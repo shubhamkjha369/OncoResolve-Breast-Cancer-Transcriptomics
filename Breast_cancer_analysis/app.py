@@ -61,7 +61,7 @@ if grid_search_log is not None and "mean_test_score" in grid_search_log.columns:
     best_f1 = best_row["mean_test_score"]
 
 # =============================================================================
-# LIGHT THEME STYLING
+# PROFESSIONAL LIGHT THEME STYLING (warm off-white, easy on eyes)
 # =============================================================================
 
 st.markdown("""
@@ -70,96 +70,149 @@ st.markdown("""
 
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
+/* ── Main background: warm off-white ── */
 .stApp {
-    background: #f8fafc;
+    background: #f5f5f0 !important;
 }
 
+/* ── Sidebar: slightly darker warm tone with full text visibility ── */
 section[data-testid="stSidebar"] {
-    background: #ffffff !important;
-    border-right: 1px solid #e2e8f0 !important;
+    background: #eceee8 !important;
+    border-right: 1px solid #d5d7d0 !important;
 }
 
-/* Main title */
+/* Sidebar – ALL text elements forced dark */
+section[data-testid="stSidebar"] * {
+    color: #1e293b !important;
+}
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] h4 {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+}
+section[data-testid="stSidebar"] .stRadio label {
+    color: #334155 !important;
+    font-weight: 500 !important;
+    font-size: 15px !important;
+}
+section[data-testid="stSidebar"] .stRadio label:hover {
+    color: #6366f1 !important;
+}
+section[data-testid="stSidebar"] .stMarkdown p,
+section[data-testid="stSidebar"] .stMarkdown strong,
+section[data-testid="stSidebar"] .stMarkdown b {
+    color: #1e293b !important;
+}
+section[data-testid="stSidebar"] small,
+section[data-testid="stSidebar"] .stCaption,
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
+    color: #64748b !important;
+}
+section[data-testid="stSidebar"] hr {
+    border-color: #d5d7d0 !important;
+}
+
+/* ── Main title ── */
 .main-title {
     font-size: 40px; font-weight: 800; line-height: 1.15;
     color: #0f172a; margin-bottom: 4px;
 }
 .main-title-accent {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: linear-gradient(135deg, #5b5edb, #7c5cbf);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 .sub-title {
     color: #64748b; font-size: 17px; margin-bottom: 32px; font-weight: 400;
 }
 
-/* Section title */
+/* ── Section title ── */
 .section-title {
     font-size: 22px; font-weight: 700; color: #1e293b;
     margin-top: 40px; margin-bottom: 16px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 2px solid #d5d7d0;
 }
 
-/* Metric cards */
+/* ── Metric cards (warm white) ── */
 .metric-card {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
+    background: #fafaf7;
+    border: 1px solid #dddfd8;
     border-radius: 16px; padding: 24px 16px;
     text-align: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.02);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .metric-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 4px 20px rgba(99,102,241,0.12);
+    box-shadow: 0 4px 20px rgba(91,94,219,0.10);
 }
 .metric-value {
-    font-size: 32px; font-weight: 800; color: #6366f1;
+    font-size: 32px; font-weight: 800; color: #5b5edb;
     line-height: 1.2;
 }
 .metric-label {
-    color: #94a3b8; font-size: 12px; margin-top: 8px;
+    color: #78816e; font-size: 12px; margin-top: 8px;
     letter-spacing: 0.8px; text-transform: uppercase; font-weight: 600;
 }
 
-/* Accent cards */
+/* ── Accent cards ── */
 .accent-card {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: linear-gradient(135deg, #5b5edb, #7c5cbf);
     border-radius: 16px; padding: 24px 16px; text-align: center;
-    box-shadow: 0 4px 20px rgba(99,102,241,0.25);
+    box-shadow: 0 4px 20px rgba(91,94,219,0.22);
 }
 .accent-card .metric-value { color: #ffffff; }
-.accent-card .metric-label { color: rgba(255,255,255,0.8); }
+.accent-card .metric-label { color: rgba(255,255,255,0.82); }
 
-/* Info & success boxes */
+/* ── Info & success boxes ── */
 .info-box {
-    background: #eff6ff; border-left: 4px solid #3b82f6;
+    background: #eef3fa; border-left: 4px solid #5b82c7;
     padding: 18px 22px; border-radius: 8px; margin-bottom: 20px;
-    color: #1e40af; font-size: 15px; line-height: 1.65;
+    color: #1e3a6e; font-size: 15px; line-height: 1.65;
 }
 .success-box {
-    background: #f0fdf4; border-left: 4px solid #22c55e;
+    background: #eef6ef; border-left: 4px solid #3da34d;
     padding: 18px 22px; border-radius: 8px; margin-bottom: 20px;
-    color: #166534; font-size: 15px; line-height: 1.65;
+    color: #1a5c28; font-size: 15px; line-height: 1.65;
 }
 
-/* Pipeline badges */
+/* ── Pipeline badges ── */
 .badge {
     display: inline-block;
-    background: #f1f5f9; border: 1px solid #e2e8f0;
+    background: #eceee8; border: 1px solid #d5d7d0;
     color: #475569; border-radius: 24px;
     padding: 7px 18px; margin: 4px 2px;
     font-size: 13px; font-weight: 500;
     transition: background 0.2s;
 }
-.badge:hover { background: #e2e8f0; }
+.badge:hover { background: #dddfd8; }
 .badge-accent {
-    background: #eef2ff; border-color: #c7d2fe; color: #4338ca;
+    background: #e8eaf8; border-color: #c5c8ed; color: #3f3ab0;
 }
 
-/* General text */
+/* ── General text ── */
 .stMarkdown p, .stMarkdown li { color: #334155; line-height: 1.7; }
 h1, h2, h3 { color: #0f172a !important; }
+
+/* ── Streamlit widget labels ── */
+.stSelectbox label, .stMultiSelect label,
+.stTextInput label, .stNumberInput label,
+.stSlider label, .stRadio > label {
+    color: #1e293b !important;
+}
+
+/* ── Dataframe / table styling ── */
+.stDataFrame { border-radius: 8px; overflow: hidden; }
+
+/* ── Expander styling ── */
+.streamlit-expanderHeader {
+    color: #1e293b !important;
+    font-weight: 600 !important;
+    background: #eceee8 !important;
+    border-radius: 8px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -189,7 +242,7 @@ st.sidebar.caption("Built with Streamlit \u00b7 Plotly \u00b7 Scikit-Learn \u00b
 
 PLOTLY_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="#ffffff",
+    plot_bgcolor="#fafaf7",
     font=dict(family="Inter", color="#334155"),
     title_font=dict(size=16, color="#1e293b"),
     margin=dict(t=50, b=40)
@@ -271,8 +324,8 @@ elif page == "EDA Insights":
             template="plotly_white", opacity=0.85, height=520)
         fig.update_traces(marker=dict(size=11, line=dict(width=0.8, color="#ffffff")))
         fig.update_layout(**PLOTLY_LAYOUT, legend=dict(font=dict(size=12)))
-        fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
-        fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
+        fig.update_xaxes(showgrid=True, gridcolor="#eeefe9")
+        fig.update_yaxes(showgrid=True, gridcolor="#eeefe9")
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.warning("PCA data not found.")
@@ -290,7 +343,7 @@ elif page == "EDA Insights":
         fig2.update_traces(textposition="outside", marker_line_width=0)
         fig2.update_layout(**PLOTLY_LAYOUT, showlegend=False)
         fig2.update_xaxes(showgrid=False)
-        fig2.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
+        fig2.update_yaxes(showgrid=True, gridcolor="#eeefe9")
         st.plotly_chart(fig2, use_container_width=True)
 
     st.markdown('<div class="info-box">Moderate class imbalance: <b>basal</b> (41 samples) is the largest subtype while <b>normal</b> has only 7. Stratified splitting was used to preserve distributions during CV.</div>', unsafe_allow_html=True)
@@ -317,7 +370,7 @@ robust, biologically meaningful biomarkers from 54,675 gene probes:<br><br>
             template="plotly_white", color="frequency",
             color_continuous_scale="Blues", height=600)
         fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
-        fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
+        fig.update_xaxes(showgrid=True, gridcolor="#eeefe9")
         st.plotly_chart(fig, use_container_width=True)
         with st.expander("\U0001f4cb View All Consensus Genes (Top 50)"):
             st.dataframe(consensus_genes.head(50), use_container_width=True, hide_index=True)
@@ -353,7 +406,7 @@ elif page == "Model Performance":
         fig.update_layout(
             title="Cross-Validated Macro F1 Score (\u00b1 Std Dev)",
             template="plotly_white", showlegend=False, height=450,
-            yaxis=dict(range=[0.8, 1.05], gridcolor="#f1f5f9"),
+            yaxis=dict(range=[0.8, 1.05], gridcolor="#eeefe9"),
             **PLOTLY_LAYOUT
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -393,7 +446,7 @@ elif page == "Cross Validation":
                 title="Fold-Level F1 Score Distribution (5-Fold)",
                 template="plotly_white", color_discrete_sequence=BAR_COLORS, height=480)
             fig.update_layout(**PLOTLY_LAYOUT, showlegend=False,
-                yaxis=dict(range=[0.8, 1.05], gridcolor="#f1f5f9"))
+                yaxis=dict(range=[0.8, 1.05], gridcolor="#eeefe9"))
             st.plotly_chart(fig, use_container_width=True)
 
         st.markdown('<div class="section-title">\U0001f4cc Model Stability</div>', unsafe_allow_html=True)
@@ -424,7 +477,7 @@ elif page == "SHAP Explainability":
             title="Top 15 SHAP Biomarkers with Gene Annotations",
             template="plotly_white", hover_data=["gene", "name"], height=500)
         fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
-        fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
+        fig.update_xaxes(showgrid=True, gridcolor="#eeefe9")
         st.plotly_chart(fig, use_container_width=True)
         with st.expander("\U0001f4cb Full Annotated Biomarker Table"):
             st.dataframe(annotated_biomarkers.head(30)[["gene","symbol","name","importance"]],
@@ -451,7 +504,7 @@ elif page == "Functional Genomics":
             title="KEGG Pathway Enrichment (-log10 Adjusted P-value)",
             template="plotly_white", hover_data=["Overlap", "Genes"], height=420)
         fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
-        fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
+        fig.update_xaxes(showgrid=True, gridcolor="#eeefe9")
         st.plotly_chart(fig, use_container_width=True)
         with st.expander("\U0001f4cb Pathway Details"):
             st.dataframe(kegg_pathways[["Term","Overlap","Adjusted P-value","Genes"]],
