@@ -46,7 +46,7 @@ This project builds a **complete, reproducible ML pipeline** that:
 
 1. **Explores** 54,675 gene expression probes across 151 patient samples
 2. **Selects** robust biomarker genes using an ensemble of four independent methods
-3. **Trains** and benchmarks five classical ML algorithms with leakage-free evaluation
+3. **Trains** and benchmarks five ML algorithms with leakage-free evaluation
 4. **Optimizes** the best model via exhaustive hyperparameter search
 5. **Explains** predictions using SHAP (SHapley Additive exPlanations) for interpretable AI
 6. **Validates** discovered biomarkers against established biological pathways (KEGG)
@@ -59,27 +59,36 @@ This project builds a **complete, reproducible ML pipeline** that:
 | Metric | Value |
 |---|---|
 | **Best Model** | Random Forest Classifier |
-| **GridSearchCV F1 (Macro)** | **~97%+** |
-| **Cross-Validated Accuracy** | **~97%+** |
+| **GridSearchCV F1 (Weighted)** | **97.33%** |
+| **Cross-Validated Accuracy** | **96.02%** |
+| **Cross-Validated F1 (Weighted)** | **95.95%** |
 | **Model Stability Score** | **0.926** |
-| **Consensus Biomarkers Found** | Multi-method validated gene set |
+| **Consensus Biomarkers Found** | Genes selected by ≥2 of 4 methods |
 | **Enriched KEGG Pathways** | **7** significantly enriched pathways |
 
-### 🧬 Key Biomarkers Identified
-| Gene Symbol | Biological Role |
-|---|---|
-| **ERBB2** | HER2 receptor — primary therapeutic target in HER2+ breast cancer |
-| **ESR1** | Estrogen receptor α — defines luminal subtypes, guides endocrine therapy |
-| **PGAP3** | Co-amplified with ERBB2 in HER2+ tumors |
-| **MIEN1** | Migration and invasion enhancer — HER2 amplicon neighbor |
-| **MLPH** | Melanophilin — luminal differentiation marker |
+### 🧬 Key Biomarkers Identified (SHAP)
+| Gene Symbol | Probe ID | Biological Role |
+|---|---|---|
+| **MIEN1** | 224447_s_at | Migration and invasion enhancer — HER2 amplicon neighbor |
+| **ERBB2** | 216836_s_at | HER2 receptor — primary therapeutic target in HER2+ breast cancer |
+| **PGAP3** | 221811_at | Post-GPI attachment to proteins — co-amplified with ERBB2 in HER2+ tumors |
+| **ESR1** | 205225_at | Estrogen receptor α — defines luminal subtypes, guides endocrine therapy |
+| **MLPH** | 218211_s_at | Melanophilin — luminal differentiation marker |
 
 ### 🗺️ Enriched Biological Pathways
-The SHAP-identified biomarkers mapped to **7 significantly enriched KEGG pathways** including:
-- **Cell Cycle** — core proliferative machinery
-- **Oocyte Meiosis** — cell division regulatory overlap
-- **Non-small Cell Lung Cancer** — shared oncogenic signaling (ERBB2/EGFR)
-- Key driver genes: **PLK1, ERBB2, CDC25C, AURKA, E2F3**
+The SHAP-identified biomarkers were mapped to gene symbols via MyGene and submitted to **Enrichr (KEGG 2021 Human)**. **7 significantly enriched pathways** were identified (adjusted p-value < 0.05):
+
+| Pathway | Overlap | Adjusted P-value | Key Genes |
+|---|---|---|---|
+| Systemic lupus erythematosus | 9/135 | 2.30e-07 | H4C1–H4C15 (histone cluster) |
+| Alcoholism | 9/186 | 1.44e-06 | H4C1–H4C15 |
+| Neutrophil extracellular trap formation | 9/189 | 1.44e-06 | H4C1–H4C15 |
+| Viral carcinogenesis | 9/203 | 2.00e-06 | H4C1–H4C15 |
+| Cell cycle | 4/124 | 2.00e-02 | CDC45, PLK1, E2F3, CDC25C |
+| Oocyte meiosis | 4/129 | 2.00e-02 | AR, PLK1, CDC25C, AURKA |
+| Non-small cell lung cancer | 3/72 | 2.88e-02 | EML4, ERBB2, E2F3 |
+
+> The top 4 pathways are driven by **histone H4 cluster genes** (H4C1–H4C15), reflecting chromatin-level dysregulation in breast cancer. The remaining pathways include **Cell Cycle** and **Oocyte Meiosis** with oncogenic regulators PLK1, ERBB2, CDC25C, AURKA.
 
 ---
 
@@ -91,8 +100,9 @@ The SHAP-identified biomarkers mapped to **7 significantly enriched KEGG pathway
 | **GEO Accession** | [GSE45827](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE45827) |
 | **Platform** | Affymetrix Human Genome U133 Plus 2.0 |
 | **Samples** | 151 patients |
-| **Features** | 54,675 gene expression probes |
+| **Features** | 54,675 gene expression probes (after dropping `samples` and `type` columns) |
 | **Target** | 6 molecular subtypes |
+| **Raw CSV Columns** | 54,677 (includes `samples` ID and `type` target) |
 
 ### Subtype Distribution
 
@@ -120,53 +130,58 @@ The SHAP-identified biomarkers mapped to **7 significantly enriched KEGG pathway
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │  01 ─ DATA LOADING           Parse CSV, inspect dimensions, dtypes  │
+│                              drop `samples` ID, optimize float32    │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  02 ─ EDA                    PCA visualization, class distribution, │
-│                              missing-value audit, variance profiling│
+│  02 ─ EDA                    PCA visualization (RobustScaler),      │
+│                              class distribution, variance profiling │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  03 ─ PREPROCESSING          Variance thresholding, robust scaling, │
-│                              train/test stratified split (80/20)    │
+│  03 ─ PREPROCESSING          Variance thresholding (threshold=0.1), │
+│                              StandardScaler, stratified split 80/20 │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │  04 ─ FEATURE SELECTION      ANOVA F-test · Mutual Information ·    │
 │                              Random Forest Importance · LASSO (L1)  │
-│                              → Consensus intersection (≥3 methods)  │
+│                              → Consensus union (≥2 of 4 methods)    │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │  05 ─ BASELINE ML            Logistic Regression · SVM · Random     │
 │                              Forest · XGBoost · LightGBM            │
-│                              Stratified 5-Fold CV benchmarking      │
+│                              Train/test evaluation on 3 feature     │
+│                              spaces (full, consensus, PCA-50)       │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  05b/c ─ CV & GRIDSEARCH     Leakage-free nested CV · GridSearchCV  │
-│                              k=500 features, max_depth=10,          │
-│                              n_estimators=100 (best config)         │
+│  05b ─ CROSS-VALIDATION      Leakage-free Stratified 5-Fold CV     │
+│                              SelectKBest(k=1000) inside each fold   │
+│                              Metric: weighted F1                    │
+│                                                                      │
+│  05c ─ GRIDSEARCH            GridSearchCV with VarianceThreshold +  │
+│                              SelectKBest + StandardScaler + RF      │
+│                              Best: k=500, depth=10, trees=100       │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  06 ─ SHAP EXPLAINABILITY    Global feature importance · Per-class  │
-│                              SHAP values · Biomarker annotation     │
-│                              via gene symbol mapping                │
+│  06/06b ─ SHAP               TreeSHAP on both CV and GridSearch     │
+│                              models. Probe → Gene Symbol mapping    │
+│                              via MyGene API                         │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │  07 ─ FUNCTIONAL GENOMICS    Enrichr API → KEGG 2021 pathway        │
-│                              enrichment · Biological validation     │
-│                              of ML-discovered biomarkers            │
+│                              enrichment of top 100 SHAP biomarkers  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -180,12 +195,12 @@ Breast_cancer_analysis/
 ├── notebooks/                          # Ordered analytical notebooks
 │   ├── 01_data_loading.ipynb           # Data ingestion & inspection
 │   ├── 02_eda.ipynb                    # Exploratory data analysis
-│   ├── 03_preprocessing.ipynb          # Scaling, splitting, variance filtering
+│   ├── 03_preprocessing.ipynb          # Variance filtering, StandardScaler, splitting
 │   ├── 04_feature_selection.ipynb      # Multi-method feature selection
-│   ├── 05_baseline_ml.ipynb            # ML model benchmarking
-│   ├── 05b_cross_validation.ipynb      # Leakage-free stratified CV
-│   ├── 05c_gridsearch_cv.ipynb         # Hyperparameter optimization
-│   ├── 06_explainability.ipynb         # SHAP analysis
+│   ├── 05_baseline_ml.ipynb            # ML model benchmarking (train/test)
+│   ├── 05b_cross_validation.ipynb      # Leakage-free stratified 5-fold CV
+│   ├── 05c_gridsearch_cv.ipynb         # Hyperparameter optimization (GridSearchCV)
+│   ├── 06_explainability.ipynb         # SHAP analysis (CV model)
 │   ├── 06b_explainability_GridSearchCV.ipynb  # SHAP on tuned model
 │   └── 07_functional_analysis.ipynb    # KEGG pathway enrichment
 │
@@ -195,29 +210,32 @@ Breast_cancer_analysis/
 │   ├── processed/                      # Cleaned parquet data
 │   │   ├── breast_cancer.parquet
 │   │   └── pca_2d.parquet
-│   ├── artifacts/                      # ML artifacts & visualizations
-│   │   ├── cv_results.parquet          # Cross-validation results
-│   │   ├── consensus_genes.parquet     # Multi-method selected genes
-│   │   ├── shap_importance.parquet     # SHAP feature importance
-│   │   ├── annotated_global_biomarkers.parquet
-│   │   ├── enriched_kegg_pathways.parquet
-│   │   ├── grid_search_log.parquet     # GridSearchCV results
-│   │   ├── global_shap_importance.png  # SHAP visualization
-│   │   ├── model_stability_cv.png      # CV stability plot
-│   │   ├── pathway_enrichment_dotplot.png
-│   │   └── ... (scalers, encoders, selectors)
-│   └── external/                       # External reference data
+│   └── artifacts/                      # ML artifacts & visualizations
+│       ├── cv_results.parquet          # Cross-validation results
+│       ├── consensus_genes.parquet     # Multi-method selected genes
+│       ├── shap_importance.parquet     # SHAP feature importance
+│       ├── annotated_global_biomarkers.parquet
+│       ├── enriched_kegg_pathways.parquet
+│       ├── grid_search_log.parquet     # GridSearchCV results
+│       ├── global_shap_importance.png  # SHAP visualization
+│       ├── model_stability_cv.png      # CV stability plot
+│       ├── pathway_enrichment_dotplot.png
+│       └── ... (scalers, encoders, selectors as .pkl)
 │
 ├── models/
-│   ├── tuned_final_model.pkl           # GridSearchCV-optimized model
-│   └── validated_final_model.pkl       # CV-validated model
+│   ├── tuned_final_model.pkl           # GridSearchCV-optimized pipeline
+│   └── validated_final_model.pkl       # CV-validated pipeline
 │
 ├── src/
 │   ├── __init__.py
 │   └── config.py                       # Centralized path configuration
 │
-├── reports/                            # Generated reports (empty)
+├── .streamlit/
+│   └── config.toml                     # Streamlit theme & server config
+│
 ├── app.py                              # Streamlit analytics dashboard
+├── automl_page.py                      # AutoML pipeline tab (UI)
+├── pipeline_engine.py                  # AutoML pipeline engine (backend)
 ├── requirements.txt                    # Python dependencies
 ├── Dockerfile                          # Multi-stage Docker build
 └── README.md                           # ← You are here
@@ -230,85 +248,99 @@ Breast_cancer_analysis/
 ### 1. Data Loading & Inspection
 > 📓 `notebooks/01_data_loading.ipynb`
 
-- Loaded the **CuMiDa GSE45827** dataset (151 × 54,677)
+- Loaded the **CuMiDa GSE45827** dataset (151 rows × 54,677 columns including `samples` and `type`)
+- Dropped the `samples` ID column
 - Validated data types, confirmed no missing values
-- Separated `samples` (IDs) and `type` (target labels) from gene expression features
-- Converted to optimized Parquet format for downstream processing
+- Optimized float64 → float32 for memory efficiency
+- Saved as Parquet format for downstream processing
 
 ### 2. Exploratory Data Analysis
 > 📓 `notebooks/02_eda.ipynb`
 
-- **PCA visualization** revealed partial subtype separability in 2D latent space, confirming that transcriptomic signal supports supervised classification
+- **PCA visualization** (using **RobustScaler**) revealed partial subtype separability in 2D latent space, confirming that transcriptomic signal supports supervised classification
 - **Class distribution analysis** identified moderate imbalance (basal: 41, normal: 7)
 - Variance profiling across 54,675 probes guided downstream filtering thresholds
+- Correlation heatmap on the first 100 features
 - No missing data or quality issues detected
+- Saved RobustScaler and PCA coordinates to artifacts
 
 ### 3. Preprocessing
 > 📓 `notebooks/03_preprocessing.ipynb`
 
-- **Variance thresholding** to remove near-zero-variance probes (uninformative noise)
-- **Robust scaling** (median/IQR-based) for outlier-resilient normalization
+- **Label encoding** of the 6 target subtypes
+- **Variance thresholding** (threshold=0.1) to remove near-zero-variance probes → reduced from 54,675 to 35,192 features
 - **Stratified train/test split** (80/20) preserving class proportions
-- All transformers fitted on training data only to prevent data leakage
+- **StandardScaler** (mean/std-based) normalization — fitted on training data only to prevent leakage
+- All transformers and split data saved as pickle artifacts
 
 ### 4. Feature Selection
 > 📓 `notebooks/04_feature_selection.ipynb`
 
-Four independent supervised methods were applied to reduce the 54,675-dimensional feature space:
+Four independent supervised methods were applied to the 35,192 post-filtering features:
 
 | Method | Type | Rationale |
 |---|---|---|
 | **ANOVA F-Test** | Univariate statistical | Tests mean differences across subtypes |
 | **Mutual Information** | Information-theoretic | Captures non-linear dependencies |
-| **Random Forest Importance** | Ensemble model-based | Gini importance from tree splits |
-| **LASSO (L1)** | Regularization-based | Sparse coefficient selection |
+| **Random Forest Importance** | Ensemble model-based (200 trees) | Gini importance from tree splits |
+| **LASSO (L1)** | Regularization-based (saga, max_iter=5000) | Sparse coefficient selection |
 
-**Consensus approach:** Genes selected by **≥3 of 4 methods** are considered robust biomarker candidates. This ensemble strategy reduces method-specific bias and improves biological reliability.
+Each method selected its top 250 features (TOP_K = 250).
+
+**Consensus approach:** Genes selected by **≥2 of 4 methods** are considered robust biomarker candidates. This ensemble strategy reduces method-specific bias and improves biological reliability.
 
 ### 5. Baseline Machine Learning
 > 📓 `notebooks/05_baseline_ml.ipynb`
 
-Five classifiers were benchmarked on the consensus feature set:
+Five classifiers were benchmarked on three feature spaces (full, consensus, PCA-50):
 
-| Algorithm | Strengths for This Task |
+| Algorithm | Configuration |
 |---|---|
-| **Logistic Regression** | Interpretable linear baseline |
-| **Support Vector Machine** | Effective in high-dimensional spaces |
-| **Random Forest** | Robust ensemble, handles feature interactions |
-| **XGBoost** | Gradient boosting with regularization |
-| **LightGBM** | Fast gradient boosting, leaf-wise growth |
+| **Logistic Regression** | max_iter=5000 |
+| **Support Vector Machine** | RBF kernel |
+| **Random Forest** | n_estimators=300 |
+| **XGBoost** | n_estimators=300, max_depth=6, lr=0.05 |
+| **LightGBM** | n_estimators=300, lr=0.05 |
 
-All models evaluated using **Stratified 5-Fold Cross-Validation** with macro-averaged F1 score as the primary metric.
+All models evaluated using **weighted F1 score** on the held-out test set. This is a single train/test split benchmark, not cross-validation.
 
 ### 6. Cross-Validation & Hyperparameter Tuning
 > 📓 `notebooks/05b_cross_validation.ipynb` · `notebooks/05c_gridsearch_cv.ipynb`
 
-- **Leakage-free CV:** Feature selection performed **inside each fold** — the selector never sees test data
-- **Stability analysis:** Measured fold-to-fold variance to assess model robustness
-- **Random Forest** emerged as the most stable and highest-performing model (stability score: **0.926**)
-- **GridSearchCV** exhaustively searched over:
-  - `k` (number of selected features): [100, 200, 500]
-  - `max_depth`: [5, 10, None]
-  - `n_estimators`: [50, 100, 200]
-- **Best configuration:** `k=500, max_depth=10, n_estimators=100`
+**05b — Leakage-free CV:**
+- **Stratified 5-Fold CV** on the full dataset with `SelectKBest(k=1000)` + `StandardScaler` + model inside each fold pipeline
+- Scoring metric: **weighted F1** (`f1_weighted`)
+- **Random Forest** emerged as the most stable model (stability score: **0.926**)
+- All 5 models benchmarked: LR, SVM, RF, XGBoost, LightGBM
+
+**05c — GridSearchCV:**
+- Pipeline: `VarianceThreshold(0.1)` → `SelectKBest` → `StandardScaler` → `RandomForestClassifier`
+- Scoring: `f1_weighted`
+- Parameter grid searched:
+  - `feature_selection__k`: [500, 1000, 2000]
+  - `model__n_estimators`: [100, 300, 500]
+  - `model__max_depth`: [10, 20, None]
+  - `model__min_samples_split`: [2, 5]
+- **Best configuration:** `k=500, max_depth=10, n_estimators=100, min_samples_split=2`
+- **Best F1 (weighted):** 0.9733
 
 ### 7. Model Explainability (SHAP)
 > 📓 `notebooks/06_explainability.ipynb` · `notebooks/06b_explainability_GridSearchCV.ipynb`
 
-- Computed **TreeSHAP** values for the optimized Random Forest model
-- Identified the most influential gene probes driving each subtype classification
-- Mapped Affymetrix probe IDs → **HUGO gene symbols** → functional annotations
-- Top biomarkers (**ERBB2, ESR1, PGAP3, MIEN1, MLPH**) have well-documented roles in breast cancer biology, providing strong biological validation of the model
+- Computed **TreeSHAP** values for both the CV-validated and GridSearchCV-optimized Random Forest pipelines
+- Identified the most influential Affymetrix probe IDs driving each subtype classification
+- Mapped probe IDs → **HUGO gene symbols** via the **MyGene API** (using `scopes="reporter"`)
+- Top biomarkers by SHAP importance: **MIEN1, ERBB2, PGAP3, ESR1, MLPH** — all with well-documented roles in breast cancer biology
 
 ### 8. Functional Genomics & Pathway Analysis
 > 📓 `notebooks/07_functional_analysis.ipynb`
 
-- Submitted top SHAP biomarker gene symbols to the **Enrichr API**
-- Retrieved **KEGG 2021 Human** pathway enrichment results
-- **7 significantly enriched pathways** identified (adjusted p-value < 0.05)
-- Key pathways: **Cell Cycle, Oocyte Meiosis, Non-small Cell Lung Cancer**
-- Driver genes (**PLK1, ERBB2, CDC25C, AURKA, E2F3**) are established oncogenic regulators
-- This step closes the loop: ML predictions → biological mechanisms
+- Took the top 100 SHAP probes, mapped them to gene symbols via MyGene
+- Submitted unique gene symbols to the **Enrichr API** against **KEGG 2021 Human** and **GO Biological Process 2021** gene sets
+- **7 significantly enriched KEGG pathways** identified (adjusted p-value < 0.05)
+- Top 4 pathways are dominated by **histone H4 cluster genes** (H4C1–H4C15), reflecting chromatin-level transcriptional dysregulation
+- Cell Cycle pathway genes (**PLK1, E2F3, CDC25C, CDC45**) and Oocyte Meiosis genes (**AURKA, PLK1**) represent established oncogenic regulators
+- **ERBB2** appears in the Non-small cell lung cancer pathway due to shared EGFR/ERBB2 signaling
 
 ---
 
@@ -325,6 +357,7 @@ The project includes a fully interactive **Streamlit** analytics dashboard (`app
 | **Cross Validation** | Fold-level box plots, stability analysis |
 | **SHAP Explainability** | Global importance plots, annotated biomarker table |
 | **Functional Genomics** | KEGG pathway enrichment dot plots, pathway details |
+| **AutoML Pipeline** | End-to-end ML pipeline for new datasets with live console output |
 
 Launch the dashboard:
 ```bash
@@ -400,12 +433,13 @@ The Docker image uses a two-stage build for minimal image size:
 | **Language** | Python 3.11 |
 | **ML & Data** | Scikit-Learn, XGBoost, LightGBM, Pandas, NumPy |
 | **Explainability** | SHAP (SHapley Additive exPlanations) |
-| **Pathway Analysis** | Enrichr API, KEGG 2021 |
+| **Gene Annotation** | MyGene API (probe → gene symbol mapping) |
+| **Pathway Analysis** | Enrichr API, KEGG 2021 Human |
 | **Visualization** | Plotly, Matplotlib, Seaborn |
 | **Dashboard** | Streamlit |
 | **Data Format** | Apache Parquet (via PyArrow) |
 | **Containerization** | Docker (multi-stage build) |
-| **Scaling** | RobustScaler, StandardScaler |
+| **Scaling** | StandardScaler (preprocessing), RobustScaler (EDA PCA) |
 
 ---
 
