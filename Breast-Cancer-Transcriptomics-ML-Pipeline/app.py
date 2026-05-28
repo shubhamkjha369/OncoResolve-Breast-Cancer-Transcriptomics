@@ -114,9 +114,6 @@ section[data-testid="stSidebar"] {
     background: #ebebe5 !important;
     border-right: 1px solid #dcdcd3 !important;
 }
-section[data-testid="stSidebar"] * {
-    color: #1a2230 !important;
-}
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3 {
@@ -124,11 +121,65 @@ section[data-testid="stSidebar"] h3 {
     color: #0f172a !important;
     font-weight: 700 !important;
 }
-section[data-testid="stSidebar"] .stRadio label {
-    color: #334155 !important;
-    font-weight: 500 !important;
-    font-size: 14px !important;
+section[data-testid="stSidebar"] .stMarkdown p,
+section[data-testid="stSidebar"] .stMarkdown strong {
+    color: #1a2230 !important;
 }
+section[data-testid="stSidebar"] caption,
+section[data-testid="stSidebar"] .stCaption,
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
+    color: #475569 !important;
+    font-weight: 500 !important;
+}
+
+
+/* ── Modern Premium Navigation Menu Items ── */
+div[data-testid="stRadio"] > div {
+    gap: 8px !important;
+}
+
+div[data-testid="stRadio"] label {
+    background: #fcfcfb !important;
+    border: 1px solid #dcdcd3 !important;
+    border-left: 4px solid #94a3b8 !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+    width: 100% !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: flex !important;
+    align-items: center !important;
+    margin-bottom: 2px !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.01) !important;
+}
+
+/* Hover effect: slide right, brighten background, accent left border */
+div[data-testid="stRadio"] label:hover {
+    background: #ffffff !important;
+    border-color: #4f46e5 !important;
+    border-left: 4px solid #4f46e5 !important;
+    transform: translateX(6px) !important;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08) !important;
+}
+
+/* Checked/Active state: Royal Indigo Gradient with outstanding white text visibility */
+div[data-testid="stRadio"] label:has(input:checked) {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
+    border-color: #4f46e5 !important;
+    border-left: 4px solid #c7d2fe !important;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.18) !important;
+}
+div[data-testid="stRadio"] label:has(input:checked) * {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* Hide standard circular radio selectors entirely */
+div[data-testid="stRadio"] label span[data-testid="stRadioCircle"],
+div[data-testid="stRadio"] label input[type="radio"] {
+    display: none !important;
+}
+
 
 /* ── Main title ── */
 .main-title {

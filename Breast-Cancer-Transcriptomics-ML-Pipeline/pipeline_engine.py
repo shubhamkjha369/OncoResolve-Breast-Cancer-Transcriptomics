@@ -88,29 +88,37 @@ def run_eda(X, y, log=_noop):
 
 # ── 3. PREPROCESSING ────────────────────────────────────────────────
 def preprocess(X, y, var_threshold=0.1, test_size=0.2, random_state=42, log=_noop):
-    log("Imputing missing values with column median...")
-    X_filled = X.fillna(X.median())
     log("Label-encoding target classes...")
     le = LabelEncoder(); y_encoded = le.fit_transform(y)
     log(f"  Classes: {dict(zip(le.classes_, range(len(le.classes_))))}")
-    log(f"Applying VarianceThreshold (threshold={var_threshold})...")
-    var_sel = VarianceThreshold(threshold=var_threshold)
-    X_var = var_sel.fit_transform(X_filled)
-    selected_features = X_filled.columns[var_sel.get_support()]
-    log(f"  {X_filled.shape[1]:,} → {X_var.shape[1]:,} features retained")
+    
     log(f"Stratified train/test split ({1-test_size:.0%} / {test_size:.0%})...")
     X_train, X_test, y_train, y_test = train_test_split(
-        X_var, y_encoded, test_size=test_size, stratify=y_encoded, random_state=random_state)
+        X, y_encoded, test_size=test_size, stratify=y_encoded, random_state=random_state)
     log(f"  Train: {X_train.shape[0]} samples, Test: {X_test.shape[0]} samples")
+    
+    log("Imputing missing values with training column median...")
+    train_medians = X_train.median()
+    X_train_filled = X_train.fillna(train_medians)
+    X_test_filled = X_test.fillna(train_medians)
+    
+    log(f"Applying VarianceThreshold (threshold={var_threshold})...")
+    var_sel = VarianceThreshold(threshold=var_threshold)
+    X_train_var = var_sel.fit_transform(X_train_filled)
+    X_test_var = var_sel.transform(X_test_filled)
+    selected_features = X_train_filled.columns[var_sel.get_support()]
+    log(f"  {X_train_filled.shape[1]:,} → {X_train_var.shape[1]:,} features retained")
+    
     log("Fitting StandardScaler on training data...")
     scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
+    X_train_scaled = scaler.fit_transform(X_train_var)
+    X_test_scaled = scaler.transform(X_test_var)
     log("Preprocessing complete ✓")
+    
     return {"X_train_scaled": X_train_scaled, "X_test_scaled": X_test_scaled,
             "y_train": y_train, "y_test": y_test, "label_encoder": le,
             "selected_features": selected_features, "scaler": scaler,
-            "variance_selector": var_sel, "shape_before": X_filled.shape, "shape_after": X_var.shape}
+            "variance_selector": var_sel, "shape_before": X_train.shape, "shape_after": X_train_var.shape}
 
 # ── 4. FEATURE SELECTION ────────────────────────────────────────────
 def run_feature_selection(X_train, y_train, feature_names, top_k=250, log=_noop):
