@@ -64,6 +64,9 @@ annotated_biomarkers = load_parquet(ARTIFACT_DIR, "annotated_global_biomarkers.p
 grid_search_log = load_parquet(ARTIFACT_DIR, "grid_search_log.parquet")
 gridsearch_df = load_parquet(ARTIFACT_DIR, "gridsearch_df.parquet")
 pca_data = load_parquet(PROCESSED_DIR, "pca_2d.parquet")
+if pca_data is not None and "subtype" in pca_data.columns:
+    pca_data = pca_data.rename(columns={"subtype": "Subtype"})
+
 
 # Dynamic Pathway loadings
 kegg_pathways = load_parquet(ARTIFACT_DIR, "enrichr_kegg_results.parquet")
