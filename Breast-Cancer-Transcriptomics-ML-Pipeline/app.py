@@ -5,6 +5,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from pathlib import Path
 import ast
+import pipeline_engine as pe
+import automl_page
 
 # =============================================================================
 # CONFIG
@@ -225,7 +227,7 @@ page = st.sidebar.radio(
     "Select Section",
     ["Project Overview", "EDA Insights", "Feature Selection",
      "Model Performance", "Cross Validation", "SHAP Explainability",
-     "Functional Genomics"],
+     "Functional Genomics", "\U0001f680 AutoML Pipeline"],
     label_visibility="collapsed"
 )
 st.sidebar.markdown("---")
@@ -510,6 +512,13 @@ elif page == "Functional Genomics":
             st.dataframe(kegg_pathways[["Term","Overlap","Adjusted P-value","Genes"]],
                 use_container_width=True, hide_index=True)
         st.markdown('<div class="success-box"><b>7 significantly enriched KEGG pathways</b> discovered including Cell Cycle, Oocyte Meiosis, and Non-small Cell Lung Cancer. Key driver genes: <b>PLK1, ERBB2, CDC25C, AURKA, E2F3</b>.</div>', unsafe_allow_html=True)
+
+# =============================================================================
+# PAGE: AUTOML PIPELINE
+# =============================================================================
+
+elif page == "\U0001f680 AutoML Pipeline":
+    automl_page.render(card_fn=card)
 
 # =============================================================================
 # FOOTER

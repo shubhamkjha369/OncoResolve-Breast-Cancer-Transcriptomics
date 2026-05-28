@@ -1,0 +1,15 @@
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Notebook Checkpoints
+**/.ipynb_checkpoints/
+
+# Raw Data Directory (contains large CSV files > 100MB)
+Breast-Cancer-Transcriptomics-ML-Pipeline/data/raw/
+
+# OS generated files
+.DS_Store
+Thumbs.db
