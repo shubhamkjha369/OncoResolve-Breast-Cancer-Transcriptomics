@@ -377,8 +377,8 @@ streamlit run app.py
 
 ```bash
 # Clone the repository
-git clone https://github.com/shubhamkjha369/Breast_cancer_analysis.git
-cd Breast_cancer_analysis
+git clone https://github.com/shubhamkjha369/Computational_Biology_Projects.git
+cd Computational_Biology_Projects/Breast-Cancer-Transcriptomics-ML-Pipeline
 
 # Create virtual environment (recommended)
 python -m venv .venv
