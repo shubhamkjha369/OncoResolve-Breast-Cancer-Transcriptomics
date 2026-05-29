@@ -238,7 +238,7 @@ def _render_predictor_tab():
         with col2:
             classifier_choice = st.radio(
                 "Select Pre-Trained Diagnostic Classifier",
-                ["Tuned Logistic Regression (CV Stability: 97.31% ± 3.48%)", "Tuned Random Forest (CV Stability: 97.01% ± 4.81%)"],
+                ["Tuned Random Forest (CV Stability: 97.01% ± 4.81%)", "PyTorch Multi-Layer Perceptron (Test Accuracy: 100.00%)"],
                 key="pred_classifier"
             )
             
@@ -259,11 +259,46 @@ def _execute_prediction(data_source, uploaded_file, classifier_choice):
     
     try:
         # 1. Load Pre-Trained Classifiers and Preprocessors
-        tuned_model_file = "tuned_lr.pkl" if "Logistic Regression" in classifier_choice else "tuned_rf.pkl"
-        if not (artifact_dir / tuned_model_file).exists():
-            st.error(f"Classifier file {tuned_model_file} not found in data/artifacts/. Run notebook/AutoML first."); return
+        is_mlp = "Multi-Layer Perceptron" in classifier_choice
+        
+        if is_mlp:
+            mlp_path = artifact_dir / "mlp_best.pt"
+            if not mlp_path.exists():
+                st.error("Classifier file mlp_best.pt not found in data/artifacts/. Run deep learning first."); return
+                
+            import torch
+            import torch.nn as nn
             
-        model = joblib.load(artifact_dir / tuned_model_file)
+            class BreastCancerMLP(nn.Module):
+                def __init__(self, in_dim, n_cls):
+                    super().__init__()
+                    self.net = nn.Sequential(
+                        nn.Linear(in_dim, 512),
+                        nn.BatchNorm1d(512),
+                        nn.ReLU(),
+                        nn.Dropout(0.4),
+                        nn.Linear(512, 256),
+                        nn.BatchNorm1d(256),
+                        nn.ReLU(),
+                        nn.Dropout(0.3),
+                        nn.Linear(256, 128),
+                        nn.ReLU(),
+                        nn.Dropout(0.2),
+                        nn.Linear(128, n_cls),
+                    )
+                def forward(self, x):
+                    return self.net(x)
+                    
+            model = BreastCancerMLP(in_dim=1480, n_cls=5)
+            model.load_state_dict(torch.load(mlp_path, map_location="cpu"))
+            model.eval()
+        else:
+            tuned_model_file = "tuned_rf.pkl"
+            if not (artifact_dir / tuned_model_file).exists():
+                st.error(f"Classifier file {tuned_model_file} not found in data/artifacts/. Run notebook/AutoML first."); return
+                
+            model = joblib.load(artifact_dir / tuned_model_file)
+            
         scaler = joblib.load(artifact_dir / "scaler.pkl")
         var_sel = joblib.load(artifact_dir / "variance_selector.pkl")
         consensus_genes = joblib.load(artifact_dir / "top_consensus_genes.pkl")
@@ -333,11 +368,17 @@ def _execute_prediction(data_source, uploaded_file, classifier_choice):
         X_new_cons = X_new_scaled[:, consensus_indices]
         
         # 6. Predict using pre-trained model
-        preds_encoded = model.predict(X_new_cons)
+        if is_mlp:
+            X_tensor = torch.FloatTensor(X_new_cons)
+            with torch.no_grad():
+                logits = model(X_tensor)
+                probs = torch.softmax(logits, dim=1).numpy()
+                preds_encoded = np.argmax(probs, axis=1)
+        else:
+            preds_encoded = model.predict(X_new_cons)
+            probs = model.predict_proba(X_new_cons)
+            
         preds_labels = le.inverse_transform(preds_encoded)
-        
-        # Calculate confidence probability
-        probs = model.predict_proba(X_new_cons)
         max_probs = np.max(probs, axis=1)
         
         # 7. Format Prediction DataFrame Report
@@ -363,7 +404,7 @@ def _execute_prediction(data_source, uploaded_file, classifier_choice):
         with c_stats[1]:
             st.markdown(custom_card(f"{max_probs.mean():.2%}", "Mean Diagnostic Confidence"), unsafe_allow_html=True)
         with c_stats[2]:
-            best_model_lbl = "Logistic Regression" if "Logistic" in classifier_choice else "Random Forest"
+            best_model_lbl = "Multi-Layer Perceptron" if is_mlp else "Random Forest"
             st.markdown(custom_card(best_model_lbl, "Classifier Utilized", True), unsafe_allow_html=True)
             
         # 8. Interactive Plotly Charts
