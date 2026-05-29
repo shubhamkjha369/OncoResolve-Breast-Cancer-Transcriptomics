@@ -77,14 +77,34 @@ def run_eda(X, y, log=_noop):
     log("Scaling features with RobustScaler...")
     X_filled = X.fillna(0).values.astype(np.float32)
     X_scaled = RobustScaler().fit_transform(X_filled)
-    log("Running PCA (randomized, 2 components)...")
-    pca = PCA(n_components=2, svd_solver="randomized", random_state=42)
-    coords = pca.fit_transform(X_scaled)
-    log(f"PCA done — explained variance: {pca.explained_variance_ratio_[0]:.1%} + {pca.explained_variance_ratio_[1]:.1%}")
-    pca_df = pd.DataFrame({"PC1": coords[:,0], "PC2": coords[:,1], "Subtype": y.values})
+    n_samples, n_features = X_scaled.shape
+    min_dim = min(n_samples, n_features)
+    
+    if min_dim >= 2:
+        log("Running PCA (2 components)...")
+        pca = PCA(n_components=2, svd_solver="auto", random_state=42)
+        coords = pca.fit_transform(X_scaled)
+        log(f"PCA done — explained variance: {pca.explained_variance_ratio_[0]:.1%} + {pca.explained_variance_ratio_[1]:.1%}")
+        pc1 = coords[:, 0]
+        pc2 = coords[:, 1]
+        explained_var = pca.explained_variance_ratio_.tolist()
+    elif min_dim == 1:
+        log("Only 1 sample or 1 feature available. Running PCA with 1 component...")
+        pca = PCA(n_components=1, svd_solver="auto", random_state=42)
+        coords = pca.fit_transform(X_scaled)
+        pc1 = coords[:, 0]
+        pc2 = np.zeros(n_samples)
+        explained_var = pca.explained_variance_ratio_.tolist()
+    else:
+        log("No samples or features available for PCA. Setting PC coordinates to 0...")
+        pc1 = np.zeros(n_samples)
+        pc2 = np.zeros(n_samples)
+        explained_var = [0.0]
+        
+    pca_df = pd.DataFrame({"PC1": pc1, "PC2": pc2, "Subtype": y.values})
     return {"class_dist": dist, "variance_stats": var_df, "corr_matrix": corr_matrix,
             "corr_labels": corr_labels, "pca_df": pca_df,
-            "explained_var": pca.explained_variance_ratio_.tolist(), "missing_per_col": missing_per_col}
+            "explained_var": explained_var, "missing_per_col": missing_per_col}
 
 # ── 3. PREPROCESSING ────────────────────────────────────────────────
 def preprocess(X, y, var_threshold=0.1, test_size=0.2, random_state=42, log=_noop):
@@ -181,9 +201,15 @@ def run_baseline_benchmark(X_train, X_test, y_train, y_test, selected_features, 
     X_test_cons = X_test[:, consensus_indices] if consensus_indices else X_test
 
     n_comp = min(50, n_feats, X_train.shape[0])
-    log(f"Building PCA feature space ({n_comp} components, randomized)...")
-    pca = PCA(n_components=n_comp, svd_solver="randomized", random_state=42)
-    X_train_pca = pca.fit_transform(X_train); X_test_pca = pca.transform(X_test)
+    if n_comp >= 1:
+        log(f"Building PCA feature space ({n_comp} components)...")
+        pca = PCA(n_components=n_comp, svd_solver="auto", random_state=42)
+        X_train_pca = pca.fit_transform(X_train)
+        X_test_pca = pca.transform(X_test)
+    else:
+        log("Insufficient dimensions for PCA. Creating dummy PCA space...")
+        X_train_pca = np.zeros((X_train.shape[0], 1))
+        X_test_pca = np.zeros((X_test.shape[0], 1))
 
     if n_feats > _MAX_FEATURES_FOR_EXPENSIVE:
         anova_k = min(1000, n_feats)
