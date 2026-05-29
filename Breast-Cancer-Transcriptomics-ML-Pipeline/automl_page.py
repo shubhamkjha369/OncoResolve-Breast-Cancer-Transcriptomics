@@ -1,5 +1,7 @@
 """
-automl_page.py — AutoML Pipeline Tab with live terminal console output
+automl_page.py — Premium, research-grade AutoML tab with two functional modes:
+1. Direct Clinical Subtype Predictor (runs pre-trained models on internal/external data with transposing and imputation).
+2. Single-Click End-to-End AutoML Training Pipeline (with live progress bar and terminal console logging).
 """
 import streamlit as st
 import pandas as pd
@@ -7,15 +9,20 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import pipeline_engine as pe
+import joblib
+from pathlib import Path
 import io, traceback, time
 
 PLOTLY_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#fafaf7",
     font=dict(family="Inter", color="#334155"),
-    title_font=dict(size=16, color="#1e293b"), margin=dict(t=50, b=40),
+    title_font=dict(size=15, color="#1e293b"), margin=dict(t=50, b=40),
 )
 GRID_COLOR = "#eeefe9"
-BAR_COLORS = ["#6366f1", "#8b5cf6", "#22c55e", "#f59e0b", "#ef4444"]
+SUBTYPE_COLORS = {
+    "basal": "#ef4444", "HER": "#f59e0b", "luminal_A": "#10b981",
+    "luminal_B": "#3b82f6", "normal": "#ec4899"
+}
 
 CONSOLE_CSS = """
 <style>
@@ -33,35 +40,6 @@ CONSOLE_CSS = """
 </style>
 """
 
-def card(val, label, accent=False):
-    cls = "accent-card" if accent else "metric-card"
-    return f'<div class="{cls}"><div class="metric-value">{val}</div><div class="metric-label">{label}</div></div>'
-
-STEPS = [
-    ("aml_data","1. Upload"), ("aml_eda","2. EDA"), ("aml_prep","3. Preprocess"),
-    ("aml_fs","4. Features"), ("aml_bench","5. Benchmark"), ("aml_cv","6. CV"),
-    ("aml_grid","7. GridSearch"), ("aml_shap","8. SHAP"), ("aml_dive","9. Gene Dive"),
-]
-
-def _init_state():
-    for k, _ in STEPS:
-        if k not in st.session_state: st.session_state[k] = None
-    if "aml_errors" not in st.session_state: st.session_state.aml_errors = {}
-
-def _render_progress():
-    html = '<div style="display:flex;gap:6px;margin:18px 0 24px;flex-wrap:wrap;">'
-    for key, label in STEPS:
-        err = key in st.session_state.aml_errors
-        done = st.session_state.get(key) is not None
-        if err:     bg,border,color,icon = "#fef2f2","#fca5a5","#991b1b","\u274c"
-        elif done:  bg,border,color,icon = "#eef6ef","#86efac","#166534","\u2705"
-        else:       bg,border,color,icon = "#f5f5f0","#d5d7d0","#64748b","\u2b1c"
-        html += (f'<div style="background:{bg};border:1px solid {border};border-radius:10px;'
-                 f'padding:8px 14px;font-size:13px;font-weight:600;color:{color};'
-                 f'font-family:Inter,sans-serif;white-space:nowrap;">{icon} {label}</div>')
-    html += '</div>'
-    st.markdown(html, unsafe_allow_html=True)
-
 class LiveConsole:
     """Terminal-style console that updates in real-time via st.empty()."""
     def __init__(self, placeholder):
@@ -71,11 +49,11 @@ class LiveConsole:
     def log(self, msg):
         elapsed = time.time() - self._start
         ts = f'<span class="log-time">[{elapsed:6.1f}s]</span>'
-        if msg.startswith("["):
+        if msg.startswith("[") or msg.startswith("Phase"):
             styled = f'<span class="log-step">{msg}</span>'
-        elif "✓" in msg or "done" in msg.lower():
+        elif "✓" in msg or "done" in msg.lower() or "success" in msg.lower():
             styled = f'<span class="log-ok">{msg}</span>'
-        elif "⚡" in msg or "High-dim" in msg:
+        elif "⚡" in msg or "High-dim" in msg or "Warning" in msg:
             styled = f'<span class="log-warn">{msg}</span>'
         else:
             styled = f'<span class="log-info">{msg}</span>'
@@ -91,336 +69,370 @@ class LiveConsole:
         html = CONSOLE_CSS + '<div class="console-output">' + '<br>'.join(self._lines) + '</div>'
         self._ph.markdown(html, unsafe_allow_html=True)
 
-def _run_step(label, run_fn, state_key):
-    """Run a pipeline step with live console output and error capture."""
-    console_ph = st.empty()
-    console = LiveConsole(console_ph)
-    console.log(f"Starting: {label}")
-    try:
-        result = run_fn(console.log)
-        console.finish(success=True)
-        st.session_state[state_key] = result
-        st.session_state.aml_errors.pop(state_key, None)
-        time.sleep(0.5)
-        st.rerun()
-    except Exception as e:
-        console.log(f"ERROR: {e}")
-        console.finish(success=False)
-        st.error(f"**{label} failed:** {e}")
-        with st.expander("Full Traceback"):
-            st.code(traceback.format_exc())
-        st.session_state.aml_errors[state_key] = str(e)
+# Helper metric card generator
+def custom_card(val, label, accent=False):
+    cls = "accent-card" if accent else "metric-card"
+    return f'<div class="{cls}"><div class="metric-value">{val}</div><div class="metric-label">{label}</div></div>'
 
 def render(card_fn=None):
-    _init_state()
-    if card_fn:
-        global card; card = card_fn
-    st.markdown('<div class="main-title">\U0001f680 AutoML <span class="main-title-accent">Pipeline</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">Upload any classification dataset \u00b7 Full ML pipeline with live console output</div>', unsafe_allow_html=True)
-    _render_progress()
-    _step1_upload()
-    if st.session_state.aml_data is None: return
-    _step2_eda()
-    _step3_preprocess()
-    if st.session_state.aml_prep is None: return
-    _step4_feature_selection()
-    if st.session_state.aml_fs is None: return
-    _step5_benchmark()
-    _step6_cv()
-    _step7_gridsearch()
-    _step8_shap()
-    _step9_gene_dive()
+    st.markdown('<div class="main-title">AutoML Pipeline and Clinical Diagnostic Predictor</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-title">Deploy pre-trained models for diagnostic subtype prediction, or train a custom end-to-end machine learning pipeline.</div>', unsafe_allow_html=True)
+    
+    t_predict, t_train = st.tabs(["Clinical Subtype Predictor (Inference)", "End-to-End AutoML Training"])
+    
+    with t_predict:
+        _render_predictor_tab()
+        
+    with t_train:
+        _render_training_tab()
 
-# ── STEP 1 ──────────────────────────────────────────────────────
-def _step1_upload():
-    st.markdown('<div class="section-title">\U0001f4c2 Step 1 — Data Upload</div>', unsafe_allow_html=True)
-    uploaded = st.file_uploader("Upload CSV or Parquet file", type=["csv","parquet"], key="aml_file")
-    if uploaded is None and st.session_state.aml_data is not None:
-        d = st.session_state.aml_data
-        st.markdown(f'<div class="success-box">Dataset loaded: <b>{d["report"]["n_samples"]}</b> samples, <b>{d["report"]["n_features"]:,}</b> features, <b>{d["report"]["n_classes"]}</b> classes</div>', unsafe_allow_html=True)
-        return
-    if uploaded is None:
-        st.markdown('<div class="info-box">Upload a CSV or Parquet file with a <b>target column</b> containing class labels.</div>', unsafe_allow_html=True)
-        return
+# =============================================================================
+# TAB 1: CLINICAL SUBTYPE PREDICTOR (DIRECT MODEL INFERENCE)
+# =============================================================================
+def _render_predictor_tab():
+    st.markdown("### Clinical Subtype Predictor")
+    st.markdown('<div class="info-box">Upload a gene expression matrix (microarray probes/signals) to predict patient molecular subtypes using our pre-trained, validated models. No retraining is required.</div>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        data_source = st.radio(
+            "Select Evaluation Dataset Source",
+            ["Internal Clinical Cohort (GSE45827 - 137 Patients)", "Upload Custom Gene Expression Dataset (CSV/Parquet)"],
+            key="pred_source"
+        )
+    with col2:
+        classifier_choice = st.radio(
+            "Select Pre-Trained Diagnostic Classifier",
+            ["Tuned Logistic Regression (CV Stability: 97.31% ± 3.48%)", "Tuned Random Forest (CV Stability: 97.01% ± 4.81%)"],
+            key="pred_classifier"
+        )
+        
+    uploaded_file = None
+    if "Upload Custom" in data_source:
+        uploaded_file = st.file_uploader("Upload gene expression dataset", type=["csv","parquet"], key="pred_file_uploader")
+        
+    if st.button("Run Subtype Prediction", key="btn_run_prediction"):
+        with st.spinner("Analyzing transcriptomic features and generating diagnostic predictions..."):
+            _execute_prediction(data_source, uploaded_file, classifier_choice)
+
+def _execute_prediction(data_source, uploaded_file, classifier_choice):
+    # Paths & Artifacts
+    base_dir = Path(__file__).resolve().parent
+    artifact_dir = base_dir / "data" / "artifacts"
+    processed_dir = base_dir / "data" / "processed"
+    
     try:
-        raw_df = pd.read_parquet(io.BytesIO(uploaded.read())) if uploaded.name.endswith(".parquet") else pd.read_csv(uploaded)
+        # 1. Load Pre-Trained Classifiers and Preprocessors
+        tuned_model_file = "tuned_lr.pkl" if "Logistic Regression" in classifier_choice else "tuned_rf.pkl"
+        if not (artifact_dir / tuned_model_file).exists():
+            st.error(f"Classifier file {tuned_model_file} not found in data/artifacts/. Run notebook/AutoML first."); return
+            
+        model = joblib.load(artifact_dir / tuned_model_file)
+        scaler = joblib.load(artifact_dir / "scaler.pkl")
+        var_sel = joblib.load(artifact_dir / "variance_selector.pkl")
+        consensus_genes = joblib.load(artifact_dir / "top_consensus_genes.pkl")
+        le = joblib.load(artifact_dir / "label_encoder.pkl")
+        
+        # Load clinical template for column alignment
+        internal_cohort_path = processed_dir / "breast_cancer.parquet"
+        if not internal_cohort_path.exists():
+            st.error("Internal clinical dataset breast_cancer.parquet not found in data/processed/."); return
+        train_df = pd.read_parquet(internal_cohort_path)
+        train_X = train_df.drop(columns=["type"])
+        train_medians = train_X.median()
+        
+        # 2. Ingest and Parse Data
+        if "Internal Clinical" in data_source:
+            st.info("Loading internal patient clinical cohort (GSE45827)...")
+            X_raw = train_X.copy()
+            patient_ids = X_raw.index.tolist()
+        else:
+            if uploaded_file is None:
+                st.warning("Please upload a CSV or Parquet file to proceed."); return
+            
+            st.info(f"Ingesting custom dataset: {uploaded_file.name}...")
+            # Parse CSV/Parquet
+            if uploaded_file.name.endswith(".parquet"):
+                raw_df = pd.read_parquet(uploaded_file)
+            else:
+                raw_df = pd.read_csv(uploaded_file)
+                
+            # Perform bioinformatics transpose check
+            # Standard microarray files are often stored as (genes x patients)
+            if raw_df.shape[1] < 150 and raw_df.shape[0] > 10000:
+                st.warning("Detected (Genes x Patients) format. Automatically transposing gene expression matrix...")
+                raw_df = raw_df.set_index(raw_df.columns[0]).T
+                
+            # Clean patient IDs
+            if raw_df.iloc[:, 0].dtype == object or raw_df.columns[0].lower() in ["id", "sample", "patient"]:
+                patient_ids = raw_df.iloc[:, 0].tolist()
+                X_raw = raw_df.set_index(raw_df.columns[0]).copy()
+            else:
+                patient_ids = [f"Sample_{i+1}" for i in range(len(raw_df))]
+                X_raw = raw_df.copy()
+                
+            # Filter non-numeric columns
+            X_raw = X_raw.select_dtypes(include=[np.number])
+            
+        # 3. Align and Impute (Robust Anti-Error Preprocessing)
+        mapped_cols = [c for c in X_raw.columns if c in train_X.columns]
+        missing_cols = [c for c in train_X.columns if c not in X_raw.columns]
+        
+        if len(mapped_cols) == 0:
+            st.error("Error: The uploaded dataset does not share any Affymetrix probe IDs (features) with the training cohort columns. Please verify that the file contains probes like '1007_s_at', 'ERBB2', etc."); return
+            
+        # Align features and fill missing with training median
+        X_new_aligned = X_raw.reindex(columns=train_X.columns)
+        X_new_filled = X_new_aligned.fillna(train_medians)
+        
+        # 4. Transform features through the exact preprocessing flow
+        X_new_var = var_sel.transform(X_new_filled)
+        X_new_scaled = scaler.transform(X_new_var)
+        
+        # 5. Subset to scaled consensus features expected by the raw estimator
+        selected_features = train_X.columns[var_sel.get_support()]
+        feature_index_map = {g: i for i, g in enumerate(selected_features)}
+        consensus_indices = [feature_index_map[g] for g in consensus_genes if g in feature_index_map]
+        
+        X_new_cons = X_new_scaled[:, consensus_indices]
+        
+        # 6. Predict using pre-trained model
+        preds_encoded = model.predict(X_new_cons)
+        preds_labels = le.inverse_transform(preds_encoded)
+        
+        # Calculate confidence probability
+        probs = model.predict_proba(X_new_cons)
+        max_probs = np.max(probs, axis=1)
+        
+        # 7. Format Prediction DataFrame Report
+        results_df = pd.DataFrame({
+            "Patient ID": patient_ids,
+            "Predicted Subtype": preds_labels,
+            "Diagnostic Confidence": max_probs
+        })
+        
+        # Add probability distribution columns for clean detail view
+        classes = list(le.classes_)
+        for i, cls in enumerate(classes):
+            results_df[f"Prob {cls}"] = probs[:, i]
+            
+        # Display Success Information
+        st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
+        st.markdown('<div class="success-box"><b>Diagnostic Prediction Complete!</b> Mapped and processed <b>{:,} out of {:,} original features</b> successfully.</div>'.format(len(mapped_cols), len(train_X.columns)), unsafe_allow_html=True)
+        
+        # Summary Cards
+        c_stats = st.columns(3)
+        with c_stats[0]:
+            st.markdown(custom_card(str(len(results_df)), "Patients Evaluated"), unsafe_allow_html=True)
+        with c_stats[1]:
+            st.markdown(custom_card(f"{max_probs.mean():.2%}", "Mean Diagnostic Confidence"), unsafe_allow_html=True)
+        with c_stats[2]:
+            best_model_lbl = "Logistic Regression" if "Logistic" in classifier_choice else "Random Forest"
+            st.markdown(custom_card(best_model_lbl, "Classifier Utilized", True), unsafe_allow_html=True)
+            
+        # 8. Interactive Plotly Charts
+        col_chart, col_stats = st.columns([3, 2])
+        
+        with col_chart:
+            dist = results_df["Predicted Subtype"].value_counts().reset_index()
+            dist.columns = ["Predicted Subtype", "Count"]
+            
+            fig = px.bar(
+                dist, x="Predicted Subtype", y="Count", color="Predicted Subtype",
+                color_discrete_map=SUBTYPE_COLORS,
+                title="Predicted Subtype Cohort Distribution",
+                template="plotly_white", text="Count"
+            )
+            fig.update_traces(textposition="outside", marker_line_width=0)
+            fig.update_layout(**PLOTLY_LAYOUT, showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
+            
+        with col_stats:
+            st.markdown("#### Diagnostic Summary Statistics")
+            st.markdown("Below is the count of predicted molecular profiles in your dataset:")
+            for _, row in dist.iterrows():
+                st.write(f"- **{row['Predicted Subtype']}:** {row['Count']} patient(s)")
+                
+        # 9. Searchable and Filterable Diagnostic Table
+        st.markdown("#### Patient Subtype Diagnostic Predictions")
+        st.markdown("Filter predictions by subtype or search by patient ID below:")
+        
+        sf_col1, sf_col2 = st.columns([1, 2])
+        with sf_col1:
+            subtype_filter = st.selectbox("Filter by Subtype", ["All Subtypes"] + list(SUBTYPE_COLORS.keys()))
+        with sf_col2:
+            search_query = st.text_input("Search Patient ID", placeholder="Enter patient ID...")
+            
+        filtered_df = results_df.copy()
+        if subtype_filter != "All Subtypes":
+            filtered_df = filtered_df[filtered_df["Predicted Subtype"] == subtype_filter]
+        if search_query:
+            filtered_df = filtered_df[filtered_df["Patient ID"].astype(str).str.contains(search_query, case=False)]
+            
+        # Formatted Display Table (with percentage mappings)
+        display_df = filtered_df.copy()
+        display_df["Diagnostic Confidence"] = display_df["Diagnostic Confidence"].apply(lambda x: f"{x:.2%}")
+        for cls in classes:
+            display_df[f"Prob {cls}"] = display_df[f"Prob {cls}"].apply(lambda x: f"{x:.2%}")
+            
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        
+        # Download predictions CSV
+        csv_data = results_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "Download Full Subtype Diagnostic Report (.csv)",
+            csv_data,
+            "subtype_predictions_report.csv",
+            "text/csv",
+            key="download-predictions-csv"
+        )
+        
+        # 10. Publication-Grade Clinical Interpretation
+        st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
+        st.markdown("### Clinical Interpretation of Detected Subtypes")
+        st.markdown("""
+        The molecular subtypes identified in the analyzed cohort represent distinct transcriptomic profiles with established clinical, pathological, and therapeutic implications:
+        
+        * **basal (Basal-like):** Typically corresponds to Triple-Negative Breast Cancer (TNBC). Characterized by high proliferation indices and the absence of hormone receptors and HER2 amplification. These tumors do not respond to endocrine therapy or Herceptin, and are clinically managed using aggressive systemic chemotherapy and emerging immunotherapies.
+        * **HER (HER2-Enriched):** Driven primarily by the amplification and over-expression of the *ERBB2* (*HER2*) gene on chromosome 17q. These tumors exhibit aggressive behavior but are highly responsive to anti-HER2 targeted monoclonal antibodies such as Trastuzumab (Herceptin) and Pertuzumab.
+        * **luminal_A (Luminal A):** The most common and low-grade molecular subtype. Characterized by high expression of estrogen (*ESR1*) and progesterone receptors, low proliferation markers (e.g., Ki-67), and slow growth. These patients have a favorable prognosis and are highly responsive to hormonal/endocrine therapies (e.g., Tamoxifen, Aromatase inhibitors).
+        * **luminal_B (Luminal B):** Expresses hormone receptors but exhibits higher growth rates, higher cellular proliferation markers, and occasionally co-amplification of HER2. These tumors have a more guarded prognosis than Luminal A and often require a combination of chemotherapy and endocrine therapy.
+        * **normal (Normal-like):** A rare molecular subtype showing expression profiles similar to non-tumor, healthy breast epithelial cells. They are typically managed similarly to luminal tumors but require careful pathological review to rule out stromal contamination.
+        """)
+        
     except Exception as e:
-        st.error(f"Error reading file: {e}"); return
-    st.dataframe(raw_df.head(10), use_container_width=True, hide_index=True)
-    target_col = st.selectbox("Select Target Column", raw_df.columns.tolist(), index=len(raw_df.columns)-1)
-    if st.button("\u2705 Validate & Load", key="btn_load"):
-        def _run(log):
-            X, y, report = pe.load_and_validate(raw_df, target_col, log=log)
-            for k in ["aml_eda","aml_prep","aml_fs","aml_bench","aml_cv","aml_grid","aml_shap"]:
-                st.session_state[k] = None
-            st.session_state.aml_errors = {}
-            return {"X": X, "y": y, "report": report, "target_col": target_col}
-        _run_step("Data Loading & Validation", _run, "aml_data")
+        st.error(f"An error occurred during prediction parsing: {e}")
+        with st.expander("Diagnostic Traceback"):
+            st.code(traceback.format_exc())
 
-# ── STEP 2 ──────────────────────────────────────────────────────
-def _step2_eda():
-    st.markdown('<div class="section-title">\U0001f4ca Step 2 — Exploratory Data Analysis</div>', unsafe_allow_html=True)
-    d = st.session_state.aml_data; report = d["report"]
-    cols = st.columns(4)
-    for col,(v,l,a) in zip(cols,[
-        (str(report["n_samples"]),"Samples",False),(f'{report["n_features"]:,}',"Features",False),
-        (str(report["n_classes"]),"Classes",True),(f'{report["memory_mb"]} MB',"Memory",False)]):
-        with col: st.markdown(card(v,l,a), unsafe_allow_html=True)
-    if report["dropped_non_numeric"]:
-        st.markdown(f'<div class="info-box">Dropped non-numeric: <b>{", ".join(report["dropped_non_numeric"])}</b></div>', unsafe_allow_html=True)
-    if st.session_state.aml_eda is not None:
-        _show_eda(st.session_state.aml_eda); return
-    if st.button("\u25b6 Run EDA", key="btn_eda"):
-        _run_step("Exploratory Data Analysis", lambda log: pe.run_eda(d["X"], d["y"], log=log), "aml_eda")
-
-def _show_eda(eda):
-    fig = px.bar(eda["class_dist"], x="Subtype", y="Count", color="Subtype", title="Class Distribution", template="plotly_white", text="Count")
-    fig.update_traces(textposition="outside", marker_line_width=0)
-    fig.update_layout(**PLOTLY_LAYOUT, showlegend=False); fig.update_xaxes(showgrid=False); fig.update_yaxes(showgrid=True, gridcolor=GRID_COLOR)
-    st.plotly_chart(fig, use_container_width=True)
-    ev = eda["explained_var"]
-    fig2 = px.scatter(eda["pca_df"], x="PC1", y="PC2", color="Subtype", title=f"PCA ({ev[0]:.1%} + {ev[1]:.1%})", template="plotly_white", opacity=0.85, height=500)
-    fig2.update_traces(marker=dict(size=10, line=dict(width=0.8, color="#fff")))
-    fig2.update_layout(**PLOTLY_LAYOUT); fig2.update_xaxes(showgrid=True, gridcolor=GRID_COLOR); fig2.update_yaxes(showgrid=True, gridcolor=GRID_COLOR)
-    st.plotly_chart(fig2, use_container_width=True)
-    fig3 = px.bar(eda["variance_stats"].head(25), x="variance", y="feature", orientation="h", title="Top 25 Features by Variance", template="plotly_white", color="variance", color_continuous_scale="Blues", height=550)
-    fig3.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
-    st.plotly_chart(fig3, use_container_width=True)
-    if not eda["missing_per_col"].empty:
-        st.markdown(f'<div class="info-box">Found <b>{len(eda["missing_per_col"])}</b> columns with missing values.</div>', unsafe_allow_html=True)
+# =============================================================================
+# TAB 2: END-TO-END AUTOML TRAINING PIPELINE (SINGLE-CLICK RUNNER)
+# =============================================================================
+def _render_training_tab():
+    st.markdown("### End-to-End AutoML Training")
+    st.markdown('<div class="info-box">Upload a training dataset (CSV/Parquet) and click one button to execute the entire computational biology machine learning pipeline. You can follow live progress in the terminal console below.</div>', unsafe_allow_html=True)
+    
+    uploaded_file = st.file_uploader("Upload custom training dataset", type=["csv","parquet"], key="train_file_uploader")
+    
+    if uploaded_file is not None:
+        try:
+            if uploaded_file.name.endswith(".parquet"):
+                raw_df = pd.read_parquet(uploaded_file)
+            else:
+                raw_df = pd.read_csv(uploaded_file)
+                
+            st.dataframe(raw_df.head(10), use_container_width=True, hide_index=True)
+            target_col = st.selectbox("Select Target Label Column", raw_df.columns.tolist(), index=len(raw_df.columns)-1, key="train_target_col")
+            
+            c_inputs = st.columns(3)
+            with c_inputs[0]:
+                var_thresh = st.number_input("Variance Filter Threshold", value=0.1, min_value=0.0, step=0.01, key="train_var_t")
+            with c_inputs[1]:
+                test_size = st.slider("Evaluation Test Size", 0.1, 0.4, 0.2, 0.05, key="train_test_s")
+            with c_inputs[2]:
+                top_k = st.number_input("Consensus Top-K features", value=250, min_value=10, key="train_top_k")
+                
+            if st.button("Start Complete End-to-End AutoML", key="btn_run_automl"):
+                _execute_automl_pipeline(raw_df, target_col, var_thresh, test_size, top_k)
+                
+        except Exception as e:
+            st.error(f"Error parsing training file: {e}")
     else:
-        st.markdown('<div class="success-box">No missing values \u2714</div>', unsafe_allow_html=True)
+        st.markdown('<div class="info-box">Please upload a training dataset to start the pipeline.</div>', unsafe_allow_html=True)
 
-# ── STEP 3 ──────────────────────────────────────────────────────
-def _step3_preprocess():
-    st.markdown('<div class="section-title">\u2699\ufe0f Step 3 — Preprocessing</div>', unsafe_allow_html=True)
-    if st.session_state.aml_prep is not None:
-        p = st.session_state.aml_prep
-        cols = st.columns(4)
-        for col,(v,l,a) in zip(cols,[
-            (f'{p["shape_before"][1]:,}',"Original",False),(f'{p["shape_after"][1]:,}',"After Filter",True),
-            (str(p["X_train_scaled"].shape[0]),"Train",False),(str(p["X_test_scaled"].shape[0]),"Test",False)]):
-            with col: st.markdown(card(v,l,a), unsafe_allow_html=True)
-        st.markdown(f'<div class="success-box"><b>{p["shape_after"][1]:,}</b> features retained.</div>', unsafe_allow_html=True)
-        return
-    c1,c2 = st.columns(2)
-    with c1: var_thresh = st.number_input("Variance Threshold", value=0.1, min_value=0.0, step=0.01, key="var_t")
-    with c2: test_size = st.slider("Test Size", 0.1, 0.4, 0.2, 0.05, key="test_s")
-    if st.button("\u25b6 Run Preprocessing", key="btn_prep"):
-        d = st.session_state.aml_data
-        _run_step("Preprocessing", lambda log: pe.preprocess(d["X"], d["y"], var_threshold=var_thresh, test_size=test_size, log=log), "aml_prep")
-
-# ── STEP 4 ──────────────────────────────────────────────────────
-def _step4_feature_selection():
-    st.markdown('<div class="section-title">\u2702\ufe0f Step 4 — Feature Selection</div>', unsafe_allow_html=True)
-    if st.session_state.aml_fs is not None: _show_fs(st.session_state.aml_fs); return
-    n_feats = st.session_state.aml_prep["X_train_scaled"].shape[1]
-    top_k = st.number_input("Top-K features per method", value=min(250, n_feats), min_value=10, max_value=n_feats, key="fs_k")
-    if st.button("\u25b6 Run Feature Selection", key="btn_fs"):
-        p = st.session_state.aml_prep
-        _run_step("Feature Selection (4 methods)", lambda log: pe.run_feature_selection(p["X_train_scaled"], p["y_train"], p["selected_features"], top_k=top_k, log=log), "aml_fs")
-
-def _show_fs(fs):
-    consensus = fs["consensus_genes"]; n_cons = len(fs["top_consensus_genes"])
-    cols = st.columns(3)
-    for col,(v,l,a) in zip(cols,[(str(n_cons),"Consensus (\u22652)",True),(str(len(consensus)),"Total Unique",False),("4","Methods",False)]):
-        with col: st.markdown(card(v,l,a), unsafe_allow_html=True)
-    fig = px.bar(consensus.head(25), x="frequency", y="gene", orientation="h", title="Top 25 Consensus Features", template="plotly_white", color="frequency", color_continuous_scale="Blues", height=600)
-    fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed")); fig.update_xaxes(showgrid=True, gridcolor=GRID_COLOR)
-    st.plotly_chart(fig, use_container_width=True)
-    with st.expander("\U0001f4cb Individual Method Scores"):
-        t1,t2,t3,t4 = st.tabs(["ANOVA","MI","RF","LASSO"])
-        with t1: st.dataframe(fs["anova_scores"].head(30), use_container_width=True, hide_index=True)
-        with t2: st.dataframe(fs["mi_scores"].head(30), use_container_width=True, hide_index=True)
-        with t3: st.dataframe(fs["rf_importance"].head(30), use_container_width=True, hide_index=True)
-        with t4: st.dataframe(fs["lasso_importance"].head(30), use_container_width=True, hide_index=True)
-
-# ── STEP 5 ──────────────────────────────────────────────────────
-def _step5_benchmark():
-    st.markdown('<div class="section-title">\U0001f916 Step 5 — Baseline Benchmark</div>', unsafe_allow_html=True)
-    if st.session_state.aml_bench is not None: _show_bench(st.session_state.aml_bench); return
-    if st.button("\u25b6 Run Baseline Benchmark", key="btn_bench"):
-        p = st.session_state.aml_prep; fs = st.session_state.aml_fs
-        _run_step("Baseline Benchmarking", lambda log: pe.run_baseline_benchmark(
-            p["X_train_scaled"], p["X_test_scaled"], p["y_train"], p["y_test"],
-            p["selected_features"], fs["top_consensus_genes"], log=log), "aml_bench")
-
-def _show_bench(bench_df):
-    best = bench_df.loc[bench_df["f1_score"].idxmax()]
-    cols = st.columns(3)
-    for col,(v,l,a) in zip(cols,[(best["model"],"Best Model",True),(f'{best["f1_score"]:.2%}',"Best F1",False),(best["feature_space"],"Best Space",False)]):
-        with col: st.markdown(card(v,l,a), unsafe_allow_html=True)
-    fig = px.bar(bench_df, x="model", y="f1_score", color="feature_space", barmode="group", title="Benchmark", template="plotly_white", text=bench_df["f1_score"].apply(lambda x: f"{x:.3f}"))
-    fig.update_traces(textposition="outside"); fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(gridcolor=GRID_COLOR))
-    st.plotly_chart(fig, use_container_width=True)
-    with st.expander("\U0001f4cb Full Results"):
-        st.dataframe(bench_df.sort_values("f1_score", ascending=False), use_container_width=True, hide_index=True)
-
-# ── STEP 6 ──────────────────────────────────────────────────────
-def _step6_cv():
-    st.markdown('<div class="section-title">\U0001f4c8 Step 6 — Cross-Validation</div>', unsafe_allow_html=True)
-    if st.session_state.aml_cv is not None: _show_cv(*st.session_state.aml_cv); return
-    d = st.session_state.aml_data; n_feats = d["X"].shape[1]
-    k_cv = st.number_input("SelectKBest k", value=min(1000, n_feats), min_value=10, max_value=n_feats, key="cv_k")
-    if st.button("\u25b6 Run Cross-Validation", key="btn_cv"):
-        p = st.session_state.aml_prep
-        _run_step("Leakage-Free Cross-Validation", lambda log: pe.run_cross_validation(
-            d["X"], p["label_encoder"].transform(d["y"]), k_features=k_cv, log=log), "aml_cv")
-
-def _show_cv(cv_df, best_name):
-    best_row = cv_df.iloc[0]
-    cols = st.columns(4)
-    for col,(v,l,a) in zip(cols,[(best_name,"Best",True),(f'{best_row["mean_f1"]:.2%}',"F1",False),(f'{best_row["mean_accuracy"]:.2%}',"Acc",False),(f'{best_row["stability_score"]:.3f}',"Stability",False)]):
-        with col: st.markdown(card(v,l,a), unsafe_allow_html=True)
-    fold_data = []
-    for _, row in cv_df.iterrows():
-        scores = row["fold_scores"]
-        if isinstance(scores, str): import ast; scores = ast.literal_eval(scores)
-        for j, s in enumerate(scores): fold_data.append({"Model": row["model"], "Fold": j+1, "F1": s})
-    if fold_data:
-        fig = px.box(pd.DataFrame(fold_data), x="Model", y="F1", color="Model", points="all", title="Fold F1 Distribution", template="plotly_white", color_discrete_sequence=BAR_COLORS, height=480)
-        fig.update_layout(**PLOTLY_LAYOUT, showlegend=False, yaxis=dict(gridcolor=GRID_COLOR))
-        st.plotly_chart(fig, use_container_width=True)
-    with st.expander("\U0001f4cb CV Table"):
-        st.dataframe(cv_df[["model","mean_accuracy","std_accuracy","mean_f1","std_f1","stability_score"]], use_container_width=True, hide_index=True)
-
-# ── STEP 7 ──────────────────────────────────────────────────────
-def _step7_gridsearch():
-    st.markdown('<div class="section-title">\u2699\ufe0f Step 7 — GridSearchCV</div>', unsafe_allow_html=True)
-    if st.session_state.aml_grid is not None: _show_grid(st.session_state.aml_grid); return
-    if st.button("\u25b6 Run GridSearchCV", key="btn_grid"):
-        d = st.session_state.aml_data; p = st.session_state.aml_prep
-        _run_step("GridSearchCV Optimization", lambda log: pe.run_gridsearch(
-            d["X"], p["label_encoder"].transform(d["y"]), log=log), "aml_grid")
-
-def _show_grid(grid):
-    cols = st.columns(3)
-    for col,(v,l,a) in zip(cols,[(f'{grid["best_score"]:.2%}',"Best F1",True),("Random Forest","Algorithm",False),(str(len(grid["cv_results_df"])),"Configs",False)]):
-        with col: st.markdown(card(v,l,a), unsafe_allow_html=True)
-    st.markdown(f'<div class="success-box">Best params: <b>{grid["best_params"]}</b></div>', unsafe_allow_html=True)
-    with st.expander("\U0001f4cb Top 10 Configs"):
-        log = grid["cv_results_df"]
-        if "mean_test_score" in log.columns:
-            top = log.nlargest(10, "mean_test_score")[["params","mean_test_score","std_test_score","rank_test_score"]].copy()
-            top.columns = ["Params","Mean F1","Std","Rank"]
-            st.dataframe(top, use_container_width=True, hide_index=True)
-    import pickle, io as _io
-    buf = _io.BytesIO(); pickle.dump(grid["best_pipeline"], buf)
-    st.download_button("\U0001f4e5 Download Model (.pkl)", buf.getvalue(), file_name="automl_best_model.pkl")
-
-# ── STEP 8 ──────────────────────────────────────────────────────
-def _step8_shap():
-    st.markdown('<div class="section-title">\U0001f52e Step 8 — SHAP Explainability</div>', unsafe_allow_html=True)
-    if st.session_state.aml_shap is not None: _show_shap(st.session_state.aml_shap); return
-    if st.session_state.aml_grid is None:
-        st.markdown('<div class="info-box">Complete Step 7 first.</div>', unsafe_allow_html=True); return
-    if st.button("\u25b6 Run SHAP", key="btn_shap"):
-        d = st.session_state.aml_data; grid = st.session_state.aml_grid
-        _run_step("SHAP Analysis", lambda log: pe.run_shap_analysis(grid["best_pipeline"], d["X"], top_n=25, log=log), "aml_shap")
-
-def _show_shap(res):
-    if "error" in res: st.error(res["error"]); return
-    imp = res["shap_importance"]
-    fig = px.bar(imp, x="importance", y="gene", orientation="h", color="importance", color_continuous_scale="Purples", title="SHAP Feature Importance", template="plotly_white", height=600)
-    fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed")); fig.update_xaxes(showgrid=True, gridcolor=GRID_COLOR)
-    st.plotly_chart(fig, use_container_width=True)
-    with st.expander("\U0001f4cb SHAP Table"):
-        st.dataframe(imp, use_container_width=True, hide_index=True)
-    st.download_button("\U0001f4e5 Download SHAP (.csv)", imp.to_csv(index=False).encode(), file_name="shap_importance.csv")
-
-# ── STEP 9 ──────────────────────────────────────────────────────
-def _step9_gene_dive():
-    st.markdown('<div class="section-title">\U0001f9ec Step 9 — Gene Deep Dive</div>', unsafe_allow_html=True)
-
-    if st.session_state.aml_shap is None:
-        st.markdown('<div class="info-box">Complete Step 8 (SHAP) first.</div>', unsafe_allow_html=True)
-        return
-    if "error" in st.session_state.aml_shap:
-        st.markdown('<div class="info-box">SHAP step had an error. Cannot run Gene Deep Dive.</div>', unsafe_allow_html=True)
-        return
-
-    # Build top 21 genes table with % importance
-    top_genes = pe.get_top_genes_with_pct(st.session_state.aml_shap, n=21)
-
-    st.markdown('#### Top 21 Most Impactful Genes')
-    st.markdown('<div class="info-box">These genes have the highest SHAP importance — each percentage shows how much that gene contributes to the model\'s predictions across all subtypes.</div>', unsafe_allow_html=True)
-
-    # Percentage bar chart
-    fig = px.bar(top_genes, x="pct", y="gene", orientation="h",
-                 text=top_genes["pct"].apply(lambda x: f"{x:.1f}%"),
-                 title="Top 21 Genes by % SHAP Contribution",
-                 template="plotly_white", height=620,
-                 color="pct", color_continuous_scale="Purples")
-    fig.update_traces(textposition="outside")
-    fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"),
-                      xaxis_title="% of Total SHAP Importance",
-                      coloraxis_showscale=False)
-    fig.update_xaxes(showgrid=True, gridcolor=GRID_COLOR)
-    st.plotly_chart(fig, use_container_width=True)
-
-    # Show the ranked table
-    with st.expander("\U0001f4cb Full Top 21 Gene Table"):
-        disp = top_genes.copy()
-        disp.columns = ["Rank", "Gene", "SHAP Importance", "% Contribution"]
-        st.dataframe(disp, use_container_width=True, hide_index=True)
-
-    # Gene selector from the curated top 21 list
-    st.markdown('---')
-    st.markdown('#### \U0001f50d Analyse a Specific Gene')
-    gene_options = top_genes["gene"].tolist()
-    gene_labels = [f"#{row['rank']}  {row['gene']}  ({row['pct']:.1f}%)" for _, row in top_genes.iterrows()]
-    selected_label = st.selectbox("Select a gene from the top 21", gene_labels, key="gene_select")
-    selected_gene = gene_options[gene_labels.index(selected_label)]
-
-    # Check if we already have results for this gene
-    dive = st.session_state.aml_dive
-    if dive is not None and dive.get("gene") == selected_gene:
-        _show_gene_dive(dive)
-        return
-
-    if st.button(f"\u25b6 Analyse {selected_gene}", key="btn_dive"):
-        d = st.session_state.aml_data
-        _run_step(f"Gene Deep Dive: {selected_gene}",
-                  lambda log: pe.run_gene_deep_dive(selected_gene, d["X"], d["y"],
-                                                    st.session_state.aml_shap, top_genes, log=log),
-                  "aml_dive")
-
-def _show_gene_dive(dive):
-    if "error" in dive:
-        st.error(dive["error"]); return
-
-    gene = dive["gene"]
-    cols = st.columns(3)
-    for col,(v,l,a) in zip(cols,[
-        (f'#{dive["rank"]}', "Rank", True),
-        (f'{dive["pct"]:.1f}%', "SHAP Contribution", False),
-        (f'{dive["importance"]:.4f}', "Raw Importance", False)]):
-        with col: st.markdown(card(v,l,a), unsafe_allow_html=True)
-
-    # Expression boxplot by subtype
-    fig = px.box(dive["expr_df"], x="subtype", y="expression", color="subtype",
-                 title=f"Expression Distribution of {gene} Across Subtypes",
-                 template="plotly_white", points="all", height=480)
-    fig.update_traces(marker=dict(size=5, opacity=0.6))
-    fig.update_layout(**PLOTLY_LAYOUT, showlegend=False, yaxis=dict(gridcolor=GRID_COLOR))
-    fig.update_xaxes(showgrid=False)
-    st.plotly_chart(fig, use_container_width=True)
-
-    # Per-subtype stats table
-    st.markdown(f'#### \U0001f4ca {gene} — Expression Stats per Subtype')
-    st.dataframe(dive["stats"], use_container_width=True, hide_index=True)
-
-    # Correlation with other top genes
-    corr = dive["corr_df"]
-    if not corr.empty:
-        st.markdown(f'#### \U0001f517 {gene} — Correlation with Other Top Genes')
-        fig2 = px.bar(corr.head(15), x="correlation", y="gene", orientation="h",
-                      title=f"Correlation of {gene} with Top Genes",
-                      template="plotly_white", height=450,
-                      color="correlation", color_continuous_scale="RdBu_r",
-                      range_color=[-1, 1])
-        fig2.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
-        fig2.update_xaxes(showgrid=True, gridcolor=GRID_COLOR)
-        st.plotly_chart(fig2, use_container_width=True)
-
-    st.markdown(f'<div class="success-box"><b>{gene}</b> (Rank #{dive["rank"]}) accounts for <b>{dive["pct"]:.1f}%</b> of the model\'s predictive power. The boxplot above reveals how this gene\'s expression varies across cancer subtypes.</div>', unsafe_allow_html=True)
+def _execute_automl_pipeline(df, target_col, var_threshold, test_size, top_k):
+    # Setup live progress tracking
+    progress_bar = st.progress(0.0)
+    status_text = st.empty()
+    console_ph = st.empty()
+    console = LiveConsole(console_ph)
+    
+    try:
+        # Phase 1: Data Ingestion and Validation
+        progress_bar.progress(0.1)
+        status_text.write("Step 1 of 8: Loading and validating raw data...")
+        X, y, report = pe.load_and_validate(df, target_col, log=console.log)
+        time.sleep(0.5)
+        
+        # Phase 2: Exploratory Data Analysis
+        progress_bar.progress(0.25)
+        status_text.write("Step 2 of 8: Performing latent dimensionality reduction (PCA)...")
+        eda_results = pe.run_eda(X, y, log=console.log)
+        time.sleep(0.5)
+        
+        # Phase 3: Preprocessing and Imputation
+        progress_bar.progress(0.40)
+        status_text.write("Step 3 of 8: Preprocessing, variance filtering, and scaling...")
+        prep_results = pe.preprocess(X, y, var_threshold=var_threshold, test_size=test_size, log=console.log)
+        time.sleep(0.5)
+        
+        # Phase 4: Ensemble Feature Selection
+        progress_bar.progress(0.55)
+        status_text.write("Step 4 of 8: Running 4-model consensus feature selection (ANOVA, MI, RF, LASSO)...")
+        fs_results = pe.run_feature_selection(
+            prep_results["X_train_scaled"], prep_results["y_train"],
+            prep_results["selected_features"], top_k=top_k, log=console.log
+        )
+        time.sleep(0.5)
+        
+        # Phase 5: Model Benchmarking
+        progress_bar.progress(0.70)
+        status_text.write("Step 5 of 8: Benchmarking classical machine learning classifiers...")
+        bench_results = pe.run_baseline_benchmark(
+            prep_results["X_train_scaled"], prep_results["X_test_scaled"],
+            prep_results["y_train"], prep_results["y_test"],
+            prep_results["selected_features"], fs_results["top_consensus_genes"], log=console.log
+        )
+        time.sleep(0.5)
+        
+        # Phase 6: Leakage-Free Cross-Validation
+        progress_bar.progress(0.80)
+        status_text.write("Step 6 of 8: Calculating K-Fold Cross-Validation model stability...")
+        cv_results, best_cv_name = pe.run_cross_validation(
+            X, prep_results["label_encoder"].transform(y), k_features=top_k, log=console.log
+        )
+        time.sleep(0.5)
+        
+        # Phase 7: GridSearchCV Hyperparameter Tuning
+        progress_bar.progress(0.90)
+        status_text.write("Step 7 of 8: Tuning optimal model hyperparameters...")
+        grid_results = pe.run_gridsearch(
+            X, prep_results["label_encoder"].transform(y), log=console.log
+        )
+        time.sleep(0.5)
+        
+        # Phase 8: SHAP Explainability
+        progress_bar.progress(0.98)
+        status_text.write("Step 8 of 8: Running TreeSHAP explanations...")
+        shap_results = pe.run_shap_analysis(
+            grid_results["best_pipeline"], X, top_n=25, log=console.log
+        )
+        time.sleep(0.5)
+        
+        # Complete
+        progress_bar.progress(1.0)
+        status_text.write("AutoML Training Successfully Completed!")
+        console.finish(success=True)
+        
+        # Save training data into session state
+        st.session_state.aml_data = {"X": X, "y": y, "report": report, "target_col": target_col}
+        st.session_state.aml_eda = eda_results
+        st.session_state.aml_prep = prep_results
+        st.session_state.aml_fs = fs_results
+        st.session_state.aml_bench = bench_results
+        st.session_state.aml_cv = (cv_results, best_cv_name)
+        st.session_state.aml_grid = grid_results
+        st.session_state.aml_shap = shap_results
+        
+        st.success("All steps completed successfully! Click tabs above to inspect your training metrics.")
+        time.sleep(1.0)
+        st.rerun()
+        
+    except Exception as e:
+        progress_bar.progress(1.0)
+        status_text.write("Pipeline failed due to a mathematical/parsing error.")
+        console.log(f"ERROR: {e}")
+        console.finish(success=False)
+        st.error(f"An error occurred during pipeline execution: {e}")
+        with st.expander("Full Traceback"):
+            st.code(traceback.format_exc())

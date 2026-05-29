@@ -14,8 +14,8 @@ import automl_page
 # =============================================================================
 
 st.set_page_config(
-    page_title="Breast Cancer transcriptomics ML Pipeline",
-    page_icon="🧬",
+    page_title="Breast Cancer Transcriptomics and Machine Learning Pipeline",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -133,7 +133,7 @@ section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
 }
 
 
-/* ── Modern Premium Navigation Menu Items ── */
+/* ── Modern PremiumNavigation Menu Items ── */
 div[data-testid="stRadio"] > div {
     gap: 8px !important;
 }
@@ -289,18 +289,18 @@ div[data-testid="stRadio"] label input[type="radio"] {
 # SIDEBAR
 # =============================================================================
 
-st.sidebar.markdown("### 🧬 Navigation")
+st.sidebar.markdown("### Navigation")
 page = st.sidebar.radio(
     "Select Section",
     ["Project Overview", "EDA Insights", "Clustering & Networks", "Feature Selection",
      "Model Performance", "Cross Validation", "SHAP Explainability",
-     "Functional Genomics", "🚀 AutoML Pipeline"],
+     "Functional Genomics", "AutoML Pipeline"],
     label_visibility="collapsed"
 )
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**GSE45827 Microarray Data**")
 st.sidebar.caption("CuMiDa curated breast cancer gene expression.")
-st.sidebar.caption("Samples: 151 | Probes: 54,675 | Subtypes: 6")
+st.sidebar.caption("Clinical Samples: 137 | Probes: 54,675 | Subtypes: 5")
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.caption("Showcase built for tech recruiters and principal investigators.")
 
@@ -332,7 +332,7 @@ def card(val, label, accent=False):
 # =============================================================================
 
 if page == "Project Overview":
-    st.markdown('<div class="main-title">🧬 Breast Cancer <span class="main-title-accent">Transcriptomic ML Pipeline</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Breast Cancer <span class="main-title-accent">Transcriptomic ML Pipeline</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-title">Recruiter Showcase & Clinical Biomarker Discovery Engine</div>', unsafe_allow_html=True)
 
     # Recruiter Executive Briefing
@@ -347,7 +347,7 @@ if page == "Project Overview":
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="section-title">📊 Key Metrics & Results</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title"> Key Metrics & Results</div>', unsafe_allow_html=True)
     
     cols = st.columns(4)
     best_model_name = best_model_info["model"] if best_model_info else "Logistic Regression"
@@ -360,18 +360,18 @@ if page == "Project Overview":
     with cols[2]:
         st.markdown(card(f"{best_f1:.2%}", "GridSearchCV CV Score", False), unsafe_allow_html=True)
     with cols[3]:
-        st.markdown(card("0.926", "Model Stability CV Score", False), unsafe_allow_html=True)
+        st.markdown(card("97.31%", "Tuned LR CV Stability", False), unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">🔬 Dataset Highlights</div>', unsafe_allow_html=True)
     cols = st.columns(3)
     with cols[0]:
-        st.markdown(card("151", "Patient Tissue Samples"), unsafe_allow_html=True)
+        st.markdown(card("137", "Clinical Patient Samples"), unsafe_allow_html=True)
     with cols[1]:
         st.markdown(card("54,675", "Transcriptomic Probes"), unsafe_allow_html=True)
     with cols[2]:
-        st.markdown(card("6", "Molecular Subtypes Classified"), unsafe_allow_html=True)
+        st.markdown(card("5", "Clinical Subtypes Classified"), unsafe_allow_html=True)
 
-    st.markdown('<div class="section-title">🛠️ Engineering Stack & Frameworks</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Engineering Stack and Frameworks</div>', unsafe_allow_html=True)
     techs = ["Python 3.13", "PyTorch (Deep Learning)", "Scikit-Learn", "SHAP", "XGBoost", "LightGBM", 
              "Plotly", "Pandas", "Streamlit", "MyGene API", "Enrichr (KEGG & GO)", "Docker"]
     tech_badges = "".join([f'<span class="badge badge-accent">{t}</span>' if i < 3 else f'<span class="badge">{t}</span>' for i, t in enumerate(techs)])
@@ -382,7 +382,7 @@ if page == "Project Overview":
 # =============================================================================
 
 elif page == "EDA Insights":
-    st.markdown('<div class="main-title">📊 Exploratory <span class="main-title-accent">Data Analysis</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Exploratory <span class="main-title-accent">Data Analysis</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="info-box">EDA visually confirms that breast cancer subtypes exhibit highly distinct transcriptomic signatures, validating the biological basis for machine learning.</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">📍 Latent Space Projections</div>', unsafe_allow_html=True)
@@ -421,10 +421,10 @@ elif page == "EDA Insights":
 # =============================================================================
 
 elif page == "Clustering & Networks":
-    st.markdown('<div class="main-title">🕸️ Tumor Heterogeneity <span class="main-title-accent">& Co-expression</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Tumor Heterogeneity <span class="main-title-accent">and Co-expression</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="info-box">Unsupervised clustering discovers natural biological divisions in tumor profiles, while gene co-expression networks uncover co-regulated complexes.</div>', unsafe_allow_html=True)
 
-    t1, t2 = st.tabs(["🧬 Unsupervised Clustering Alignment", "🕸️ Co-expression Network Modules"])
+    t1, t2 = st.tabs(["Unsupervised Clustering Alignment", "Co-expression Network Modules"])
     
     with t1:
         st.markdown('<div class="section-title">Natural Subtype Clustering Alignment</div>', unsafe_allow_html=True)
@@ -467,7 +467,7 @@ elif page == "Clustering & Networks":
 # =============================================================================
 
 elif page == "Feature Selection":
-    st.markdown('<div class="main-title">✂️ Consensus <span class="main-title-accent">Biomarker Discovery</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Consensus <span class="main-title-accent">Biomarker Discovery</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="info-box">Rather than relying on one statistical method, we run an ensemble voting pipeline across 4 independent algorithms. Features selected by ≥2 methods are retained.</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">Top Consensus Biomarkers</div>', unsafe_allow_html=True)
@@ -493,10 +493,10 @@ elif page == "Feature Selection":
 # =============================================================================
 
 elif page == "Model Performance":
-    st.markdown('<div class="main-title">🤖 Benchmark <span class="main-title-accent">& PyTorch Deep Learning</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Benchmark <span class="main-title-accent">and PyTorch Deep Learning</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="info-box">We benchmark classical classifiers against a custom PyTorch Deep Learning Multi-Layer Perceptron (MLP) trained with balanced class weights.</div>', unsafe_allow_html=True)
 
-    t1, t2 = st.tabs(["🤖 Classical ML Benchmarks", "🔥 PyTorch Deep Learning Model"])
+    t1, t2 = st.tabs(["Classical ML Benchmarks", "PyTorch Deep Learning Model"])
 
     with t1:
         st.markdown('<div class="section-title">Classical Classifiers Benchmark</div>', unsafe_allow_html=True)
@@ -563,7 +563,7 @@ BreastCancerMLP(
 # =============================================================================
 
 elif page == "Cross Validation":
-    st.markdown('<div class="main-title">📈 Cross Validation <span class="main-title-accent">& Hyperparameters</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Cross Validation <span class="main-title-accent">and Hyperparameters</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="info-box">To guarantee generalizability, we run stratified 5-fold cross-validation and hyperparameter GridSearch with re-fitted scalers inside each fold.</div>', unsafe_allow_html=True)
 
     if cv_results is not None:
@@ -601,7 +601,7 @@ elif page == "Cross Validation":
 # =============================================================================
 
 elif page == "SHAP Explainability":
-    st.markdown('<div class="main-title">🔮 SHAP <span class="main-title-accent">Explainable AI & Biomarkers</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">SHAP <span class="main-title-accent">Explainable AI and Biomarkers</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="info-box">Using TreeSHAP explainers, we extract the mathematically exact feature contributions of gene probes driving subtype decisions, creating trust for clinical PIs.</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">Global Feature Impact (TreeSHAP)</div>', unsafe_allow_html=True)
@@ -634,7 +634,7 @@ elif page == "SHAP Explainability":
 # =============================================================================
 
 elif page == "Functional Genomics":
-    st.markdown('<div class="main-title">🧬 Pathway Validation <span class="main-title-accent">& Functional Genomics</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Pathway Validation <span class="main-title-accent">and Functional Genomics</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="info-box">We submit our top SHAP-derived biomarkers to the Enrichr API to check for enrichment in canonical pathways (KEGG 2021) and Gene Ontology (GO 2023) terms.</div>', unsafe_allow_html=True)
 
     enrich_tab = st.radio("Select Gene Set Repository", ["KEGG Pathways 2021", "Gene Ontology Biological Processes 2023"], horizontal=True)
@@ -685,7 +685,7 @@ elif page == "Functional Genomics":
 # PAGE: AUTOML PIPELINE
 # =============================================================================
 
-elif page == "🚀 AutoML Pipeline":
+elif page == "AutoML Pipeline":
     automl_page.render(card_fn=card)
 
 # =============================================================================
@@ -696,10 +696,10 @@ st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.markdown("""
 <div style="text-align:center; padding:10px 0;">
     <span style="color:#64748b; font-size:13.5px;">
-        🧬 <b>Breast Cancer Microarray Transcriptomics Pipeline</b>
+       <b>Breast Cancer Microarray Transcriptomics Pipeline</b>
     </span><br>
     <span style="color:#94a3b8; font-size:11.5px;">
-        Scikit-Learn & PyTorch &nbsp;•&nbsp; CuMiDa GSE45827 &nbsp;•&nbsp; 151 Samples &nbsp;•&nbsp; 6 Subtypes
+        Scikit-Learn and PyTorch &nbsp;•&nbsp; CuMiDa GSE45827 &nbsp;•&nbsp; 137 Clinical Samples &nbsp;•&nbsp; 5 Clinical Subtypes
     </span>
 </div>
 """, unsafe_allow_html=True)
