@@ -81,16 +81,17 @@ def render(card_fn=None):
 /* Pill-based segment tabs */
 div[data-baseweb="tab-list"] {
     background-color: #ebebe5 !important;
-    padding: 6px !important;
+    padding: 6px 12px !important;
     border-radius: 12px !important;
-    gap: 4px !important;
+    gap: 16px !important;
     border-bottom: none !important;
 }
 div[data-baseweb="tab"] {
     background-color: transparent !important;
     color: #475569 !important;
     border-radius: 10px !important;
-    padding: 8px 20px !important;
+    padding: 10px 24px !important;
+    margin: 0 4px !important;
     font-weight: 600 !important;
     border: none !important;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
