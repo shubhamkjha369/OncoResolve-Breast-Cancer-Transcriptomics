@@ -17,33 +17,34 @@
 
 ## 📋 Table of Contents
 
-- [Overview](#-overview)
-- [Key Findings & Model Results](#-key-findings--model-results)
-- [Dataset, Features & Details](#-dataset-features--details)
-- [Pipeline Architecture](#-pipeline-architecture)
-- [Project Structure](#-project-structure)
-- [Methodology & Pipeline Sections](#-methodology--pipeline-sections)
-  - [1. Data Loading & Inspection](#1-data-loading--inspection)
-  - [2. Normalization & Preprocessing](#2-normalization--preprocessing)
-  - [3. Dimensionality Reduction & EDA](#3-dimensionality-reduction--eda)
+- [Overview](#overview)
+- [Key Findings & Model Results](#key-findings-model-results)
+- [Dataset, Features & Details](#dataset-features-details)
+- [Pipeline Architecture](#pipeline-architecture)
+- [Project Structure](#project-structure)
+- [Methodology & Pipeline Sections](#methodology-pipeline-sections)
+  - [1. Data Loading & Inspection](#1-data-loading-inspection)
+  - [2. Normalization & Preprocessing](#2-normalization-preprocessing)
+  - [3. Dimensionality Reduction & EDA](#3-dimensionality-reduction-eda)
   - [4. Differential Gene Expression (DGE)](#4-differential-gene-expression-dge)
   - [5. Subtype Clustering Analysis](#5-subtype-clustering-analysis)
   - [6. Gene Co-expression Networks](#6-gene-co-expression-networks)
   - [7. Consensus Feature Selection](#7-consensus-feature-selection)
   - [8. Baseline Machine Learning Benchmarking](#8-baseline-machine-learning-benchmarking)
   - [9. Deep Learning (PyTorch MLP)](#9-deep-learning-pytorch-mlp)
-  - [10. Cross-Validation & GridSearchCV Tuning](#10-cross-validation--gridsearchcv-tuning)
+  - [10. Cross-Validation & GridSearchCV Tuning](#10-cross-validation-gridsearchcv-tuning)
   - [11. Model Explainability (SHAP)](#11-model-explainability-shap)
-  - [12. Functional Genomics (GO & KEGG)](#12-functional-genomics-go--kegg)
-- [Interactive Dashboard](#-interactive-dashboard)
-- [Getting Started](#-getting-started)
-- [Docker Deployment](#-docker-deployment)
-- [Technologies](#-technologies)
-- [References](#-references)
-- [License](#-license)
+  - [12. Functional Genomics (GO & KEGG)](#12-functional-genomics-go-kegg)
+- [Interactive Dashboard](#interactive-dashboard)
+- [Getting Started](#getting-started)
+- [Docker Deployment](#docker-deployment)
+- [Technologies](#technologies)
+- [References](#references)
+- [License](#license)
 
 ---
 
+<a id="overview"></a>
 ## 🔬 Overview
 
 Breast cancer is a highly complex disease with distinct **molecular subtypes** (Basal, HER2, Luminal A, Luminal B, and Normal) that behave differently, respond to different treatments, and have highly varying patient outcomes. Identifying these subtypes from transcriptomic (gene expression) profiles is a major pillar of precision medicine.
@@ -60,6 +61,7 @@ This project delivers a **complete, end-to-end transcriptomic machine learning a
 
 ---
 
+<a id="key-findings-model-results"></a>
 ## 🏆 Key Findings & Model Results
 
 All results reported below are fully authentic, verified, and extracted directly from our end-to-end pipeline executions:
@@ -115,6 +117,7 @@ Gene Ontology (GO) enrichment validated that our selected biomarkers are key dri
 
 ---
 
+<a id="dataset-features-details"></a>
 ## 📊 Dataset, Features & Details
 
 ### 📂 Dataset Overview
@@ -146,6 +149,7 @@ To focus exclusively on patient-derived tumor biology and clinically relevant tu
 
 ---
 
+<a id="pipeline-architecture"></a>
 ## 🏗️ Pipeline Architecture
 
 The pipeline executes a strict, leakage-free flow to guarantee that no test-set information influences variance filtering, scaling, consensus biomarker selection, or model training:
@@ -210,6 +214,7 @@ The pipeline executes a strict, leakage-free flow to guarantee that no test-set 
 
 ---
 
+<a id="project-structure"></a>
 ## 📁 Project Structure
 
 ```
@@ -246,8 +251,14 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 
 ---
 
+<a id="methodology-pipeline-sections"></a>
 ## 🔍 Methodology & Pipeline Sections
 
+<a id="1-data-loading-inspection"></a>
+### 1. Data Loading & Inspection
+* **Action:** Ingests the high-dimensional GSE45827 microarray dataset, profiles clinical class distributions, casts data types to memory-efficient `float32` (reducing memory footprint by 50%), and drops laboratory cell line samples to focus purely on patient-derived tumor biology.
+
+<a id="2-normalization-preprocessing"></a>
 ### 2. Normalization & Preprocessing
 * **Action:** Conducts **Quantile Normalization** on raw patient microarray intensities to standardize signal distributions across arrays and mitigate batch variation.
 * **Data Hygiene (Anti-Leakage Protocol):**
@@ -256,22 +267,27 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
   3. **Variance Filtering:** Probes with flat profiles (non-informative features) are filtered using a **Variance Threshold ($>0.1$)** fit exclusively on the training set, shrinking the feature space from 54,675 to 35,192 probes.
   4. **Standardization:** A `StandardScaler` is fit on the training partition only and applied to both splits, strictly preventing scaling leakages.
 
+<a id="3-dimensionality-reduction-eda"></a>
 ### 3. Dimensionality Reduction & EDA
 * **Action:** Projects the massive feature space onto 2D and 3D using **PCA**, **t-SNE**, and **UMAP**.
 * **Finding:** PCA projects strong separation of the Basal and Normal subtypes, validating the presence of strong transcriptomic signatures.
 
+<a id="4-differential-gene-expression-dge"></a>
 ### 4. Differential Gene Expression (DGE)
 * **Action:** Applies ANOVA testing across subtypes to calculate Log2 Fold Change and p-values.
 * **Biologist Value:** Identifies probes that are statistically turned "on" or "off" in cancer tissue compared to normal controls.
 
+<a id="5-subtype-clustering-analysis"></a>
 ### 5. Subtype Clustering Analysis
 * **Action:** Runs K-Means and Hierarchical Clustering (using Ward linkage) on the expression space.
 * **Finding:** Clusters align with patient subtype labels, proving that the underlying transcriptomic profiles naturally group into their respective clinical classes.
 
+<a id="6-gene-co-expression-networks"></a>
 ### 6. Gene Co-expression Networks
 * **Action:** Computes correlation matrices for the top 500 high-variance probes and extracts high-correlation co-expression links.
 * **Finding:** Discovers dense, highly correlated gene modules that represent co-regulated biological complexes.
 
+<a id="7-consensus-feature-selection"></a>
 ### 7. Consensus Feature Selection
 * **Action:** Combines four independent selection tools to rank and select features:
   1. **ANOVA F-Test:** Evaluates linear difference between classes.
@@ -280,10 +296,12 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
   4. **LASSO L1 Regularization:** Selects features with non-zero weights.
 * **Ensemble Strategy:** Features selected by **at least 2 methods** are retained as the **Consensus Space** to minimize mathematical bias.
 
+<a id="8-baseline-machine-learning-benchmarking"></a>
 ### 8. Baseline Machine Learning Benchmarking
 * **Action:** Benchmarks 5 algorithms (Logistic Regression, SVM, Random Forest, XGBoost, and LightGBM) on the consensus features.
 * **Finding:** Logistic Regression and Random Forest both achieved **100% accuracy** on the consensus features test set, proving that our consensus pipeline isolates highly separable transcriptomic patterns.
 
+<a id="9-deep-learning-pytorch-mlp"></a>
 ### 9. Deep Learning (PyTorch MLP)
 * **Action:** Constructs a custom **PyTorch Multi-Layer Perceptron (MLP)**.
 * **Architecture:**
@@ -296,21 +314,25 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 * **Training Details:** Uses weighted CrossEntropyLoss (addressing class imbalance) and the Adam optimizer (lr=1e-3, weight_decay=1e-4) over 100 epochs.
 * **Results:** Successfully achieved **100% accuracy** on the consensus test set by epoch 3.
 
+<a id="10-cross-validation-gridsearchcv-tuning"></a>
 ### 10. Cross-Validation & GridSearchCV Tuning
 * **Action:** Validates the Random Forest model using Stratified 5-Fold CV (re-selecting features inside each fold to prevent leakage).
 * **GridSearch Config:** Tunes the pipeline over feature size `k`, tree count, and depth.
 * **Tuned Params:** `k=500 features, max_depth=None, max_features='log2', n_estimators=300` yielding a **97.16% mean CV score**.
 
+<a id="11-model-explainability-shap"></a>
 ### 11. Model Explainability (SHAP)
 * **Action:** Calculates local and global feature impact using **TreeSHAP**.
 * **Clinician Value:** Quantifies how much each individual gene pushes the model's prediction toward a specific subtype. Identifies **MIEN1**, **ERBB2**, and **ESR1** as top global biomarkers.
 
+<a id="12-functional-genomics-go-kegg"></a>
 ### 12. Functional Genomics (GO & KEGG)
 * **Action:** Performs pathway enrichment analysis using the **Enrichr API** to map predictive probes back to functional biochemical pathways (KEGG 2021) and Gene Ontology (GO 2023) biological processes.
 * **Biological Validation:** Confirms that the predictive features isolated by our machine learning models represent key cancer hallmarks, including **Cell Cycle regulation**, **Cellular Senescence**, and **Spindle Checkpoint signaling**.
 
 ---
 
+<a id="interactive-dashboard"></a>
 ## 📊 Interactive Dashboard
 
 The Streamlit analytics dashboard (`app.py`) provides an interactive interface built for recruiters and computational biologists:
@@ -326,12 +348,15 @@ The Streamlit analytics dashboard (`app.py`) provides an interactive interface b
 
 ---
 
+<a id="getting-started"></a>
 ## 🚀 Getting Started
 
+<a id="prerequisites"></a>
 ### Prerequisites
 * Python 3.13+
 * pip or conda
 
+<a id="installation"></a>
 ### 💻 Installation
 ```bash
 # Clone the repository
@@ -347,6 +372,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+<a id="running-the-unified-pipeline"></a>
 ### 📓 Running the Unified Pipeline
 The analytical notebook is already fully compiled, structured, and verified cell-by-cell. To execute the pipeline end-to-end (which automatically processes the data, trains the models, and saves all Parquet/weights outputs to `data/artifacts/`):
 ```bash
@@ -355,6 +381,7 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/Breast_Cancer_ML_P
 ```
 > **Note:** The raw CuMiDa dataset (`Breast_GSE45827.csv`, ~140 MB) must be placed in the `data/raw/` folder before executing the notebook. Download the dataset from [Kaggle](https://www.kaggle.com/datasets/brunogrisci/breast-cancer-gene-expression-cumida/data).
 
+<a id="running-the-dashboard"></a>
 ### 🖥️ Running the Dashboard
 ```bash
 streamlit run app.py
@@ -363,6 +390,7 @@ Open your browser and navigate to `http://localhost:8501`.
 
 ---
 
+<a id="docker-deployment"></a>
 ## 🐳 Docker Deployment
 
 The application features a production-ready, multi-stage Dockerfile:
@@ -381,6 +409,7 @@ The Dockerfile uses a two-stage build to minimize the final container size:
 
 ---
 
+<a id="technologies"></a>
 ## 🛠️ Technologies
 
 * **Programming Language:** Python 3.13
@@ -397,6 +426,7 @@ The Dockerfile uses a two-stage build to minimize the final container size:
 
 ---
 
+<a id="references"></a>
 ## 📚 References
 
 1. **Perou, C. M. et al. (2000).** *Molecular portraits of human breast tumours.* **Nature**, 406(6797), 747-752. [https://doi.org/10.1038/35021093](https://doi.org/10.1038/35021093)
@@ -425,6 +455,7 @@ The Dockerfile uses a two-stage build to minimize the final container size:
 
 ---
 
+<a id="license"></a>
 ## 📄 License
 
 This project is open-source and intended for academic, research, and technical recruitment demonstration purposes. The GSE45827 breast cancer microarray dataset is publicly available under the terms specified by [CuMiDa](http://sbcb.inf.ufrgs.br/cumida).
