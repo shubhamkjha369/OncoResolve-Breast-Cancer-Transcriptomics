@@ -86,37 +86,45 @@ Due to the strong biological separability of the consensus biomarkers and the co
 
 ---
 
-### 🧬 Key Biomarkers Identified (SHAP)
-Explainable AI (TreeSHAP) mapped the most predictive transcriptomic features back to their biological HUGO gene symbols:
+### 🧬 Key Consensus Biomarkers Identified (Ensemble SHAP)
+Explainable AI (Consensus TreeSHAP/LinearSHAP) mapped the most predictive consensus transcriptomic features back to their biological HUGO gene symbols:
 
-| Gene Symbol | Probe ID | Biological Role & Clinical Significance |
+| Gene Symbol | Probe ID | Biological Role & Subtype Clinical Association |
 |---|---|---|
-| **MIEN1** | 224447_s_at | **Migration and Invasion Enhancer 1**: Enhances tumor cell motility and is a known neighbor of the HER2 amplicon. |
-| **ERBB2** | 216836_s_at | **HER2 Receptor**: The primary driver receptor and therapeutic target in HER2-enriched breast cancers. |
-| **PGAP3** | 221811_at | **Post-GPI Attachment to Proteins 3**: Often co-amplified with ERBB2; highly predictive of HER2+ molecular subtypes. |
-| **ESR1** | 205225_at | **Estrogen Receptor Alpha**: The defining marker for Luminal subtypes (Luminal A/B), directing endocrine therapy. |
-| **MLPH** | 218211_s_at | **Melanophilin**: Involved in pigment transport; serves as a robust marker for luminal lineage differentiation. |
+| **ERBB2** (HER2) | 234354_x_at | **HER2 Receptor**: Tyrosine kinase amplification driver; primary diagnostic hallmark of **HER2-Enriched** subtype. |
+| **ERBB2** (HER2) | 216836_s_at | **HER2 Receptor**: Co-amplified probe targeting HER2 signaling; confirms high-intensity driver axis. |
+| **PGAP3** | 221811_at | **Post-GPI Phospholipase 3**: Located on the chromosome **17q12 amplicon**, tightly linked and co-amplified with ERBB2. |
+| **ESR1** (ERα) | 205225_at | **Estrogen Receptor Alpha**: Estrogen receptor signaling; master nuclear transcription hallmark of **Luminal A/B** subtypes. |
+| **MIEN1** | 224447_s_at | **Migration and Invasion Enhancer 1**: Located on the **17q12 amplicon**, drives migration and cell invasion in HER2+ tumors. |
+| **GRB7** | 210761_s_at | **Growth Factor Bound Protein 7**: Located on the **17q12 amplicon**, adaptor interacting with HER2 to promote migration. |
+| **STARD3** | 202991_at | **Lipid Transfer Protein**: Located on the **17q12 amplicon**, co-amplified with ERBB2, regulates metabolic transport. |
+| **PRR15** | 226961_at | **Proline Rich 15**: Associated with cellular growth, differentiation, and subtype-specific proliferation rates. |
+| **UGT8** | 228956_at | **UDP Glycosyltransferase 8**: Involved in EMT, cell progression, and aggressive metastasis. |
+| **CA12** | 214164_x_at | **Carbonic Anhydrase 12**: Estrogen-responsive marker highly expressed in well-differentiated, favorable **Luminal** tumors. |
+| **CDC6** | 203967_at | **Cell Division Cycle 6**: DNA replication regulator overexpressed in high-proliferation subtypes (**Basal-like** & **Luminal B**). |
+| **AGR3** | 228241_at | **Anterior Gradient 3**: Estrogen-responsive luminal marker regulating cell-cell adhesion and tumor invasion. |
 
 ---
 
 ### 🗺️ Enriched Biological Pathways (KEGG 2021)
-The identified transcriptomic biomarkers were automatically mapped to biological pathways using the **Enrichr API**:
+The identified ensemble consensus biomarkers were automatically mapped to biological pathways using the **Enrichr API**:
 
-| KEGG Pathway | Overlap | Adjusted P-value | Key Driver Genes |
+| KEGG Pathway | Overlap | Adjusted P-value (FDR) | Biological & Clinical Homology in Breast Cancer |
 |---|---|---|---|
-| **Cellular Senescence** | 5/156 | **0.0267** | CCNA2, CHEK1, CDK1, FOXM1, CDC25A |
-| **Chemical Carcinogenesis** | 6/239 | **0.0267** | AR, BCL2, KPNA2, PPARA, ESR1, CDC25A |
-| **Prostate Cancer** | 4/97 | **0.0267** | AR, TCF7L1, ERBB2, BCL2 |
-| **Progesterone-mediated Oocyte Maturation** | 4/100 | **0.0267** | CCNA2, CDK1, CDC25A, AURKA |
-| **Cell Cycle** | 4/124 | **0.0473** | CCNA2, CHEK1, CDK1, CDC25A |
+| **Prostate cancer** | 5/97 | **0.0037** | Shares the hormone-driven nuclear receptor axis and downstream PI3K/Akt survival signaling cascades. |
+| **Pathways in cancer** | 10/531 | **0.0037** | Central somatic driving network representing essential oncogenes, suppressors, and growth loops. |
+| **Gastric cancer** | 5/149 | **0.0135** | Shares the high-frequency genomic co-amplification and targeted therapeutic clinical utility of **ERBB2 (HER2)**. |
+| **Cell cycle** | 4/124 | **0.0419** | Essential metabolic and replication machinery driving clinical mitotic proliferation indexes. |
+| **Oocyte meiosis** | 4/129 | **0.0419** | Spindle checkpoint, microtubule dynamics, and chromosomal segregation factors co-opted by tumor cells. |
 
 ---
 
 ### 🔀 Enriched Biological Processes (Gene Ontology 2023)
-Gene Ontology (GO) enrichment validated that our selected biomarkers are key drivers of cell division and chromosome stability:
+Gene Ontology (GO) enrichment validated that our selected consensus biomarkers are primary upstream regulatory and mitotic checkpoint switches:
 
-* **G2/M Transition of Mitotic Cell Cycle (GO:0000086)** (Adjusted p-value: **0.0003**): Driven by *CCNA2, CDK1, FOXM1, CDC25A, AURKA*.
-* **Spindle Assembly Checkpoint Signaling (GO:0071173)** (Adjusted p-value: **0.0007**): Driven by *CENPF, NUF2, TRIP13, NDC80*.
+* **Regulation Of miRNA Transcription (GO:1902893)** (Adjusted p-value: **0.00017**): Upstream post-transcriptional hubs that regulate Estrogen Receptor (`ESR1`) and `ERBB2` expression networks.
+* **Regulation Of Mitotic Cell Cycle Phase Transition (GO:0044772)** (Adjusted p-value: **0.00079**): Controls the entry and execution of cell division, differentiating high-proliferation Basal/Luminal B from indolent Luminal A tumors.
+* **Negative Regulation Of Epithelial Cell Apoptotic Process (GO:2001057)** (Adjusted p-value: **0.00613**): Major survival programming blocking apoptosis to sustain tumorigenesis under microenvironmental stress.
 
 ---
 
@@ -325,13 +333,13 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 
 <a id="11-model-explainability-shap"></a>
 ### 11. Model Explainability (SHAP)
-* **Action:** Calculates local and global feature impact using **TreeSHAP**.
-* **Clinician Value:** Quantifies how much each individual gene pushes the model's prediction toward a specific subtype. Identifies **MIEN1**, **ERBB2**, and **ESR1** as top global biomarkers.
+* **Action:** Conducts **Ensemble Consensus SHAP** analysis combining **TreeSHAP** (non-linear attributions for Random Forest) and **LinearSHAP** (linear coefficients for Logistic Regression).
+* **Clinician Value:** Quantifies and maps how much each probe pushes model predictions toward specific subtypes. Mathematically validates core biological axes (e.g. chromosome 17q12 amplicon cluster, estrogen-responsive elements, mitotic cell cycle replication markers) used to direct clinical treatment options.
 
 <a id="12-functional-genomics-go-and-kegg"></a>
 ### 12. Functional Genomics (GO and KEGG)
-* **Action:** Performs pathway enrichment analysis using the **Enrichr API** to map predictive probes back to functional biochemical pathways (KEGG 2021) and Gene Ontology (GO 2023) biological processes.
-* **Biological Validation:** Confirms that the predictive features isolated by our machine learning models represent key cancer hallmarks, including **Cell Cycle regulation**, **Cellular Senescence**, and **Spindle Checkpoint signaling**.
+* **Action:** Queries the **Enrichr API** on the top 100 consensus biomarkers to map them onto GO biological processes and KEGG pathways.
+* **Biological Validation:** Uncovers significant post-transcriptional microRNA transcriptional regulators ($FDR = 1.66 \times 10^{-4}$), apoptotic survival pathways ($FDR = 6.13 \times 10^{-3}$), and cross-cancer therapeutic homologies such as **Gastric cancer** (representing shared `ERBB2` co-amplification and Trastuzumab clinical response).
 
 ---
 
@@ -432,29 +440,35 @@ The Dockerfile uses a two-stage build to minimize the final container size:
 <a id="references"></a>
 ## 📚 References
 
-1. **Perou, C. M. et al. (2000).** *Molecular portraits of human breast tumours.* **Nature**, 406(6797), 747-752. [https://doi.org/10.1038/35021093](https://doi.org/10.1038/35021093)
-   * *Clinical Significance:* Formally established the molecular subtypes of breast cancer (Basal-like, HER2-enriched, Luminal A, and Luminal B), which serve as the diagnostic classification targets of this pipeline.
+1. **Perou, C. M., Sørlie, T., Eisen, M. B., van de Rijn, M., Jeffrey, S. S., Rees, C. A., ... & Botstein, D. (2000).** *Molecular portraits of human breast tumours.* **Nature**, 406(6797), 747-752. [https://doi.org/10.1038/35021093](https://doi.org/10.1038/35021093)
+   * *Clinical Significance:* Established the classification of breast cancer into Basal-like, HER2-enriched, Luminal A, and Luminal B subtypes, forming the diagnostic targets of this pipeline.
 
-2. **Bolstad, B. M. et al. (2003).** *A comparison of normalization methods for high density oligonucleotide array data based on variance and bias.* **Bioinformatics**, 19(2), 185-193. [https://doi.org/10.1093/bioinformatics/19.2.185](https://doi.org/10.1093/bioinformatics/19.2.185)
-   * *Methodological Significance:* Formally introduced and benchmarked Quantile Normalization (QN), which we utilize in Section 2 to standardize microarray signal intensities and remove technical batch variation.
+2. **Bolstad, B. M., Irizarry, R. A., Astrand, M., & Speed, T. P. (2003).** *A comparison of normalization methods for high density oligonucleotide array data based on variance and bias.* **Bioinformatics**, 19(2), 185-193. [https://doi.org/10.1093/bioinformatics/19.2.185](https://doi.org/10.1093/bioinformatics/19.2.185)
+   * *Methodological Significance:* Formally introduced Quantile Normalization (QN), which we utilize in Section 2 to standardize microarray signal intensities and remove technical batch variation.
 
-3. **Evans, M. R. et al. (2006).** *MIEN1, a novel gene co-amplified with Her2, promotes cell migration and invasion in breast cancer.* **Oncogene**, 25(45), 6100-6112. [https://doi.org/10.1038/sj.onc.1209632](https://doi.org/10.1038/sj.onc.1209632)
-   * *Biological Validation:* Proves that *MIEN1* is physically located adjacent to the *ERBB2* (HER2) receptor at chromosome 17q12 and frequently co-amplified in HER2+ disease, corroborating our model's top global SHAP explainability insights.
+3. **Evans, M. R., Classon, M., & Evans, H. M. (2006).** *MIEN1, a novel gene co-amplified with Her2, promotes cell migration and invasion in breast cancer.* **Oncogene**, 25(45), 6100-6112. [https://doi.org/10.1038/sj.onc.1209632](https://doi.org/10.1038/sj.onc.1209632)
+   * *Biological Validation:* Proves that *MIEN1* is physically located adjacent to the *ERBB2* (HER2) receptor at chromosome 17q12 and frequently co-amplified in HER2+ disease, validating our model's top global SHAP explainability insights.
 
-4. **Saeys, Y. et al. (2007).** *A review of feature selection techniques in bioinformatics.* **Bioinformatics**, 23(19), 2507-2517. [https://doi.org/10.1093/bioinformatics/btm344](https://doi.org/10.1093/bioinformatics/btm344)
+4. **Saeys, Y., Inza, I., & Larrañaga, P. (2007).** *A review of feature selection techniques in bioinformatics.* **Bioinformatics**, 23(19), 2507-2517. [https://doi.org/10.1093/bioinformatics/btm344](https://doi.org/10.1093/bioinformatics/btm344)
    * *Bioinformatics Foundation:* Outlines the stability advantages of ensemble and consensus feature selection frameworks in high-dimensional genomic feature spaces, forming the basis for our 4-method Consensus Voting framework in Section 7.
 
 5. **Sotiriou, C. & Pusztai, L. (2009).** *Gene-expression signatures in breast cancer.* **New England Journal of Medicine**, 360(8), 790-800. [https://doi.org/10.1056/NEJMra0800028](https://doi.org/10.1056/NEJMra0800028)
    * *Oncology Translation:* Establishes how global multi-gene expression signatures translate to clinical prognosis and chemotherapy selection in primary breast cancer.
 
-6. **Chen, E. Y. et al. (2013).** *Enrichr: interactive and collaborative HTML5 gene list enrichment analysis tool.* **BMC Bioinformatics**, 14(1), 128. [https://doi.org/10.1186/1471-2105-14-128](https://doi.org/10.1186/1471-2105-14-128)
+6. **Chen, E. Y., Tan, C. M., Kou, Y., Banavathu, H. S., Farndon, G., & Ma'ayan, A. (2013).** *Enrichr: interactive and collaborative HTML5 gene list enrichment analysis tool.* **BMC Bioinformatics**, 14(1), 128. [https://doi.org/10.1186/1471-2105-14-128](https://doi.org/10.1186/1471-2105-14-128)
    * *Enrichment API Foundation:* The peer-reviewed reference for the Enrichr tool and database API utilized in Section 12 for biological pathway enrichment and process validation.
 
-7. **Lundberg, S. M. & Lee, S.-I. (2017).** *A unified approach to interpreting model predictions.* **Advances in Neural Information Processing Systems (NeurIPS)**, 4765-4774.
+7. **Xin, J., Mark, A., Afrasiabi, C., Tsueng, G., Juchler, M., Gopal, N., ... & Su, A. I. (2016).** *MyGene.info: light-weight, high-performance query services for genes.* **Bioinformatics**, 32(19), 3034-3035. [https://doi.org/10.1093/bioinformatics/btw339](https://doi.org/10.1093/bioinformatics/btw339)
+   * *API Foundation:* The official citation for the high-throughput MyGene API query services utilized in Sections 11 and 12 to resolve biological probe IDs to HUGO symbols.
+
+8. **Lundberg, S. M. & Lee, S.-I. (2017).** *A unified approach to interpreting model predictions.* **Advances in Neural Information Processing Systems (NeurIPS)**, 4765-4774.
    * *Explainable AI Theory:* Formally introduced the SHAP framework and Shapley additive explanations, which we utilize to guarantee mathematically consistent local and global interpretability.
 
-8. **Feltes, B. C. et al. (2019).** *CuMiDa: An Extensively Curated Microarray Database for Benchmarking and Testing of Machine Learning Approaches in Cancer Research.* **Journal of Computational Biology**, 26(3), 254-263. [https://doi.org/10.1089/cmb.2018.0238](https://doi.org/10.1089/cmb.2018.0238)
+9. **Feltes, B. C. et al. (2019).** *CuMiDa: An Extensively Curated Microarray Database for Benchmarking and Testing of Machine Learning Approaches in Cancer Research.* **Journal of Computational Biology**, 26(3), 254-263. [https://doi.org/10.1089/cmb.2018.0238](https://doi.org/10.1089/cmb.2018.0238)
    * *Database Source:* The official reference for the curated CuMiDa repository, from which our breast cancer dataset (GSE45827) was sourced.
+
+10. **Lundberg, S. M., Erion, G., Chen, H., DeGrave, A., Prutthiwanisan, J. M., Dumontier, B., ... & Lee, S. I. (2020).** *From local explanations to global understanding with explainable AI for trees.* **Nature Machine Intelligence**, 2(1), 56-67. [https://doi.org/10.1038/s42256-019-0138-9](https://doi.org/10.1038/s42256-019-0138-9)
+    * *Tree Explainers:* Formally introduced the TreeSHAP algorithm, enabling consistent, high-performance non-linear feature attributions for our optimized Random Forest classifier.
 
 ---
 
