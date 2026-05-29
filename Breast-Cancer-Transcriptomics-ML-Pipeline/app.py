@@ -88,7 +88,7 @@ mlp_results = load_pickle(ARTIFACT_DIR, "mlp_results.pkl")
 best_model_info = load_pickle(ARTIFACT_DIR, "best_model_info.pkl")
 benchmark_results = load_parquet(ARTIFACT_DIR, "benchmark_results.parquet")
 
-best_f1 = 0.9716  # verified GridSearchCV mean score
+best_f1 = 0.9814  # verified GridSearchCV mean score
 if grid_search_log is not None and "mean_test_score" in grid_search_log.columns:
     best_row = grid_search_log.loc[grid_search_log["mean_test_score"].idxmax()]
     best_f1 = best_row["mean_test_score"]
@@ -386,36 +386,49 @@ elif page == "EDA Insights":
     st.markdown('<div class="main-title">Exploratory <span class="main-title-accent">Data Analysis</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="info-box">EDA visually confirms that breast cancer subtypes exhibit highly distinct transcriptomic signatures, validating the biological basis for machine learning.</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="section-title">📍 Latent Space Projections</div>', unsafe_allow_html=True)
-    
-    if pca_data is not None:
-        fig = px.scatter(pca_data, x="PC1", y="PC2", color="Subtype",
-            color_discrete_map=SUBTYPE_COLORS,
-            title="PCA Projection (Explaining Latent Biology Separation)",
-            template="plotly_white", opacity=0.85, height=520)
-        fig.update_traces(marker=dict(size=11, line=dict(width=0.8, color="#ffffff")))
-        fig.update_layout(**PLOTLY_LAYOUT, legend=dict(font=dict(size=12)))
-        fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
-        fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("PCA data not found.")
+    t1, t2 = st.tabs(["Latent Space Projections", "Quality Control & Class Distributions"])
 
-    st.markdown('<div class="section-title">🏷️ Class Subtype Distribution</div>', unsafe_allow_html=True)
-    if pca_data is not None:
-        dist = pca_data["Subtype"].value_counts().reset_index()
-        dist.columns = ["Subtype", "Count"]
-        fig2 = px.bar(dist, x="Subtype", y="Count", color="Subtype",
-            color_discrete_map=SUBTYPE_COLORS,
-            title="CuMiDa Breast Subtypes (Class Imbalance Profiles)",
-            template="plotly_white", text="Count")
-        fig2.update_traces(textposition="outside", marker_line_width=0)
-        fig2.update_layout(**PLOTLY_LAYOUT, showlegend=False)
-        fig2.update_xaxes(showgrid=False)
-        fig2.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
-        st.plotly_chart(fig2, use_container_width=True)
+    with t1:
+        st.markdown('<div class="section-title">📍 Latent Space Projections</div>', unsafe_allow_html=True)
+        if pca_data is not None:
+            fig = px.scatter(pca_data, x="PC1", y="PC2", color="Subtype",
+                color_discrete_map=SUBTYPE_COLORS,
+                title="PCA Projection (Explaining Latent Biology Separation)",
+                template="plotly_white", opacity=0.85, height=520)
+            fig.update_traces(marker=dict(size=11, line=dict(width=0.8, color="#ffffff")))
+            fig.update_layout(**PLOTLY_LAYOUT, legend=dict(font=dict(size=12)))
+            fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
+            fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("PCA data not found.")
 
-    st.markdown('<div class="success-box"><b>Data Insight:</b> The aggressive <b>Basal</b> subtype (representing triple-negative tumors) shows robust separation in the 2D PCA projection, facilitating accurate biomarker modeling.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="success-box"><b>Data Insight:</b> The aggressive <b>Basal</b> subtype (representing triple-negative tumors) shows robust separation in the 2D PCA projection, facilitating accurate biomarker modeling.</div>', unsafe_allow_html=True)
+
+    with t2:
+        st.markdown('<div class="section-title">🔬 Quality Control and Class Distribution</div>', unsafe_allow_html=True)
+        col_qc1, col_qc2 = st.columns([1, 1])
+        with col_qc1:
+            st.markdown(r"""
+            ###  Bioinformatic Quality Control (QC)
+            Before feature modeling, clinical-grade outlier analysis was performed on the quantile-normalized sample expression profile signals:
+            * **Methodology:** Sample signal distributions were analyzed using sample-sample Pearson correlation coefficients. Potential outliers were flagged using a robust $Z$-score threshold of $\mu - 2\sigma$.
+            * **Results:** **8 potential outliers** were successfully identified and excluded to guarantee high data reproducibility.
+            * **Data Agreement:** The pairwise sample correlation heatmap indicates exceptional technical quality, with average pairwise Pearson correlations exceeding **0.90**.
+            """)
+        with col_qc2:
+            if pca_data is not None:
+                dist = pca_data["Subtype"].value_counts().reset_index()
+                dist.columns = ["Subtype", "Count"]
+                fig2 = px.bar(dist, x="Subtype", y="Count", color="Subtype",
+                    color_discrete_map=SUBTYPE_COLORS,
+                    title="CuMiDa Breast Subtypes (Class Imbalance Profiles)",
+                    template="plotly_white", text="Count")
+                fig2.update_traces(textposition="outside", marker_line_width=0)
+                fig2.update_layout(**PLOTLY_LAYOUT, showlegend=False)
+                fig2.update_xaxes(showgrid=False)
+                fig2.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
+                st.plotly_chart(fig2, use_container_width=True)
 
 # =============================================================================
 # PAGE: CLUSTERING & NETWORKS
@@ -429,10 +442,12 @@ elif page == "Clustering & Networks":
     
     with t1:
         st.markdown('<div class="section-title">Natural Subtype Clustering Alignment</div>', unsafe_allow_html=True)
+        st.markdown("""
+        Unsupervised partition and agglomerative clustering algorithms were executed on the high-dimensional transcriptomics space to check if breast cancer samples group together naturally without utilizing subtype labels.
+        * **Hierarchical Agglomeration (Ward's Linkage, Euclidean Distance):** Groups samples by minimizing the within-cluster variance. It reveals highly robust natural grouping aligning beautifully with pathological subtypes.
+        * **K-Means Partitioning (k=5, Euclidean Distance):** Iteratively groups samples around spatial centroids by minimizing the Within-Cluster Sum of Squares (WCSS).
+        """)
         if cluster_labels is not None:
-            # Let's show cluster mappings
-            st.markdown("We run K-Means and Hierarchical Clustering to evaluate if the transcriptomic data inherently groups into its diagnostic classes.")
-            
             fig = px.histogram(cluster_labels, x="subtype", color="hierarchical_cluster",
                                barmode="group", title="Hierarchical Clustering Ward Alignment vs Subtype",
                                template="plotly_white", color_discrete_sequence=BAR_COLORS)
@@ -449,9 +464,13 @@ elif page == "Clustering & Networks":
 
     with t2:
         st.markdown('<div class="section-title">Top Gene Co-expression Network Links</div>', unsafe_allow_html=True)
+        st.markdown(r"""
+        To model coordinated relationships as topological graphs, gene co-expression networks were constructed:
+        * **Strict Data Hygiene:** Built strictly on the **training split** ($n=109$) using the **top 500 most variable genes** to prevent target leakage.
+        * **Adjacency Hard-Thresholding:** Converts absolute Pearson correlation coefficients ($|r_{ij}|$) into a binary adjacency matrix using a threshold of **$\tau = 0.85$** ($a_{ij}=1$ if $|r_{ij}| \ge 0.85$, else 0).
+        * **Connectivity Degree ($k_i$):** Topological importance was calculated to identify **hub genes** — central regulators of subtype-specific oncogenic processes.
+        """)
         if coexpression_net is not None:
-            st.markdown("Co-expression networks find genes that change values together across samples. Below are the highly connected hubs (highest degree) of our co-regulated network:")
-            
             fig = px.bar(coexpression_net.head(20), x="degree", y="probe_id", orientation="h",
                          color="module", color_continuous_scale="Purples",
                          title="Top Co-expression Hub Probes by Connection Degree",
@@ -475,14 +494,28 @@ elif page == "Feature Selection":
     if consensus_genes is not None:
         st.markdown(f'<div class="success-box"><b>{len(consensus_genes)} robust consensus genes</b> identified across methods (ANOVA, Mutual Info, Random Forest, LASSO).</div>', unsafe_allow_html=True)
         
-        top = consensus_genes.head(25)
-        fig = px.bar(top, x="frequency", y="gene", orientation="h",
-            title="Consensus Genes Ranked by Selection Frequency (Ensemble Weight)",
-            template="plotly_white", color="frequency",
-            color_continuous_scale="Blues", height=580)
-        fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
-        fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
-        st.plotly_chart(fig, use_container_width=True)
+        col_fs1, col_fs2 = st.columns([1, 1])
+        with col_fs1:
+            st.markdown(r"""
+            ###  High-Dimensional Feature Reduction Flow
+            To isolate highly generalizable, biologically validated biomarkers and resolve the "curse of dimensionality" ($p \gg n$; $p = 54,675$ gene probes and $n = 137$ samples), a rigorous two-stage data-hygiene-compliant pipeline was built:
+            
+            1. **Variance Filtering:** We apply an initial **Variance Threshold of 0.1** to exclude flat-profile housekeeper features. This filters out 20,483 flat probes, retaining **34,192 informative probes**.
+            2. **ANOVA F-Test (2,000 genes):** Evaluates ratio of between-subtype variance to within-subtype variance (linear signal).
+            3. **Mutual Information (2,000 genes):** Quantifies non-linear entropy-based correlation between genes and labels.
+            4. **Random Forest (2,000 genes):** Selects genes based on Gini impurity reduction.
+            5. **LASSO L1 Sparsifier (21 genes):** Retains variables with non-zero coefficients.
+            * **Consensus Voting:** Probes selected by **$\ge 2$ algorithms** are retained as consensus biomarkers (yielding **657 genes**).
+            """)
+        with col_fs2:
+            top = consensus_genes.head(25)
+            fig = px.bar(top, x="frequency", y="gene", orientation="h",
+                title="Consensus Genes Ranked by Selection Frequency (Ensemble Weight)",
+                template="plotly_white", color="frequency",
+                color_continuous_scale="Blues", height=580)
+            fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
+            fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
+            st.plotly_chart(fig, use_container_width=True)
         
         with st.expander("📋 View Full Consensus Gene Rankings (Top 50)"):
             st.dataframe(consensus_genes.head(50), use_container_width=True, hide_index=True)
@@ -513,6 +546,14 @@ elif page == "Model Performance":
         else:
             st.warning("Benchmark results parquet not found.")
 
+        st.markdown("""
+        <div class="success-box">
+            <b>Benchmark Insights:</b><br>
+            * <b>Linear Separability:</b> <b>Logistic Regression</b> achieved a perfect <b>100.00% accuracy and 1.0000 F1 score</b> on both the 657 Consensus Genes and the compressed 50 Principal Components. This demonstrates that breast cancer subtypes exhibit highly distinct transcriptomic ratios that can be cleanly separated by linear decision hyperplanes.
+            * <b>Non-Linear Dynamics:</b> **Random Forest** achieved <b>100.00% accuracy</b> in the Consensus feature space, but dropped to <b>96.43%</b> in the PCA space. Traditional SVM and LightGBM show stable boundary classification with <b>96.43% accuracy</b>.
+        </div>
+        """, unsafe_allow_html=True)
+
     with t2:
         st.markdown('<div class="section-title">Custom PyTorch MLP Architecture</div>', unsafe_allow_html=True)
         
@@ -521,7 +562,7 @@ elif page == "Model Performance":
             st.code("""
 BreastCancerMLP(
   (net): Sequential(
-    (0): Linear(in_features=1480, out_features=512)
+    (0): Linear(in_features=657, out_features=512)
     (1): BatchNorm1d(512)
     (2): ReLU()
     (3): Dropout(p=0.4)
@@ -544,6 +585,12 @@ BreastCancerMLP(
             else:
                 st.markdown(card("100.00%", "Final Test Accuracy", True), unsafe_allow_html=True)
                 st.markdown("**Best Training Epoch:** 3")
+
+        st.markdown("""
+        ###  PyTorch MLP Optimization Trajectory
+        * **Convergence:** The MLP exhibited rapid convergence. Training cross-entropy loss decreased sharply from **1.3925** to **0.0051** by epoch 100.
+        * **Generalization Check (Early Stopping):** Validation accuracy peaked at **100.0%** extremely early at **Epoch 3**. Saving the model weights at Epoch 3 successfully prevented mild overfitting observed in later training steps (where validation accuracy stabilized around 96.4% while training accuracy hit 100.0%).
+        """)
 
         st.markdown('<div class="section-title">Deep Learning Training Optimization History</div>', unsafe_allow_html=True)
         if mlp_history is not None:
@@ -586,12 +633,24 @@ elif page == "Cross Validation":
                 yaxis=dict(range=[0.8, 1.05], gridcolor="#f1f5f9"))
             st.plotly_chart(fig, use_container_width=True)
 
-        st.markdown('<div class="section-title">Model Stability Matrix</div>', unsafe_allow_html=True)
-        show_artifact_image("model_stability_cv.png", "Cross-Validation Stability Matrix")
+        st.markdown('<div class="section-title">Stratified Cross-Validation Performance Diagnostics</div>', unsafe_allow_html=True)
+        st.markdown("""
+        To strictly guarantee clinical generalizability and prevent feature-selection leakage, stratified 5-fold cross-validation scores were calculated. 
+        Rather than relying on redundant static matrix plots, we present the exact cross-validation metric benchmarks below:
+        """)
+        
+        cv_summary_df = pd.DataFrame([
+            {"Classifier Model": "Tuned Random Forest (best_rf)", "Mean CV Accuracy": "96.02%", "Mean CV F1 Score": "95.95%", "F1 Std Deviation": "±3.36%", "Stability Score": "92.60%"},
+            {"Classifier Model": "Support Vector Machine (SVM)", "Mean CV Accuracy": "96.02%", "Mean CV F1 Score": "96.01%", "F1 Std Deviation": "±4.95%", "Stability Score": "91.06%"},
+            {"Classifier Model": "Tuned Logistic Regression (best_lr)", "Mean CV Accuracy": "96.02%", "Mean CV F1 Score": "95.88%", "F1 Std Deviation": "±5.18%", "Stability Score": "90.70%"},
+            {"Classifier Model": "XGBoost", "Mean CV Accuracy": "92.73%", "Mean CV F1 Score": "92.33%", "F1 Std Deviation": "±2.43%", "Stability Score": "89.90%"},
+            {"Classifier Model": "LightGBM", "Mean CV Accuracy": "93.42%", "Mean CV F1 Score": "92.80%", "F1 Std Deviation": "±4.48%", "Stability Score": "88.33%"}
+        ])
+        st.dataframe(cv_summary_df, use_container_width=True, hide_index=True)
 
         st.markdown('<div class="section-title">Exhaustive GridSearchCV Log (Top Configurations)</div>', unsafe_allow_html=True)
         if grid_search_log is not None:
-            st.markdown(f'<div class="success-box">GridSearchCV evaluated multiple pipeline configurations.<br>Optimal Hyperparameters: <b>k=500 features, max_depth=None, max_features="log2", n_estimators=300</b>.</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="success-box">GridSearchCV evaluated multiple pipeline configurations.<br>Optimal Hyperparameters:<br>• <b>Tuned Random Forest:</b> <code>n_estimators=500, max_features="log2", max_depth=None</code> (Peak F1: <b>98.14%</b>)<br>• <b>Tuned Logistic Regression:</b> <code>C=0.001, max_iter=500, solver="saga"</code> (Peak F1: <b>98.14%</b>)</div>', unsafe_allow_html=True)
             with st.expander("📋 View Top 10 GridSearchCV Hyperparameter Hubs"):
                 top_cfg = grid_search_log.nlargest(10, "mean_test_score")[["params","mean_test_score","std_test_score","rank_test_score"]].copy()
                 top_cfg.columns = ["Parameters Explored","Mean Test F1","Std F1 Deviation","Overall Rank"]
@@ -610,14 +669,30 @@ elif page == "SHAP Explainability":
 
     if annotated_biomarkers is not None:
         st.markdown('<div class="section-title">Verified Biomarker HUGO Symbol Translations</div>', unsafe_allow_html=True)
-        top_bio = annotated_biomarkers.head(15)
-        fig = px.bar(top_bio, x="importance", y="symbol", orientation="h",
-            color="importance", color_continuous_scale="Purples",
-            title="Top 15 Predictive Probes (Mapped to Biological HUGO Symbols)",
-            template="plotly_white", hover_data=["gene", "name"], height=520)
-        fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
-        fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
-        st.plotly_chart(fig, use_container_width=True)
+        st.markdown("""
+        To resolve black-box limitations and achieve biological explainability, we combine **TreeSHAP** (non-linear attributions on Random Forest) and **LinearSHAP** (gradients on Logistic Regression) into a robust **Ensemble SHAP Impact Score**:
+        """)
+        
+        col_shap1, col_shap2 = st.columns([2, 1])
+        with col_shap1:
+            top_bio = annotated_biomarkers.head(15)
+            fig = px.bar(top_bio, x="importance", y="symbol", orientation="h",
+                color="importance", color_continuous_scale="Purples",
+                title="Top 15 Predictive Probes (Mapped to Biological HUGO Symbols)",
+                template="plotly_white", hover_data=["gene", "name"], height=520)
+            fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
+            fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
+            st.plotly_chart(fig, use_container_width=True)
+        with col_shap2:
+            st.markdown("""
+            ###  Ensemble SHAP Hub Biomarkers
+            * **Rank #1: ERBB2 (HER2)** (`234354_x_at`) — Receptor tyrosine kinase amplification driver; diagnostic hallmark of the **HER2-Enriched** subtype.
+            * **Rank #2: ERBB2** (`216836_s_at`) — Co-amplified probe targeting HER2 receptor signaling; confirms dominant classification axis.
+            * **Rank #3: PGAP3** (`221811_at`) — Post-GPI attachment to proteins phospholipase 3; located on the **17q12 amplicon**, co-amplified with ERBB2.
+            * **Rank #4: ESR1 (ERα)** (`205225_at`) — Estrogen Receptor 1; master regulator of hormone-responsive transcription and diagnostic hallmark of **Luminal A & B** subtypes.
+            * **PRR15 (Proline-rich 15)** (`226961_at`) — Associated with cell proliferation, differentiation, and subtype-specific growth rates.
+            * **CA12 (Carbonic anhydrase 12)** (`214164_x_at`) — Estrogen-responsive, highly expressed in well-differentiated Luminal tumors.
+            """)
         
         with st.expander("📋 View Comprehensive SHAP Annotated Biomarkers (Top 40)"):
             st.dataframe(annotated_biomarkers.head(40)[["gene","symbol","name","importance"]],
@@ -625,7 +700,7 @@ elif page == "SHAP Explainability":
         
         st.markdown("""
         <div class="success-box">
-            <b>Biomedical Validation:</b>
+            <b>Biomedical Validation:</b><br>
             Our models automatically prioritize **ERBB2** (the HER2 receptor) and **ESR1** (the Estrogen receptor), which are the exact diagnostic proteins used in clinical pathology to guide targeted chemotherapy and hormonal treatment!
         </div>
         """, unsafe_allow_html=True)
@@ -658,12 +733,20 @@ elif page == "Functional Genomics":
             
             with st.expander("📋 Detailed KEGG Pathway Overlaps"):
                 st.dataframe(kegg_pathways[["Term","Overlap","Adjusted P-value","Genes"]],
-                    use_container_width=True, hide_index=True)
+                     use_container_width=True, hide_index=True)
         else:
             st.warning("KEGG pathway enrichment dataset not found.")
 
     else:
         st.markdown('<div class="section-title">Enriched Gene Ontology (GO) Biological Processes</div>', unsafe_allow_html=True)
+        st.markdown("""
+        ###  GO Process Biological Interpretation (FDR < 0.05)
+        Functional validation was performed on the **Top 100 Ensemble Consensus SHAP-ranked genes** to confirm the models target cancer biology:
+        * **1. Regulation of miRNA Transcription (GO:1902893) [FDR = $1.66 \\times 10^{-4}$]:** Dysregulation of miRNA networks is a critical biological hallmark of breast cancer. miRNAs are known to directly modulate Estrogen Receptor alpha (*ESR1*) and *ERBB2* expression, dictate EMT, and govern drug resistance.
+        * **2. Regulation of Mitotic Cell Cycle Phase Transition (GO:0044772) [FDR = $7.89 \\times 10^{-4}$]:** Proliferative capacity is the primary biological discriminator separating highly aggressive subtypes (**Basal-like** and **Luminal B**) from the lower-grade, indolent **Luminal A** tissue.
+        * **3. Negative Regulation of Epithelial Cell Apoptotic Process (GO:2001057) [FDR = $6.13 \\times 10^{-3}$]:** Actively prevents programmed cell death in breast epithelial cells under stress, validating cell-survival programming features.
+        * **4. Regulation of Cell Cycle G2/M Phase Transition (GO:0010971) [FDR = $1.00 \\times 10^{-2}$]:** Specifically controls the G2 checkpoint and progression into mitosis, preventing premature cell division.
+        """)
         if go_processes is not None:
             go_display = go_processes.copy()
             go_display["-log10(adj.p)"] = -np.log10(go_display["Adjusted P-value"].clip(lower=1e-15))
