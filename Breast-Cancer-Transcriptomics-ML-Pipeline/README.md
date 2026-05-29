@@ -72,8 +72,8 @@ Due to the strong biological separability of the consensus biomarkers and the co
 | Model | Feature Space | Test Accuracy ($n=28$) | Test Weighted F1 | 5-Fold Stratified CV (Weighted F1) | Repeated CV (5-Fold, 10 Reps) |
 |---|---|---|---|---|---|
 | **Random Forest (Tuned)** | Consensus Genes | **100.00%** | **1.000** | **98.14%** | **97.01% ± 4.81%** |
+| **Random Forest (Baseline)** | Consensus Genes | **100.00%** | **1.000** | **95.95% ± 3.36%** | — |
 | **Support Vector Machine (RBF)** | Consensus Genes | **96.43%** | **0.964** | **96.01% ± 4.95%** | — |
-| **Random Forest (Baseline)** | Consensus Genes | **96.43%** | **0.964** | **95.95% ± 3.36%** | — |
 | **Logistic Regression** | Consensus Genes | **100.00%** | **1.000** | **95.88% ± 5.18%** | — |
 | **LightGBM Classifier** | Consensus Genes | **96.43%** | **0.966** | **92.80% ± 4.48%** | — |
 | **XGBoost Classifier** | Consensus Genes | **85.71%** | **0.824** | **92.33% ± 2.43%** | — |
