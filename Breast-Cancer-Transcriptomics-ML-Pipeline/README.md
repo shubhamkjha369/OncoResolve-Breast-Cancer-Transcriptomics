@@ -9,7 +9,7 @@
 
 # Breast Cancer Transcriptomic ML Pipeline
 
-[![Streamlit App](https://docs.streamlit.io/logo.svg)](https://computationalbiologyprojects-ypsvsczlfcejfemkuy9ifm.streamlit.app/)
+[![Streamlit App](https://docs.streamlit.io/logo.svg)](https://computationalbiologyprojects-ypsvsczlfcejfemkuy9ifm.streamlit.app/): Streamlit App
 
 > **End-to-end machine learning and deep learning workflow for breast cancer molecular subtype classification using high-dimensional gene expression data — from exploratory analysis and co-expression networks through model explainability and biological pathway validation.**
 
