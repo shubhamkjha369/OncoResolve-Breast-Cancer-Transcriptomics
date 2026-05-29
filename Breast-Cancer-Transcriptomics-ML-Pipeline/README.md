@@ -115,6 +115,8 @@ The identified ensemble consensus biomarkers were automatically mapped to biolog
 | **Cell cycle** | 4/124 | **4.46 × 10⁻²** | Essential replication machinery driving clinical mitotic proliferation indexes (ASPM, DEK, DEPDC1). |
 | **Oocyte meiosis** | 4/129 | **4.46 × 10⁻²** | Spindle checkpoint, microtubule dynamics, and chromosomal segregation factors co-opted by tumor cells. |
 | **Chemical carcinogenesis** | 5/239 | **4.70 × 10⁻²** | Metabolism and detoxification pathways reflecting carcinogen exposure signatures. |
+| **Central carbon metabolism in cancer** | 3/70 | **4.70 × 10⁻²** | Reflects altered metabolic programming (e.g. Warburg effect) and biosynthetic shifts vital for rapid cell division in breast tumors. |
+| **Gastric cancer** | 4/149 | **4.70 × 10⁻²** | Shares regulatory network components (e.g. ERBB2 overexpression, Wnt pathway crosstalk) that are highly relevant to invasive breast cancers. |
 
 ---
 

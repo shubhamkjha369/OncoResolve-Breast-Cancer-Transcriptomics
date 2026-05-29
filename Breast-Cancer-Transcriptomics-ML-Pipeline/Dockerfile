@@ -1,7 +1,7 @@
 # ==============================================================================
 # STAGE 1: Compilation Build Stage
 # ==============================================================================
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 
 WORKDIR /workspace
 
@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # ==============================================================================
 # STAGE 2: Optimized Production Runtime
 # ==============================================================================
-FROM python:3.11-slim AS runner
+FROM python:3.13-slim AS runner
 
 WORKDIR /app
 

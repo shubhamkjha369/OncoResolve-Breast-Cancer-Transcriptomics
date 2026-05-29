@@ -593,12 +593,12 @@ BreastCancerMLP(
                 st.markdown(f"**Best Training Epoch:** {mlp_results['best_epoch']}")
             else:
                 st.markdown(card("100.00%", "Final Test Accuracy", True), unsafe_allow_html=True)
-                st.markdown("**Best Training Epoch:** 3")
+                st.markdown("**Best Training Epoch:** 4")
 
         st.markdown("""
         ###  PyTorch MLP Optimization Trajectory
-        * **Convergence:** The MLP exhibited rapid convergence. Training cross-entropy loss decreased sharply from **1.3925** to **0.0051** by epoch 100.
-        * **Generalization Check (Early Stopping):** Validation accuracy peaked at **100.0%** extremely early at **Epoch 3**. Saving the model weights at Epoch 3 successfully prevented mild overfitting observed in later training steps (where validation accuracy stabilized around 96.4% while training accuracy hit 100.0%).
+        * **Convergence:** The MLP exhibited rapid convergence. Training cross-entropy loss decreased sharply from **1.3925** to **0.0047** by epoch 100.
+        * **Generalization Check (Early Stopping):** Validation accuracy peaked at **100.0%** extremely early at **Epoch 4**. Saving the model weights at Epoch 4 successfully captured the optimal representation, achieving a perfect 100.0% validation accuracy and generalizability without any overfitting.
         """)
 
         st.markdown('<div class="section-title">Deep Learning Training Optimization History</div>', unsafe_allow_html=True)
@@ -649,9 +649,9 @@ elif page == "Cross Validation":
         """)
         
         cv_summary_df = pd.DataFrame([
-            {"Classifier Model": "Tuned Random Forest (best_rf)", "Mean CV Accuracy": "96.02%", "Mean CV F1 Score": "95.95%", "F1 Std Deviation": "±3.36%", "Stability Score": "92.60%"},
+            {"Classifier Model": "Random Forest", "Mean CV Accuracy": "96.02%", "Mean CV F1 Score": "95.95%", "F1 Std Deviation": "±3.36%", "Stability Score": "92.60%"},
             {"Classifier Model": "Support Vector Machine (SVM)", "Mean CV Accuracy": "96.02%", "Mean CV F1 Score": "96.01%", "F1 Std Deviation": "±4.95%", "Stability Score": "91.06%"},
-            {"Classifier Model": "Tuned Logistic Regression (best_lr)", "Mean CV Accuracy": "96.02%", "Mean CV F1 Score": "95.88%", "F1 Std Deviation": "±5.18%", "Stability Score": "90.70%"},
+            {"Classifier Model": "Logistic Regression", "Mean CV Accuracy": "96.02%", "Mean CV F1 Score": "95.88%", "F1 Std Deviation": "±5.18%", "Stability Score": "90.70%"},
             {"Classifier Model": "XGBoost", "Mean CV Accuracy": "92.73%", "Mean CV F1 Score": "92.33%", "F1 Std Deviation": "±2.43%", "Stability Score": "89.90%"},
             {"Classifier Model": "LightGBM", "Mean CV Accuracy": "93.42%", "Mean CV F1 Score": "92.80%", "F1 Std Deviation": "±4.48%", "Stability Score": "88.33%"}
         ])
@@ -810,42 +810,8 @@ elif page == "Functional Genomics":
         show_artifact_image("pathway_enrichment_dotplot.png", "Enrichr KEGG Dot Plot")
         
         if kegg_pathways is not None:
-            # Clinical Priority Re-prioritization:
-            # Mathematically prioritize the Breast Cancer pathway over Prostate Cancer
-            # since Breast Cancer represents the native transcriptomic disease context of our dataset
-            # and specifically contains our primary diagnostic driver ESR1 (absent in prostate-specific signaling).
+            # Sort to reflect normal ranking
             kegg_display = kegg_pathways.copy()
-            if "Breast cancer" in kegg_display["Term"].values and "Prostate cancer" in kegg_display["Term"].values:
-                idx_bc = kegg_display[kegg_display["Term"] == "Breast cancer"].index[0]
-                idx_pc = kegg_display[kegg_display["Term"] == "Prostate cancer"].index[0]
-                
-                # Only boost if Prostate cancer is currently ranked higher than Breast cancer
-                if idx_pc < idx_bc:
-                    # Get Prostate cancer's superior stats
-                    pc_pval = kegg_display.loc[idx_pc, "P-value"]
-                    pc_adj_pval = kegg_display.loc[idx_pc, "Adjusted P-value"]
-                    pc_odds = kegg_display.loc[idx_pc, "Odds Ratio"]
-                    pc_score = kegg_display.loc[idx_pc, "Combined Score"]
-                    
-                    # Get Breast cancer's stats
-                    bc_pval = kegg_display.loc[idx_bc, "P-value"]
-                    bc_adj_pval = kegg_display.loc[idx_bc, "Adjusted P-value"]
-                    bc_odds = kegg_display.loc[idx_bc, "Odds Ratio"]
-                    bc_score = kegg_display.loc[idx_bc, "Combined Score"]
-                    
-                    # Elevate Breast cancer slightly above Prostate cancer to make it the top
-                    kegg_display.loc[idx_bc, "P-value"] = pc_pval * 0.95
-                    kegg_display.loc[idx_bc, "Adjusted P-value"] = pc_adj_pval * 0.95
-                    kegg_display.loc[idx_bc, "Odds Ratio"] = pc_odds * 1.05
-                    kegg_display.loc[idx_bc, "Combined Score"] = pc_score * 1.05
-                    
-                    # Push Prostate cancer down to Breast cancer's original level
-                    kegg_display.loc[idx_pc, "P-value"] = bc_pval
-                    kegg_display.loc[idx_pc, "Adjusted P-value"] = bc_adj_pval
-                    kegg_display.loc[idx_pc, "Odds Ratio"] = bc_odds
-                    kegg_display.loc[idx_pc, "Combined Score"] = bc_score
-                
-            # Re-sort to reflect new clinical-priority ranking
             kegg_display = kegg_display.sort_values("Adjusted P-value", ascending=True).reset_index(drop=True)
             kegg_display["-log10(adj.p)"] = -np.log10(kegg_display["Adjusted P-value"].clip(lower=1e-15))
             
@@ -878,10 +844,10 @@ elif page == "Functional Genomics":
         st.markdown("""
         ###  GO Process Biological Interpretation (FDR < 0.05)
         Functional validation was performed on the **Top 100 Ensemble Consensus SHAP-ranked genes** to confirm the models target cancer biology:
-        * **1. Regulation of miRNA Transcription (GO:1902893) [FDR = $1.66 \\times 10^{-4}$]:** Dysregulation of miRNA networks is a critical biological hallmark of breast cancer. miRNAs are known to directly modulate Estrogen Receptor alpha (*ESR1*) and *ERBB2* expression, dictate EMT, and govern drug resistance.
-        * **2. Regulation of Mitotic Cell Cycle Phase Transition (GO:0044772) [FDR = $7.89 \\times 10^{-4}$]:** Proliferative capacity is the primary biological discriminator separating highly aggressive subtypes (**Basal-like** and **Luminal B**) from the lower-grade, indolent **Luminal A** tissue.
-        * **3. Negative Regulation of Epithelial Cell Apoptotic Process (GO:2001057) [FDR = $6.13 \\times 10^{-3}$]:** Actively prevents programmed cell death in breast epithelial cells under stress, validating cell-survival programming features.
-        * **4. Regulation of Cell Cycle G2/M Phase Transition (GO:0010971) [FDR = $1.00 \\times 10^{-2}$]:** Specifically controls the G2 checkpoint and progression into mitosis, preventing premature cell division.
+        * **1. Regulation of miRNA Transcription (GO:1902893) [FDR = $3.46 \\times 10^{-3}$]:** Dysregulation of miRNA networks is a critical biological hallmark of breast cancer. miRNAs are known to directly modulate Estrogen Receptor alpha (*ESR1*) and *ERBB2* expression, dictate EMT, and govern drug resistance.
+        * **2. Positive Regulation of Cell Cycle Process (GO:0090068) [FDR = $3.58 \\times 10^{-3}$]:** Govern cell cycle progression and active cell division, representing the main driver of high-grade tumor growth and proliferative expansion.
+        * **3. Positive Regulation of Chromosome Segregation (GO:0051984) [FDR = $1.07 \\times 10^{-2}$]:** Critical for precise partitioning of sister chromatids during mitosis, validating the model's focus on chromosomal instability and cell-division machinery.
+        * **4. Negative Regulation of miRNA Transcription (GO:1902894) [FDR = $1.07 \\times 10^{-2}$]:** Negative feedback loop that controls miRNA abundance, which is heavily dysregulated in invasive breast carcinomas.
         """)
         if go_processes is not None:
             go_display = go_processes.copy()
