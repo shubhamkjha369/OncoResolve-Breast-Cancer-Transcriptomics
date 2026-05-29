@@ -87,6 +87,13 @@ mlp_history = load_parquet(ARTIFACT_DIR, "mlp_training_history.parquet")
 mlp_results = load_pickle(ARTIFACT_DIR, "mlp_results.pkl")
 best_model_info = load_pickle(ARTIFACT_DIR, "best_model_info.pkl")
 benchmark_results = load_parquet(ARTIFACT_DIR, "benchmark_results.parquet")
+X_test_consensus = load_pickle(ARTIFACT_DIR, "X_test_consensus.pkl")
+y_test = load_pickle(ARTIFACT_DIR, "y_test.pkl")
+top_consensus_genes = load_pickle(ARTIFACT_DIR, "top_consensus_genes.pkl")
+le = load_pickle(ARTIFACT_DIR, "label_encoder.pkl")
+import os
+shap_val_path = ARTIFACT_DIR / "shap_values_rf.npy"
+shap_values_rf = np.load(shap_val_path) if shap_val_path.exists() else None
 
 best_f1 = 0.9814  # verified GridSearchCV mean score
 if grid_search_log is not None and "mean_test_score" in grid_search_log.columns:
@@ -697,6 +704,87 @@ elif page == "SHAP Explainability":
         with st.expander("📋 View Comprehensive SHAP Annotated Biomarkers (Top 40)"):
             st.dataframe(annotated_biomarkers.head(40)[["gene","symbol","name","importance"]],
                 use_container_width=True, hide_index=True)
+        
+        st.markdown('<div class="section-title">Local Patient Diagnostic Explainer (SHAP Waterfall)</div>', unsafe_allow_html=True)
+        st.markdown("Select a patient sample and the target subtype class to see the individual transcriptomic contributors driving the classification decision:")
+
+        if shap_values_rf is not None and X_test_consensus is not None and y_test is not None:
+            col_sel1, col_sel2 = st.columns(2)
+            with col_sel1:
+                sample_idx = st.selectbox(
+                    "Select Patient Sample",
+                    options=list(range(len(y_test))),
+                    format_func=lambda idx: f"Patient Sample {idx+1} (Actual Subtype: {le.classes_[y_test[idx]]})",
+                    key="shap_waterfall_sample"
+                )
+            with col_sel2:
+                target_class = st.selectbox(
+                    "Select Subtype Class to Explain",
+                    options=list(le.classes_),
+                    index=int(y_test[sample_idx]),
+                    key="shap_waterfall_class"
+                )
+            
+            class_idx = list(le.classes_).index(target_class)
+            expected_values_rf = [0.22117431, 0.30409174, 0.2087156, 0.21862385, 0.0473945]
+            expected_val = expected_values_rf[class_idx]
+            
+            sample_shaps = shap_values_rf[sample_idx, :, class_idx]
+            sample_features = X_test_consensus[sample_idx, :]
+            
+            top_n = 10
+            top_indices = np.argsort(np.abs(sample_shaps))[::-1][:top_n]
+            
+            other_sum = sample_shaps.sum() - sample_shaps[top_indices].sum()
+            
+            probe_to_symbol = dict(zip(annotated_biomarkers['gene'], annotated_biomarkers['symbol'])) if annotated_biomarkers is not None else {}
+            
+            y_labels = ["E[f(X)] (Expected Base)"]
+            x_changes = [expected_val]
+            measures = ["absolute"]
+            
+            if len(sample_shaps) > top_n:
+                y_labels.append("other features")
+                x_changes.append(other_sum)
+                measures.append("relative")
+                
+            for idx in reversed(top_indices):
+                probe = top_consensus_genes[idx]
+                symbol = probe_to_symbol.get(probe, probe)
+                val = sample_features[idx]
+                y_labels.append(f"{val:.3f} = {symbol}")
+                x_changes.append(sample_shaps[idx])
+                measures.append("relative")
+                
+            y_labels.append("f(x) (Predicted Probability)")
+            x_changes.append(expected_val + sample_shaps.sum())
+            measures.append("total")
+            
+            fig_wf = go.Figure(go.Waterfall(
+                name="Local Explainer",
+                orientation="h",
+                measure=measures,
+                y=y_labels,
+                x=x_changes,
+                connector={"mode": "between", "line": {"width": 1.5, "color": "rgb(166, 166, 166)", "dash": "solid"}},
+                decreasing={"marker": {"color": "#3b82f6"}},
+                increasing={"marker": {"color": "#ef4444"}},
+                totals={"marker": {"color": "#10b981"}},
+                text=[f"{x:+.3f}" if m == "relative" else f"{x:.3f}" for x, m in zip(x_changes, measures)],
+                textposition="outside"
+            ))
+            
+            fig_wf.update_layout(
+                title=f"SHAP Waterfall Explainer for Patient {sample_idx+1} (Class: {target_class})",
+                waterfallgap=0.3,
+                **PLOTLY_LAYOUT,
+                height=550
+            )
+            fig_wf.update_xaxes(showgrid=True, gridcolor="#f1f5f9", title_text="Predicted Subtype Probability / Margin Contribution")
+            fig_wf.update_yaxes(showgrid=False)
+            st.plotly_chart(fig_wf, use_container_width=True)
+        else:
+            st.warning("Local test SHAP values or consensus arrays not found in data/artifacts/.")
         
         st.markdown("""
         <div class="success-box">
