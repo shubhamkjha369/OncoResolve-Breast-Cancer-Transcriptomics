@@ -69,17 +69,19 @@ All results reported below are fully authentic, verified, and extracted directly
 ### 📊 Model Performance Comparison
 Due to the strong biological separability of the consensus biomarkers and the compact clinical sample size ($n=137$ patient samples), multiple classifiers achieve perfect classification on the independent held-out test partition ($n=28$ samples). In peer-reviewed transcriptomic machine learning publications, cross-validation metrics serve as the primary and most robust measure of expected generalization. 
 
-| Model | Feature Space | Test Accuracy ($n=28$) | Test Weighted F1 | 5-Fold Stratified CV Score | Repeated CV (5-Fold, 10 Reps) |
+| Model | Feature Space | Test Accuracy ($n=28$) | Test Weighted F1 | 5-Fold Stratified CV (Weighted F1) | Repeated CV (5-Fold, 10 Reps) |
 |---|---|---|---|---|---|
-| **Random Forest (Tuned)** | Consensus Genes | **100.00%** | **1.000** | **98.14%** (Weighted F1) | **97.01% ± 4.81%** (Weighted F1) |
-| **Random Forest (Baseline)** | Consensus Genes | **96.43%** | **0.964** | **96.32% ± 1.84%** (Accuracy) | — |
-| **Logistic Regression** | Consensus Genes | **100.00%** | **1.000** | — | — |
+| **Random Forest (Tuned)** | Consensus Genes | **100.00%** | **1.000** | **98.14%** | **97.01% ± 4.81%** |
+| **Support Vector Machine (RBF)** | Consensus Genes | **96.43%** | **0.964** | **96.01% ± 4.95%** | — |
+| **Random Forest (Baseline)** | Consensus Genes | **96.43%** | **0.964** | **95.95% ± 3.36%** | — |
+| **Logistic Regression** | Consensus Genes | **100.00%** | **1.000** | **95.88% ± 5.18%** | — |
+| **LightGBM Classifier** | Consensus Genes | **96.43%** | **0.966** | **92.80% ± 4.48%** | — |
+| **XGBoost Classifier** | Consensus Genes | **85.71%** | **0.824** | **92.33% ± 2.43%** | — |
 | **PyTorch MLP Neural Net** | Consensus Genes | **100.00%** | **1.000** | — | — |
-| **Support Vector Machine (RBF)** | Consensus Genes | **96.43%** | **0.964** | — | — |
-| **LightGBM Classifier** | Consensus Genes | **96.43%** | **0.966** | — | — |
-| **XGBoost Classifier** | Consensus Genes | **85.71%** | **0.824** | — | — |
 
-> *Note:* The high performance is driven by the distinct molecular signatures of the breast cancer subtypes. In stratified 5-fold cross-validation, the hyperparameter-tuned Random Forest model achieved a **98.14% peak CV Weighted F1 score** and a **Model Stability Score of 0.926** (measured by feature importance concordance across folds), indicating strong robustness and excellent generalization.
+> *Note on Cross-Validation & Data Hygiene:* To prevent optimistic feature-selection leakage, the 5-Fold Stratified CV is executed with univariate feature selection (ANOVA SelectKBest) nested *inside* each CV fold on the pre-processed clinical cohort (stored in `cv_results.parquet`). The PyTorch MLP is trained on the full stratified training partition and evaluated on the independent held-out test split, utilizing early stopping on validation loss to prevent overfitting without excessive deep learning K-fold training overhead.
+>
+> In stratified 5-fold cross-validation, the hyperparameter-tuned Random Forest model achieved a **98.14% peak CV Weighted F1 score** and a **Model Stability Score of 0.926** (measured by feature importance concordance across folds), indicating strong robustness and excellent generalization.
 
 ---
 
