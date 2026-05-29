@@ -520,7 +520,7 @@ elif page == "Model Performance":
             st.code("""
 BreastCancerMLP(
   (net): Sequential(
-    (0): Linear(in_features=167, out_features=512)
+    (0): Linear(in_features=1480, out_features=512)
     (1): BatchNorm1d(512)
     (2): ReLU()
     (3): Dropout(p=0.4)
@@ -531,7 +531,7 @@ BreastCancerMLP(
     (8): Linear(in_features=256, out_features=128)
     (9): ReLU()
     (10): Dropout(p=0.2)
-    (11): Linear(in_features=128, out_features=6)
+    (11): Linear(in_features=128, out_features=5)
   )
 )
             """, language="python")
