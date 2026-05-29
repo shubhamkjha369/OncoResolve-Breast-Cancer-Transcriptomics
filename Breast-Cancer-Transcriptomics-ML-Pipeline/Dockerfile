@@ -25,11 +25,12 @@ WORKDIR /app
 COPY --from=builder /root/.local /root/.local
 ENV PATH=/root/.local/bin:$PATH
 
-# Copy structured data analytics ecosystem assets
+# Copy configuration and all core application files
+COPY .streamlit/ ./.streamlit/
 COPY data/processed/ ./data/processed/
 COPY data/artifacts/ ./data/artifacts/
 COPY src/ ./src/
-COPY app.py .
+COPY app.py automl_page.py pipeline_engine.py ./
 
 # Expose Streamlit defaults
 EXPOSE 8501
