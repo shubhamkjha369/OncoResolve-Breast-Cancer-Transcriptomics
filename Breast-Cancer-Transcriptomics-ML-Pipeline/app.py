@@ -32,6 +32,9 @@ PROCESSED_DIR = BASE_DIR / "data" / "processed"
 # HELPERS
 # =============================================================================
 
+if "active_page" not in st.session_state:
+    st.session_state.active_page = "Project Overview"
+
 @st.cache_data
 def load_parquet(directory, filename):
     path = directory / filename
@@ -133,51 +136,29 @@ section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
 }
 
 
-/* ── Modern PremiumNavigation Menu Items ── */
-div[data-testid="stRadio"] > div {
-    gap: 8px !important;
-}
-
-div[data-testid="stRadio"] label {
+/* ── Modern Premium Sidebar Button Navigation ── */
+section[data-testid="stSidebar"] .stButton > button {
     background: #fcfcfb !important;
     border: 1px solid #dcdcd3 !important;
     border-left: 4px solid #94a3b8 !important;
     border-radius: 8px !important;
-    padding: 10px 14px !important;
+    padding: 8px 14px !important;
     width: 100% !important;
-    cursor: pointer !important;
+    color: #1a2230 !important;
+    font-weight: 500 !important;
+    text-align: left !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    display: flex !important;
-    align-items: center !important;
-    margin-bottom: 2px !important;
     box-shadow: 0 1px 2px rgba(0,0,0,0.01) !important;
+    margin-bottom: 4px !important;
 }
 
-/* Hover effect: slide right, brighten background, accent left border */
-div[data-testid="stRadio"] label:hover {
+section[data-testid="stSidebar"] .stButton > button:hover {
     background: #ffffff !important;
     border-color: #4f46e5 !important;
     border-left: 4px solid #4f46e5 !important;
-    transform: translateX(6px) !important;
+    transform: translateX(4px) !important;
     box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08) !important;
-}
-
-/* Checked/Active state: Royal Indigo Gradient with outstanding white text visibility */
-div[data-testid="stRadio"] label:has(input:checked) {
-    background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
-    border-color: #4f46e5 !important;
-    border-left: 4px solid #c7d2fe !important;
-    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.18) !important;
-}
-div[data-testid="stRadio"] label:has(input:checked) * {
-    color: #ffffff !important;
-    font-weight: 600 !important;
-}
-
-/* Hide standard circular radio selectors entirely */
-div[data-testid="stRadio"] label span[data-testid="stRadioCircle"],
-div[data-testid="stRadio"] label input[type="radio"] {
-    display: none !important;
+    color: #4f46e5 !important;
 }
 
 
@@ -290,13 +271,33 @@ div[data-testid="stRadio"] label input[type="radio"] {
 # =============================================================================
 
 st.sidebar.markdown("### Navigation")
-page = st.sidebar.radio(
-    "Select Section",
-    ["Project Overview", "EDA Insights", "Clustering & Networks", "Feature Selection",
-     "Model Performance", "Cross Validation", "SHAP Explainability",
-     "Functional Genomics", "AutoML Pipeline"],
-    label_visibility="collapsed"
-)
+
+# Expander 1: Research Findings & Insights
+with st.sidebar.expander("Research Findings & Insights", expanded=(st.session_state.active_page != "AutoML Pipeline")):
+    research_pages = [
+        ("Project Overview", "Project Overview"),
+        ("EDA Insights", "Exploratory Data Analysis"),
+        ("Clustering & Networks", "Clustering and Networks"),
+        ("Feature Selection", "Consensus Biomarkers"),
+        ("Model Performance", "ML Benchmarks"),
+        ("Cross Validation", "Cross Validation"),
+        ("SHAP Explainability", "SHAP Interpretability"),
+        ("Functional Genomics", "Functional Genomics")
+    ]
+    for page_key, display_name in research_pages:
+        label = f"● {display_name}" if st.session_state.active_page == page_key else f"  {display_name}"
+        if st.button(label, use_container_width=True, key=f"btn_nav_{page_key}"):
+            st.session_state.active_page = page_key
+            st.rerun()
+
+# Expander 2: AutoML Diagnostic Engine
+with st.sidebar.expander("AutoML Diagnostic Engine", expanded=(st.session_state.active_page == "AutoML Pipeline")):
+    label = "● Launch AutoML and Predictor" if st.session_state.active_page == "AutoML Pipeline" else "  Launch AutoML and Predictor"
+    if st.button(label, use_container_width=True, key="btn_launch_automl"):
+        st.session_state.active_page = "AutoML Pipeline"
+        st.rerun()
+
+page = st.session_state.active_page
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**GSE45827 Microarray Data**")
 st.sidebar.caption("CuMiDa curated breast cancer gene expression.")
