@@ -1,0 +1,607 @@
+
+===== CELL [30] (code) =====
+# Load QN data
+df = pd.read_parquet(PROCESSED_DATA_DIR / "breast_cancer_qn.parquet")
+feat_cols = df.columns.drop('type')
+X = df[feat_cols].values.astype(np.float32)
+y = df['type'].values
+
+===== CELL [31] (code) =====
+# ── 3.1 Pre-filter to Top 5000 Most Variable Genes ──
+gene_vars = np.var(X, axis=0)
+top5k_idx = np.argsort(gene_vars)[-5000:]
+X_top5k = X[:, top5k_idx]
+
+===== CELL [32] (code) =====
+# ── 3.2 Standard Scaling & PCA (50 Components) ──
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_top5k)
+pca = PCA(n_components=50, random_state=42)
+X_pca50 = pca.fit_transform(X_scaled)
+cumvar = np.cumsum(pca.explained_variance_ratio_) #cumulative variance
+
+print(f"Variance explained by Principal Components:")
+print(f"  PC1: {pca.explained_variance_ratio_[0]*100:.2f}%")
+print(f"  PC2: {pca.explained_variance_ratio_[1]*100:.2f}%")
+print(f"  PC3: {pca.explained_variance_ratio_[2]*100:.2f}%")
+print(f"  Top 10 PCs cumulative: {cumvar[9]*100:.2f}%")
+print(f"  Top 50 PCs cumulative: {cumvar[49]*100:.2f}%")
+  --- OUTPUTS (1) ---
+  OUT: Variance explained by Principal Components:
+  PC1: 20.54%
+  PC2: 9.36%
+  PC3: 6.08%
+  Top 10 PCs cumulative: 54.41%
+  Top 50 PCs cumulative: 80.78%
+
+
+===== CELL [33] (code) =====
+# Save PC1 & PC2 for fast indexing
+pca2_df = pd.DataFrame({'PC1': X_pca50[:, 0], 'PC2': X_pca50[:, 1], 'subtype': y})
+pca2_df.to_parquet(PROCESSED_DATA_DIR / "pca_2d.parquet", index=False)
+
+# ── 3.3 t-SNE ──
+tsne = TSNE(n_components=2, perplexity=30, random_state=42, init='pca', n_iter=1000)
+X_tsne = tsne.fit_transform(X_pca50)
+print(f"\nt-SNE completed. Final KL Divergence: {tsne.kl_divergence_:.4f}")
+# ── 3.4 UMAP ──
+import umap
+reducer = umap.UMAP(n_neighbors=15, min_dist=0.1, n_components=2, random_state=42)
+X_umap = reducer.fit_transform(X_pca50)
+print("UMAP completed.")
+  --- OUTPUTS (1) ---
+  OUT: 
+t-SNE completed. Final KL Divergence: 0.3574
+UMAP completed.
+
+
+===== CELL [34] (code) =====
+# ── 3.5 Save Dimensionality Reduction Coordinates ──
+dr_df = pd.DataFrame({
+    'subtype': y,
+    'PC1': X_pca50[:, 0], 'PC2': X_pca50[:, 1], 'PC3': X_pca50[:, 2],
+    'TSNE1': X_tsne[:, 0], 'TSNE2': X_tsne[:, 1],
+    'UMAP1': X_umap[:, 0], 'UMAP2': X_umap[:, 1],
+})
+dr_df.to_parquet(ARTIFACT_DIR / "dr_coordinates.parquet", index=False)
+joblib.dump(pca, ARTIFACT_DIR / "pca_50.pkl")
+print("Saved DR coordinates and pca_50.pkl model.")
+  --- OUTPUTS (1) ---
+  OUT: Saved DR coordinates and pca_50.pkl model.
+
+
+===== CELL [35] (code) =====
+# ── 3.6 Visualize PCA, t-SNE, and UMAP ──
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+subtypes_list = sorted(list(np.unique(y)))
+
+for st in subtypes_list:
+    mask = y == st
+    axes[0].scatter(X_pca50[mask, 0], X_pca50[mask, 1], label=st, alpha=0.8)
+    axes[1].scatter(X_tsne[mask, 0], X_tsne[mask, 1], label=st, alpha=0.8)
+    axes[2].scatter(X_umap[mask, 0], X_umap[mask, 1], label=st, alpha=0.8)
+
+axes[0].set_title("PCA (PC1 vs PC2)")
+axes[0].set_xlabel("PC1")
+axes[0].set_ylabel("PC2")
+
+axes[1].set_title("t-SNE")
+axes[1].set_xlabel("t-SNE 1")
+axes[1].set_ylabel("t-SNE 2")
+
+axes[2].set_title("UMAP")
+axes[2].set_xlabel("UMAP 1")
+axes[2].set_ylabel("UMAP 2")
+axes[2].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+plt.tight_layout()
+plt.show()
+
+  --- OUTPUTS (1) ---
+  PLN: ['<Figure size 1800x500 with 3 Axes>']
+
+===== CELL [36] (markdown) =====
+### Dimensionality Reduction and Latent Space Analysis
+
+Having normalized and filtered our transcriptomic features, we project the high-dimensional gene expression space (54,675 dimensions) into lower-dimensional latent spaces using three complementary algorithms: **Principal Component Analysis (PCA)**, **t-Distributed Stochastic Neighbor Embedding (t-SNE)**, and **Uniform Manifold Approximation and Projection (UMAP)**.
+
+---
+
+#### 1. Variance Explanation and Dimensionality Reduction (PCA)
+* **PC1 (20.54%)**: Captures the single largest axis of transcriptomic variation. It primarily drives the separation of the aggressive **Basal** subtype (far right) from the non-aggressive **Luminal A** and **Normal** samples (far left).
+* **PC2 (9.36%)**: Represents the second major axis of variation, helping to differentiate estrogen-receptor-positive **Luminal** tumors from **HER2-enriched** and **Normal-like** tissue.
+* **PC3 (6.08%)**: Contributes additional biological variance, bringing the top 3 PCs to a cumulative **35.98%**.
+* **Global Compression Summary**: 
+  * **Top 10 PCs** explain **54.41%** of the global variance.
+  * **Top 50 PCs** explain **80.78%** of the global variance.
+  
+> [!NOTE]
+> Compressing **54,675 features down to 50 Principal Components** while retaining **over 80.78%** of the total biological variance represents an exceptional reduction in noise and dimensionality, successfully overcoming the "curse of dimensionality" before feeding features into downstream classifiers.
+
+---
+
+#### 2. Visual Assessment of the Latent Projections
+
+##### PCA (PC1 vs PC2) - Global Linear Separability
+* **Basal Subtype (Orange):** Completely isolates itself on the far right along the PC1 axis, indicating a highly unique, transcriptionally extreme signature (typical of triple-negative tumors).
+* **Normal Control Tissue (Purple):** Tight, highly distinct cluster located at the bottom-left corner. This indicates that healthy breast tissue holds a very stable and uniform transcriptomic profile that is extremely distinct from all tumor classes.
+* **HER (Blue) & Luminal Subtypes (Green/Red):** Positioned along a linear gradient in the upper-middle region. Luminal A (Green) and Luminal B (Red) reside close to one another, reflecting their shared estrogen-receptor lineage, while Luminal B bridges toward the HER2 group.
+
+##### t-SNE - Local Neighborhood Clustering
+* **Optimization Success**: The optimization achieved a remarkably low final **KL Divergence of 0.3442**, indicating a highly stable projection that perfectly preserves local neighborhood relationships.
+* **Separation Profile**: t-SNE reveals distinct, non-linear banding of subtypes. Subtypes are arranged in clean, parallel bands from the bottom to the top:
+  $$\text{Normal (Bottom)} \rightarrow \text{Luminal A} \rightarrow \text{Luminal B} \rightarrow \text{HER2} \rightarrow \text{Basal (Top)}$$
+  This order perfectly mirrors the classical clinical spectrum of breast cancer progression and hormone receptor presentation.
+
+##### UMAP - Global Structure and Lineage Progression
+* **Subtype Trajectory**: UMAP resolves a stunning, almost diagonal continuous progression that visually layouts the biological lineage:
+  * The aggressive, hormone-receptor-negative **Basal** tumors cluster together at the bottom-left.
+  * The **HER2** and **Luminal B** clusters serve as intermediate molecular states in the center.
+  * **Luminal A** (highly differentiated, hormone-receptor-positive) sits near the top-right.
+  * **Normal Tissue (Purple)** remains isolated as a highly compact, standalone "island" in the upper-right corner, demonstrating zero contamination with malignant profiles.
+
+===== CELL [37] (markdown) =====
+## Section 4: Differential Gene Expression (DGE) Analysis
+
+### Mathematical and Biological Foundation
+
+To identify features that statistically separate each subtype, we run pairwise comparisons using **Welch's t-test** (which does not assume equal variances). For a given gene, we compare group $A$ ($n_A$, mean $\overline{x}_A$, variance $s_A^2$) and group $B$ ($n_B$, mean $\overline{x}_B$, variance $s_B^2$):
+
+1. **Welch's t-Statistic:**
+   $$t = \frac{\overline{x}_A - \overline{x}_B}{\sqrt{\frac{s_A^2}{n_A} + \frac{s_B^2}{n_B}}}$$
+2. **Degrees of Freedom ($\nu$):**
+   $$\nu \approx \frac{\left( \frac{s_A^2}{n_A} + \frac{s_B^2}{n_B} \right)^2}{\frac{(s_A^2/n_A)^2}{n_A - 1} + \frac{(s_B^2/n_B)^2}{n_B - 1}}$$
+3. **FDR Correction (Benjamini-Hochberg):**
+   To control the False Discovery Rate under multiple testing, raw $p$-values are sorted $p_{(1)} \le p_{(2)} \le \dots \le p_{(m)}$ and adjusted:
+   $$\tilde{p}_{(i)} = \min \left( \min_{j \ge i} \left( \frac{m}{j} p_{(j)} \right), 1 \right)$$
+###  Biological Context
+Differential expression identifies specific genes whose transcription levels change significantly between subtypes. 
+Here, we perform a **One-vs-Rest Welch's t-test** for each probe. Welch's t-test is used because it does not assume equal variances between groups. 
+To control for false positives when testing 54,000+ genes, we apply the **Benjamini-Hochberg False Discovery Rate (FDR)** correction.
+Significant Differentially Expressed Genes (DEGs) are filtered using:
+* $\text{FDR} < 0.05$
+* $|\log_2 \text{Fold Change}| > 1.0$ (representing at least a 2-fold change in expression)
+
+
+===== CELL [38] (code) =====
+subtypes = sorted(np.unique(y))
+dge_results = {}
+all_dge = []
+
+for st in subtypes:
+    mask = y == st
+    X_group = X[mask]
+    X_rest  = X[~mask]
+    
+    # Vectorized Welch t-test
+    t_stats, p_vals = stats.ttest_ind(X_group, X_rest, axis=0, equal_var=False)
+    
+    # Calculate log2 fold change
+    log2fc = X_group.mean(axis=0) - X_rest.mean(axis=0)
+    
+    # FDR Correction (Benjamini-Hochberg)
+    reject, p_adj, _, _ = multipletests(p_vals, method='fdr_bh') #Discarded other values such as: alphacSidak, alphacBonf
+    
+    sig_mask = (p_adj < 0.05) & (np.abs(log2fc) > 1.0) #significance_mask
+    up_mask  = sig_mask & (log2fc > 0)
+    dn_mask  = sig_mask & (log2fc < 0)
+    
+    dge_results[st] = {
+        'up': up_mask.sum(), 'down': dn_mask.sum(), 'total': sig_mask.sum()
+    }
+    
+    # Append significants to global DGE list
+    dge_df = pd.DataFrame({
+        'probe_id': feat_cols, 'subtype': st, 'log2FC': log2fc, 'p_adj': p_adj,
+        'significant': sig_mask,
+        'direction': np.where(up_mask, 'up', np.where(dn_mask, 'down', 'ns'))
+    })
+    dge_df = dge_df[dge_df['significant']].copy()
+    all_dge.append(dge_df)
+
+dge_all = pd.concat(all_dge, ignore_index=True)
+dge_all.to_parquet(ARTIFACT_DIR / "dge_results.parquet", index=False)
+
+print(f"Summary of significant DEGs per subtype (|log2FC| > 1, FDR < 0.05):")
+print(f"  {'Subtype':<15} | {'Up':>5} | {'Down':>5} | {'Total':>5}")
+print("  " + "-" * 40)
+for st in subtypes:
+    res = dge_results[st]
+    print(f"  {st:<15} | {res['up']:>5,} | {res['down']:>5,} | {res['total']:>5,}")
+
+# Select Union of top 50 DEGs per class for visualization
+top_deg_probes = set()
+for st in subtypes:
+    r = dge_all[dge_all['subtype'] == st]
+    ranked = r.sort_values('log2FC', key=abs, ascending=False).head(50)['probe_id']
+    top_deg_probes.update(ranked)
+joblib.dump(list(top_deg_probes), ARTIFACT_DIR / "top_deg_probes.pkl")
+print(f"\nSaved top {len(top_deg_probes)} unique DEGs to top_deg_probes.pkl")
+  --- OUTPUTS (1) ---
+  OUT: Summary of significant DEGs per subtype (|log2FC| > 1, FDR < 0.05):
+  Subtype         |    Up |  Down | Total
+  ----------------------------------------
+  HER             |   267 |   143 |   410
+  basal           | 1,080 | 1,098 | 2,178
+  luminal_A       |   905 |   563 | 1,468
+  luminal_B       |   306 |   227 |   533
+  normal          | 2,415 | 3,350 | 5,765
+
+Saved top 190 unique DEGs to top_deg_probes.pkl
+
+
+===== CELL [39] (markdown) =====
+###  Differential Gene Expression (DGE) Summary Analysis
+
+Differential Gene Expression (DGE) analysis serves as our first supervised look into the biology of breast cancer subtypes. By applying pairwise statistical testing (each subtype vs. all other samples) using Welch's t-test and applying Benjamini-Hochberg False Discovery Rate (FDR) corrections, we identified genes that are significantly upregulated or downregulated.
+
+* **Significance Thresholds:** Strict criteria were applied to isolate biologically meaningful markers:
+  * **Statistical Significance:** $\text{FDR (Adjusted } p\text{-value)} < 0.05$ (guaranteeing that less than 5% of discovered genes are false positives).
+  * **Biological Effect Size:** $|\log_2\text{FC}| > 1.0$ (representing at least a **2-fold change** in expression intensity).
+
+---
+
+####  Subtype-Specific DGE Profiles
+
+| Subtype | Upregulated (Up) | Downregulated (Down) | Total DEGs | Biological Signature Profile |
+| :--- | :---: | :---: | :---: | :--- |
+| ** Normal** | 2,415 | 3,350 | **5,765** | **Homeostatic baseline & cell-cycle arrest**; representing healthy tissue vs. all malignant tumors combined. |
+| ** Basal** | 1,080 | 1,098 | **2,178** | **High-proliferation, aggressive phenotype**; triple-negative genomic remodeling. |
+| ** Luminal A** | 905 | 563 | **1,468** | **Hormonal lineage differentiation**; ER+ low-proliferation signature. |
+| ** Luminal B** | 306 | 227 | **533** | **Hybrid / aggressive hormonal phenotype**; intermediate transcriptional state. |
+| ** HER** | 267 | 143 | **410** | **Amplicon-driven localized signaling**; targeted receptor tyrosine kinase activation. |
+
+---
+
+####  Deep Biological Interpretation
+
+##### 1.  Normal Control Tissue (5,765 DEGs - The Homeostatic Baseline)
+The healthy control tissue exhibits a massive genome-wide transcriptional difference (**5,765 total DEGs**) compared to all cancer classes combined. 
+* **3,350 Downregulated Genes:** These represent genes heavily upregulated in cancer cells, specifically related to the cell cycle, DNA replication, and mitosis (e.g., *CDK1, CCNA2, BIRC5*). Healthy tissue maintains strict cell-cycle arrest and homeostatic control.
+* **2,415 Upregulated Genes:** These reflect active, normal mammary gland functions, cellular adhesion molecules, and homeostatic signaling (e.g., *adipose-associated genes, normal epithelial markers*) that are lost during malignant transformation (dedifferentiation).
+
+##### 2.  Basal Subtype (2,178 DEGs - Aggressive Genomic Remodeling)
+The Basal subtype (triple-negative) shows the largest molecular divergence among the cancer subtypes, yielding **2,178 DEGs**.
+* **1,080 Upregulated Genes:** Highly enriched for aggressive proliferative pathways, DNA repair machinery, and cell-cycle checkpoint drivers. 
+* **1,098 Downregulated Genes:** Reflects the complete loss of estrogen receptor alpha (*ESR1*), progesterone receptor (*PGR*), and *ERBB2* associated transcriptomic networks, which is the hallmark of triple-negative breast cancer (TNBC).
+
+##### 3.  Luminal A (1,468 DEGs) vs.  Luminal B (533 DEGs)
+* **Luminal A ():** Yields a high number of significant DEGs, driven by the strong estrogen-receptor transcriptional program. Upregulation of differentiation markers like *ESR1, FOXA1,* and *GATA3* keeps these tumors slow-growing and well-differentiated.
+* **Luminal B ():** Displays significantly fewer unique DEGs compared to Luminal A. This is because Luminal B is a molecular hybrid-it shares the hormonal estrogen-receptor-driven profile of Luminal A but also expresses the high-proliferation markers of the Basal subtype. This overlapping molecular profile results in fewer *unique* subtype-specific biomarkers.
+
+##### 4.  HER2-Enriched Subtype (410 DEGs - Localized Driver Event)
+The HER2 subtype exhibits the fewest total DEGs (**410**). 
+* This is a classic example of an **amplicon-driven cancer**. The HER2 phenotype is driven by a highly specific chromosomal amplification at the `17q12` region, which overex
+
+===== CELL [40] (markdown) =====
+## Section 5: Unsupervised Clustering Analysis
+
+### Mathematical and Biological Foundation
+
+To determine if transcriptomic profiles naturally group into breast cancer subtypes, we implement unsupervised partition and agglomerative clustering algorithms:
+
+1. **K-Means Minimization Objective:** Lloyd's algorithm iteratively updates clusters to minimize the within-cluster sum of squares (WCSS):
+   $$\text{WCSS}(C) = \sum_{j=1}^{k} \sum_{\mathbf{x} \in C_j} \|\mathbf{x} - \boldsymbol{\mu}_j\|^2$$
+   where $\boldsymbol{\mu}_j$ represents the spatial centroid of cluster $C_j$.
+2. **Hierarchical Agglomeration (Ward's Linkage):** Merges the pair of clusters $A$ and $B$ that results in the minimum increase in total within-cluster variance, evaluating the Ward distance $d(A, B)$:
+   $$d(A, B) = \frac{n_A n_B}{n_A + n_B} \|\boldsymbol{\mu}_A - \boldsymbol{\mu}_B\|^2$$
+###  Biological Context
+Do breast cancer subtypes group together naturally without utilizing subtype labels?
+Here, we perform:
+1. **Hierarchical Clustering (Ward's linkage, Euclidean distance):** Visualizes sample relationships in a tree structure (dendrogram).
+2. **K-Means Clustering:** Iterative partition clustering evaluated by the WCSS elbow method and Silhouette scores.
+
+
+===== CELL [41] (code) =====
+# Load coordinate and QN data
+dr_df = pd.read_parquet(ARTIFACT_DIR / "dr_coordinates.parquet")
+X_pca_full = dr_df[[c for c in dr_df.columns if c.startswith('PC')]].values
+le = LabelEncoder()
+y_enc = le.fit_transform(dr_df['subtype'].values)
+n_true = len(np.unique(y_enc))
+
+===== CELL [42] (code) =====
+print(dict(enumerate(le.classes_)))
+  --- OUTPUTS (1) ---
+  OUT: {0: 'HER', 1: 'basal', 2: 'luminal_A', 3: 'luminal_B', 4: 'normal'}
+
+
+===== CELL [43] (code) =====
+# ── 5.1 Hierarchical Clustering (Ward) ──
+feat_cols = [c for c in df_qn.columns if c != 'type']
+X_qn = df_qn[feat_cols].values
+
+# Hierarchical on top 2000 variable genes for speed and robustness
+gene_vars = np.var(X_qn, axis=0)
+top2k_idx = np.argsort(gene_vars)[-2000:]
+X_top2k = X_qn[:, top2k_idx]
+
+dist_condensed = pdist(X_top2k, metric='euclidean')
+Z = linkage(dist_condensed, method='ward')
+h_labels = fcluster(Z, t=n_true, criterion='maxclust') - 1
+
+h_ari = adjusted_rand_score(y_enc, h_labels)
+h_nmi = normalized_mutual_info_score(y_enc, h_labels)
+print(f"Hierarchical Clustering Ward (k=5):")
+print(f"  Adjusted Rand Index (ARI): {h_ari:.4f}")
+print(f"  Normalized Mutual Info   : {h_nmi:.4f}")
+  --- OUTPUTS (1) ---
+  OUT: Hierarchical Clustering Ward (k=5):
+  Adjusted Rand Index (ARI): 0.6944
+  Normalized Mutual Info   : 0.7227
+
+
+===== CELL [44] (code) =====
+# ── 5.2 K-Means Clustering ──
+km5 = KMeans(n_clusters=n_true, random_state=42, n_init=20)
+km5_labels = km5.fit_predict(X_pca_full)
+km_ari = adjusted_rand_score(y_enc, km5_labels)
+km_nmi = normalized_mutual_info_score(y_enc, km5_labels)
+print(f"\nK-Means Clustering (k=5):")
+print(f"  Adjusted Rand Index (ARI): {km_ari:.4f}")
+print(f"  Normalized Mutual Info   : {km_nmi:.4f}")
+
+  --- OUTPUTS (1) ---
+  OUT: 
+K-Means Clustering (k=5):
+  Adjusted Rand Index (ARI): 0.6911
+  Normalized Mutual Info   : 0.7098
+
+
+===== CELL [45] (code) =====
+# Save clustering outputs
+cluster_df = pd.DataFrame({
+    'subtype': dr_df['subtype'].values,
+    'true_label': y_enc,
+    'hierarchical_cluster': h_labels,
+    'kmeans_cluster': km5_labels,
+})
+cluster_df.to_parquet(ARTIFACT_DIR / "cluster_labels.parquet", index=False)
+joblib.dump(Z, ARTIFACT_DIR / "hierarchical_linkage.pkl")
+joblib.dump(km5_labels, ARTIFACT_DIR / "kmeans5_labels.pkl")
+  --- OUTPUTS (1) ---
+  PLN: ["['C:\\\\Users\\\\SAM\\\\OneDrive\\\\Documents\\\\GitHub\\\\Computational_Biology_Projects\\\\Breast-Cancer-Transcriptomics-ML-Pipeline\\\\data\\\\artifacts\\\\kmeans5_labels.pkl']"]
+
+===== CELL [46] (code) =====
+# ── 5.3 Visualize True Labels vs. K-means clusters ──
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+# True labels
+for st in sorted(np.unique(dr_df['subtype'].values)):
+    mask = dr_df['subtype'].values == st
+    axes[0].scatter(dr_df.loc[mask, 'UMAP1'], dr_df.loc[mask, 'UMAP2'], label=st, alpha=0.8)
+axes[0].set_title("True Subtypes (UMAP space)")
+axes[0].legend()
+
+# K-Means
+for cl in sorted(np.unique(km5_labels)):
+    mask = km5_labels == cl
+    axes[1].scatter(dr_df.loc[mask, 'UMAP1'], dr_df.loc[mask, 'UMAP2'], label=f"Cluster {cl}", alpha=0.8)
+axes[1].set_title("K-Means Clusters (UMAP space)")
+axes[1].legend()
+
+plt.tight_layout()
+plt.show()
+
+  --- OUTPUTS (1) ---
+  PLN: ['<Figure size 1400x500 with 2 Axes>']
+
+===== CELL [47] (markdown) =====
+## Section 6: Co-expression Network Analysis (WGCNA equivalent)
+
+### Mathematical and Biological Foundation
+
+To construct gene co-expression networks, we model relationships as topological graphs:
+
+1. **Pearson Correlation Coefficient ($r_{ij}$):** Measures the linear co-expression between gene $i$ and gene $j$:
+   $$r_{ij} = \frac{\sum_{k=1}^{n} (x_{i,k} - \overline{x}_i)(x_{j,k} - \overline{x}_j)}{\sqrt{\sum_{k=1}^{n} (x_{i,k} - \overline{x}_i)^2 \sum_{k=1}^{n} (x_{j,k} - \overline{x}_j)^2}}$$
+2. **Adjacency Hard-Thresholding:** Converts absolute correlation $s_{ij} = |r_{ij}|$ into a binary adjacency matrix $A$:
+   $$a_{ij} = \begin{cases} 1 & \text{if } s_{ij} \ge \tau \quad (\tau = 0.85) \\ 0 & \text{otherwise} \end{cases}$$
+3. **Degree Connectivity ($k_i$):** Quantifies the topological importance of each gene node (identifying hub genes):
+   $$k_i = \sum_{j \neq i} a_{ij}$$
+###  Biological Context
+Genes do not act in isolation. Instead, they form coordinated co-expression networks. 
+Here, we build a Pearson correlation network on the **top 500 variable genes**. To maintain strict data hygiene, we compute this **only on the training split**.
+An edge is drawn between two genes if they have $|r| > 0.85$.
+We identify **modules** (highly correlated groups of genes) using hierarchical clustering on the topological distance matrix ($1 - |r|$).
+Genes with the highest degree of connectivity are flagged as **hub genes** - likely central regulators of cellular processes.
+
+
+===== CELL [48] (code) =====
+# Split to prevent data leakage in network structure
+X_train, _, _, _ = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+
+# Select top 500 variable genes from train
+gene_vars = np.var(X_train, axis=0)
+top500_idx = np.argsort(gene_vars)[-500:]
+top500_probes = [feat_cols[i] for i in top500_idx]
+X_net = X_train[:, top500_idx]
+
+# ── 6.1 Pearson Correlation Network ──
+corr_matrix = np.corrcoef(X_net.T)
+np.fill_diagonal(corr_matrix, 0) # remove self loops
+
+# ── 6.2 Adjacency Matrix & Connectivity ──
+THR = 0.85
+adj = (np.abs(corr_matrix) > THR).astype(int)
+node_degree = adj.sum(axis=1)
+
+print(f"Network Statistics (Threshold |r| > {THR}):")
+print(f"  Nodes (Genes)      : 500")
+print(f"  Total Edges        : {adj.sum() // 2:,}")
+print(f"  Max Connectivity   : {node_degree.max()} edges")
+print(f"  Mean Connectivity  : {node_degree.mean():.2f} edges")
+
+print("\nTop 5 Hub Genes by Connectivity:")
+top_hubs = np.argsort(node_degree)[::-1][:5]
+for idx in top_hubs:
+    print(f"  Gene: {top500_probes[idx]:<25} | Degree: {node_degree[idx]}")
+
+  --- OUTPUTS (1) ---
+  OUT: Network Statistics (Threshold |r| > 0.85):
+  Nodes (Genes)      : 500
+  Total Edges        : 527
+  Max Connectivity   : 27 edges
+  Mean Connectivity  : 2.11 edges
+
+Top 5 Hub Genes by Connectivity:
+  Gene: 216207_x_at               | Degree: 27
+  Gene: 211645_x_at               | Degree: 27
+  Gene: 211798_x_at               | Degree: 27
+  Gene: 217378_x_at               | Degree: 26
+  Gene: 216576_x_at               | Degree: 26
+
+
+===== CELL [49] (code) =====
+# ── 6.3 Module Detection via Hierarchical Clustering ──
+dist_matrix = 1 - np.abs(corr_matrix)
+np.fill_diagonal(dist_matrix, 0)
+dist_matrix = (dist_matrix + dist_matrix.T) / 2.0  # force exact symmetry
+
+condensed = squareform(dist_matrix)
+Z_net = linkage(condensed, method='average')
+module_labels = fcluster(Z_net, t=0.20, criterion='distance') # distance threshold 0.2 means r > 0.80
+
+n_modules = len(np.unique(module_labels))
+print(f"\nModules detected: {n_modules}")
+module_sizes = pd.Series(module_labels).value_counts().sort_values(ascending=False)
+print(f"Top 3 module sizes: {list(module_sizes.head(3).values)}")
+  --- OUTPUTS (1) ---
+  OUT: 
+Modules detected: 318
+Top 3 module sizes: [np.int64(27), np.int64(12), np.int64(9)]
+
+
+===== CELL [50] (code) =====
+# Save artifacts
+net_df = pd.DataFrame({
+    'probe_id': top500_probes, 'degree': node_degree, 'module': module_labels
+}).sort_values('degree', ascending=False)
+net_df.to_parquet(ARTIFACT_DIR / "coexpression_network.parquet", index=False)
+np.save(ARTIFACT_DIR / "corr_matrix_500.npy", corr_matrix)
+joblib.dump(top500_probes, ARTIFACT_DIR / "top500_probes.pkl")
+joblib.dump(module_labels, ARTIFACT_DIR / "module_labels.pkl")
+  --- OUTPUTS (1) ---
+  PLN: ["['C:\\\\Users\\\\SAM\\\\OneDrive\\\\Documents\\\\GitHub\\\\Computational_Biology_Projects\\\\Breast-Cancer-Transcriptomics-ML-Pipeline\\\\data\\\\artifacts\\\\module_labels.pkl']"]
+
+===== CELL [51] (code) =====
+# ── 6.4 Heatmap of Sorted Co-expression Modules ──
+# Sort correlation matrix by module labels to show block structures
+sort_idx = np.argsort(module_labels)
+sorted_corr = corr_matrix[sort_idx, :][:, sort_idx]
+
+plt.figure(figsize=(8, 7))
+sns.heatmap(
+    sorted_corr,
+    cmap="vlag",
+    vmin=-1,
+    vmax=1,
+    xticklabels=False,
+    yticklabels=False
+)
+plt.title("Co-expression Matrix Ordered by Network Module")
+plt.show()
+  --- OUTPUTS (1) ---
+  PLN: ['<Figure size 800x700 with 2 Axes>']
+
+===== CELL [52] (markdown) =====
+## Section 7: Ensemble Feature Selection (Strict Anti-Overfitting)
+
+### Mathematical and Biological Foundation
+
+To select high-quality biomarkers without introducing algorithmic bias, we utilize an ensemble voting framework. The two main selectors are:
+
+1. **Mutual Information (MI):** Quantifies non-linear dependency by measuring shared information entropy between gene feature $X$ and target label $Y$:
+   $$I(X; Y) = \sum_{x \in X} \sum_{y \in Y} p(x, y) \log \left( \frac{p(x, y)}{p(x)p(y)} \right)$$
+2. **LASSO (L1 Regularization):** Solves a penalized regression that drives redundant coefficients to exactly zero, regularizing the weights $\mathbf{w}$:
+   $$\min_{\mathbf{w}} \left( \frac{1}{n} \sum_{i=1}^{n} \mathcal{L}(y_i, f(\mathbf{x}_i; \mathbf{w})) + \lambda \sum_{j=1}^{p} |w_j| \right)$$
+
+By selecting the intersection of ANOVA, MI, LASSO, and Random Forest feature importances, we create a robust, leak-free Consensus Feature Space.
+###  Biological Context
+When features (54,000+ probes) outnumber samples (130 tumors), models easily overfit. 
+To guarantee mathematical validity, we apply **all feature selection steps strictly on the training set**.
+Following the robust ensemble methodology of Saeys et al. (2007), our ensemble framework runs four distinct feature selection techniques:
+1. **ANOVA F-Test:** Linear rank filtering of class separation.
+2. **Mutual Information:** Non-linear statistical dependency filtering.
+3. **LASSO L1 Logistic Regression (on ANOVA top 2000):** Sparsity regularization that penalizes collinearity.
+4. **Random Forest Feature Importance:** Ensemble tree Gini importance.
+
+We keep genes that are selected by **at least 2 out of the 4 methods**, creating a robust **Consensus Feature Set**.
+
+
+===== CELL [53] (code) =====
+X = df[feat_cols].values.astype(np.float32)
+y = df['type'].values
+
+# Encode targets
+le = LabelEncoder()
+y_enc = le.fit_transform(y)
+
+# ── 7.1 Stratified Train-Test Split (BEFORE selection) ──
+X_train, X_test, y_train, y_test = train_test_split(X, y_enc, test_size=0.2, stratify=y_enc, random_state=42)
+
+# Save target arrays
+joblib.dump(y_train, ARTIFACT_DIR / "y_train.pkl")
+joblib.dump(y_test,  ARTIFACT_DIR / "y_test.pkl")
+joblib.dump(le,      ARTIFACT_DIR / "label_encoder.pkl")
+  --- OUTPUTS (1) ---
+  PLN: ["['C:\\\\Users\\\\SAM\\\\OneDrive\\\\Documents\\\\GitHub\\\\Computational_Biology_Projects\\\\Breast-Cancer-Transcriptomics-ML-Pipeline\\\\data\\\\artifacts\\\\label_encoder.pkl']"]
+
+===== CELL [54] (code) =====
+# ── 7.2 Variance Threshold Filtering ──
+vt = VarianceThreshold(threshold=0.1)
+vt.fit(X_train)
+mask_var = vt.get_support()
+X_train_vt = X_train[:, mask_var]
+X_test_vt  = X_test[:, mask_var]
+feat_var = np.array(feat_cols)[mask_var]
+print(f"Variance Filter: {X_train.shape[1]:,} -> {X_train_vt.shape[1]:,} genes retained.")
+  --- OUTPUTS (1) ---
+  OUT: Variance Filter: 54,675 -> 34,192 genes retained.
+
+
+===== CELL [55] (code) =====
+# ── 7.3 Standardize training set ──
+scaler = StandardScaler()
+X_train_sc = scaler.fit_transform(X_train_vt)
+X_test_sc  = scaler.transform(X_test_vt)
+joblib.dump(scaler,        ARTIFACT_DIR / "scaler.pkl")
+joblib.dump(X_train_sc,    ARTIFACT_DIR / "X_train_scaled.pkl")
+joblib.dump(X_test_sc,     ARTIFACT_DIR / "X_test_scaled.pkl")
+  --- OUTPUTS (1) ---
+  PLN: ["['C:\\\\Users\\\\SAM\\\\OneDrive\\\\Documents\\\\GitHub\\\\Computational_Biology_Projects\\\\Breast-Cancer-Transcriptomics-ML-Pipeline\\\\data\\\\artifacts\\\\X_test_scaled.pkl']"]
+
+===== CELL [56] (code) =====
+# ── 7.4 Method 1: ANOVA F-test (select top 2000) ──
+K = 2000
+anova = SelectKBest(f_classif, k=K)
+anova.fit(X_train_sc, y_train)
+mask_anova = anova.get_support()
+genes_anova = set(feat_var[mask_anova])
+
+===== CELL [57] (code) =====
+# ── 7.5 Method 2: Mutual Information (select top 2000) ──
+from functools import partial
+mi_scorer = partial(mutual_info_classif, random_state=42)
+mi = SelectKBest(mi_scorer, k=K)
+mi.fit(X_train_sc, y_train)
+mask_mi = mi.get_support()
+genes_mi = set(feat_var[mask_mi])
+
+===== CELL [58] (code) =====
+# ── 7.6 Method 3: LASSO (C=0.05, Liblinear solver, on ANOVA top 2000) ──
+X_train_anova = X_train_sc[:, mask_anova]
+lasso_lr = LogisticRegression(penalty='l1', C=0.05, solver='liblinear', max_iter=1000, random_state=42)
+from sklearn.multiclass import OneVsRestClassifier
+lasso_ovr = OneVsRestClassifier(lasso_lr, n_jobs=-1)
+lasso_ovr.fit(X_train_anova, y_train)
+  --- OUTPUTS (1) ---
+  PLN: ['OneVsRestClassifier(estimator=LogisticRegression(C=0.05, max_iter=1000,\n', "                                                 penalty='l1', random_state=42,\n", "                                                 solver='liblinear'),\n", '                    n_jobs=-1)']
+
+===== CELL [59] (code) =====
+# Collect union of non-zero features across all classes
+feat_var_anova = feat_var[mask_anova]
+lasso_nonzero = np.zeros(K, dtype=bool)
+for est in lasso_ovr.estimators_:
+    lasso_nonzero |= (np.abs(est.coef_[0]) > 0)
+genes_lasso = set(feat_var_anova[lasso_nonzero])

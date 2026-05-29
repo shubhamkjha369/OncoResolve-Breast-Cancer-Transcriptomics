@@ -1,0 +1,113 @@
+﻿Total cells: 112
+  [  0] markdown | # Breast Cancer Transcriptomics and Machine Learning Pipeline  ### Computational Framework for Molecular Subty
+  [  1] markdown | ## Section 0: Environment Setup and Imports We begin by importing all necessary Python packages, setting up th
+  [  2] code     | import sys import os import warnings from pathlib import Path  # Scientific computing & data wrangling import 
+  [  3] markdown | ## Section 1: Data Loading and Quality Control ###  Biological Context Gene expression microarray data contain
+  [  4] code     | # ΓöÇΓöÇ 1.1 Load Raw CSV Data ΓöÇΓöÇ csv_path = RAW_DATA_DIR / "Breast_GSE45827.csv" df_raw = pd.read_csv(csv_path)  
+  [  5] code     | # ΓöÇΓöÇ 1.2 Class Distribution Before Filtering ΓöÇΓöÇ print("\nClass distribution before removing cell lines:") vc_a
+  [  6] code     | # ΓöÇΓöÇ 1.3 Remove Cell Line Samples & ID Column ΓöÇΓöÇ df = df_raw[df_raw['type'] != 'cell_line'].copy() df = df.dro
+  [  7] code     | # ΓöÇΓöÇ 1.4 Class Distribution of Clinical Subtypes ΓöÇΓöÇ print("\nClass distribution of clinical subtypes:") vc_cli
+  [  8] code     | # ΓöÇΓöÇ 1.5 Optimize Memory via Downcasting ΓöÇΓöÇ feat_cols = df.columns.drop("type") #feat_cols = feature columns (
+  [  9] code     | # ΓöÇΓöÇ 1.6 Expression Scale Verification ΓöÇΓöÇ # Sample 1% of the data to perform distribution checks  # ΓöÇΓöÇ 1.6 Exp
+  [ 10] code     | # ΓöÇΓöÇ 1.7 Visualize Subtypes Before vs. After Filtering ΓöÇΓöÇ fig, axes = plt.subplots(1, 2, figsize=(15, 5))  # B
+  [ 11] code     | # ΓöÇΓöÇ 1.8 Free Up Global Notebook RAM ΓöÇΓöÇ # Deleting massive raw dataframes that are no longer needed del df_raw
+  [ 12] markdown | ## Section 2: Quantile Normalization and Quality Checks  ### Mathematical and Biological Foundation  To standa
+  [ 13] code     | # Load raw processed data df = pd.read_parquet(PROCESSED_DATA_DIR / "breast_cancer.parquet") feat_cols = df.co
+  [ 14] code     | # ΓöÇΓöÇ 2.1 ΓöÇΓöÇ Per-Sample Medians BEFORE Normalization ΓöÇΓöÇ per_sample_median_before = np.median(X, axis=1)  before
+  [ 15] code     | # ΓöÇΓöÇ 2.2 ΓöÇΓöÇ Perform Quantile Normalization ΓöÇΓöÇ # Sort columns (samples) to find rank order X_sorted = np.sort(X
+  [ 16] code     | # ΓÇöΓÇö 2.3 ΓÇöΓÇö Normalization Metadata qn_summary = pd.Series({     "Samples": X.shape[0],     "Features": X.shape
+  [ 17] markdown | Normalizatoin Metadata: This is plausible for log2-transformed microarray expression values.
+  [ 18] code     | # ΓöÇΓöÇ 2.4 ΓöÇΓöÇ Per-Sample Medians AFTER Normalization ΓöÇΓöÇ per_sample_median_after = np.median(X_qn, axis=1)  after
+  [ 19] code     | # ΓÇöΓÇö 2.5 ΓöÇΓöÇ Before vs After Comparison variability_reduction = (     1 - per_sample_median_after.std() / per_s
+  [ 20] markdown | ## Quantile Normalization Assessment ## Effect of Quantile Normalization  ### Median Expression Distribution  
+  [ 21] code     | # ΓöÇΓöÇ 2.6 ΓöÇΓöÇ Outlier Sample Detection ΓöÇΓöÇ corr_matrix = np.corrcoef(X_qn)  # (130, 130) sample-sample correlatio
+  [ 22] markdown | ## Outlier Assessment ## Outlier Detection Analysis  Outliers were identified using mean sample correlation va
+  [ 23] code     | # ΓöÇΓöÇ 2.7 Save Normalized Data ΓöÇΓöÇ median_comparison.to_csv(     ARTIFACT_DIR / "quantile_normalization_summary.
+  [ 24] code     | # ΓöÇΓöÇ 2.8 Visualize Normalization Effects ΓöÇΓöÇ  corr_plot = corr_matrix.copy() np.fill_diagonal(corr_plot, 1.0)  
+  [ 25] code     | # ΓöÇΓöÇ 2.9 Visualize PCA Effects ΓöÇΓöÇ pca = PCA(n_components=2) X_pca = pca.fit_transform(X_qn)  plt.figure(figsiz
+  [ 26] code     | # ΓöÇΓöÇ 2.10 Saving Outliers in a DF ΓöÇΓöÇ outlier_idx = np.where(outlier_mask)[0]  pd.DataFrame({     "PC1": X_pca[
+  [ 27] markdown | ## Quality Control Assessment ## Sample-Sample Correlation Structure  ### Correlation Heatmap Analysis  The sa
+  [ 28] code     | # ΓöÇΓöÇ Free RAM Before Dimensionality Reduction ΓöÇΓöÇ  del df del X del X_sorted del reference del ranks del X_qn  
+  [ 29] markdown | ## Section 3: Exploratory Data Analysis (Dimensionality Reduction)  ### Mathematical and Biological Foundation
+  [ 30] code     | # Load QN data df = pd.read_parquet(PROCESSED_DATA_DIR / "breast_cancer_qn.parquet") feat_cols = df.columns.dr
+  [ 31] code     | # ΓöÇΓöÇ 3.1 Pre-filter to Top 5000 Most Variable Genes ΓöÇΓöÇ gene_vars = np.var(X, axis=0) top5k_idx = np.argsort(ge
+  [ 32] code     | # ΓöÇΓöÇ 3.2 Standard Scaling & PCA (50 Components) ΓöÇΓöÇ scaler = StandardScaler() X_scaled = scaler.fit_transform(X
+  [ 33] code     | # Save PC1 & PC2 for fast indexing pca2_df = pd.DataFrame({'PC1': X_pca50[:, 0], 'PC2': X_pca50[:, 1], 'subtyp
+  [ 34] code     | # ΓöÇΓöÇ 3.5 Save Dimensionality Reduction Coordinates ΓöÇΓöÇ dr_df = pd.DataFrame({     'subtype': y,     'PC1': X_pc
+  [ 35] code     | # ΓöÇΓöÇ 3.6 Visualize PCA, t-SNE, and UMAP ΓöÇΓöÇ fig, axes = plt.subplots(1, 3, figsize=(18, 5)) subtypes_list = sor
+  [ 36] markdown | ### Dimensionality Reduction and Latent Space Analysis  Having normalized and filtered our transcriptomic feat
+  [ 37] markdown | ## Section 4: Differential Gene Expression (DGE) Analysis  ### Mathematical and Biological Foundation  To iden
+  [ 38] code     | subtypes = sorted(np.unique(y)) dge_results = {} all_dge = []  for st in subtypes:     mask = y == st     X_gr
+  [ 39] markdown | ###  Differential Gene Expression (DGE) Summary Analysis  Differential Gene Expression (DGE) analysis serves a
+  [ 40] markdown | ## Section 5: Unsupervised Clustering Analysis  ### Mathematical and Biological Foundation  To determine if tr
+  [ 41] code     | # Load coordinate and QN data dr_df = pd.read_parquet(ARTIFACT_DIR / "dr_coordinates.parquet") X_pca_full = dr
+  [ 42] code     | print(dict(enumerate(le.classes_)))
+  [ 43] code     | # ΓöÇΓöÇ 5.1 Hierarchical Clustering (Ward) ΓöÇΓöÇ feat_cols = [c for c in df_qn.columns if c != 'type'] X_qn = df_qn[
+  [ 44] code     | # ΓöÇΓöÇ 5.2 K-Means Clustering ΓöÇΓöÇ km5 = KMeans(n_clusters=n_true, random_state=42, n_init=20) km5_labels = km5.fi
+  [ 45] code     | # Save clustering outputs cluster_df = pd.DataFrame({     'subtype': dr_df['subtype'].values,     'true_label'
+  [ 46] code     | # ΓöÇΓöÇ 5.3 Visualize True Labels vs. K-means clusters ΓöÇΓöÇ fig, axes = plt.subplots(1, 2, figsize=(14, 5))  # True
+  [ 47] markdown | ## Section 6: Co-expression Network Analysis (WGCNA equivalent)  ### Mathematical and Biological Foundation  T
+  [ 48] code     | # Split to prevent data leakage in network structure X_train, _, _, _ = train_test_split(X, y, test_size=0.2, 
+  [ 49] code     | # ΓöÇΓöÇ 6.3 Module Detection via Hierarchical Clustering ΓöÇΓöÇ dist_matrix = 1 - np.abs(corr_matrix) np.fill_diagona
+  [ 50] code     | # Save artifacts net_df = pd.DataFrame({     'probe_id': top500_probes, 'degree': node_degree, 'module': modul
+  [ 51] code     | # ΓöÇΓöÇ 6.4 Heatmap of Sorted Co-expression Modules ΓöÇΓöÇ # Sort correlation matrix by module labels to show block s
+  [ 52] markdown | ## Section 7: Ensemble Feature Selection (Strict Anti-Overfitting)  ### Mathematical and Biological Foundation
+  [ 53] code     | X = df[feat_cols].values.astype(np.float32) y = df['type'].values  # Encode targets le = LabelEncoder() y_enc 
+  [ 54] code     | # ΓöÇΓöÇ 7.2 Variance Threshold Filtering ΓöÇΓöÇ vt = VarianceThreshold(threshold=0.1) vt.fit(X_train) mask_var = vt.g
+  [ 55] code     | # ΓöÇΓöÇ 7.3 Standardize training set ΓöÇΓöÇ scaler = StandardScaler() X_train_sc = scaler.fit_transform(X_train_vt) X
+  [ 56] code     | # ΓöÇΓöÇ 7.4 Method 1: ANOVA F-test (select top 2000) ΓöÇΓöÇ K = 2000 anova = SelectKBest(f_classif, k=K) anova.fit(X_
+  [ 57] code     | # ΓöÇΓöÇ 7.5 Method 2: Mutual Information (select top 2000) ΓöÇΓöÇ from functools import partial mi_scorer = partial(m
+  [ 58] code     | # ΓöÇΓöÇ 7.6 Method 3: LASSO (C=0.05, Liblinear solver, on ANOVA top 2000) ΓöÇΓöÇ X_train_anova = X_train_sc[:, mask_a
+  [ 59] code     | # Collect union of non-zero features across all classes feat_var_anova = feat_var[mask_anova] lasso_nonzero = 
+  [ 60] code     | # ΓöÇΓöÇ 7.7 Method 4: Random Forest Importance (top 2000) ΓöÇΓöÇ rf_sel = RandomForestClassifier(n_estimators=100, ra
+  [ 61] code     | # ΓöÇΓöÇ 7.8 Consensus Voting (>= 2 methods) ΓöÇΓöÇ gene_votes = {} for g in feat_var:     votes = sum([g in genes_ano
+  [ 62] code     | # Parse features feat_var_list = list(feat_var) consensus_indices = [feat_var_list.index(g) for g in consensus
+  [ 63] code     | # Save consensus data joblib.dump(consensus_genes,   ARTIFACT_DIR / "top_consensus_genes.pkl") joblib.dump(con
+  [ 64] markdown | ## Ensemble Feature Selection and Consensus Biomarker Analysis  High-dimensional transcriptomic datasets suffe
+  [ 65] markdown | ## Section 8: Machine Learning Model Benchmarking  ### Mathematical and Biological Foundation  To benchmark cl
+  [ 66] code     | #Freeing Memory before Proceeding to Section 8  for var in [     "df", "df_qn",     "X", "X_qn", "X_sorted", "
+  [ 67] code     | # Benchmark Consensus Features  from copy import deepcopy  from sklearn.base import clone from sklearn.svm imp
+  [ 68] code     | # ΓöÇΓöÇ 8.1 Visualize Benchmarking Results ΓöÇΓöÇ bench_df = pd.read_parquet(ARTIFACT_DIR / "benchmark_results.parque
+  [ 69] markdown | ## Machine Learning Model Benchmarking and Performance Evaluation  Supervised machine learning algorithms are 
+  [ 70] markdown | ## Section 9: Deep Learning (PyTorch MLP Classifier) ###  Biological Context Deep neural networks can learn hi
+  [ 71] code     | # Load inputs n_features = X_train_c.shape[1] n_classes  = len(class_names)  # Class Weights (balanced) from s
+  [ 72] code     | # ΓöÇΓöÇ 9.1 Network Architecture ΓöÇΓöÇ class BreastCancerMLP(nn.Module):     def __init__(self, in_dim, n_cls):     
+  [ 73] code     | # DataLoaders (with automatic pinning for efficiency) X_tr_t = torch.FloatTensor(X_train_c) y_tr_t = torch.Lon
+  [ 74] code     | # ΓöÇΓöÇ 9.2 Training Loop ΓöÇΓöÇ EPOCHS = 100 history = {'train_loss': [], 'train_acc': [], 'val_acc': [], 'val_f1': 
+  [ 75] code     | # 1. Load the training history Parquet file using the notebook's ARTIFACT_DIR constant mlp_history = pd.read_p
+  [ 76] markdown | ## PyTorch Multi-Layer Perceptron (MLP) Training Analysis  ## Training Dynamics  The MLP exhibited extremely r
+  [ 77] markdown | ## Section 10: Cross-Validation and Hyperparameter Tuning  ### Mathematical and Biological Foundation  To guar
+  [ 78] code     | # ΓöÇΓöÇ 10.1 Stratified 5-Fold CV on Baseline RF ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  rf_base = RandomForestClassifier
+  [ 79] code     | # ΓöÇΓöÇ 10.1b Stratified 5-Fold CV on Baseline Logistic Regression ΓöÇΓöÇ  lr_base = LogisticRegression(     max_iter
+  [ 80] code     | # ΓöÇΓöÇ 10.2 GridSearchCV Hyperparameter Tuning (RF + Logistic Regression) ΓöÇΓöÇ cv = StratifiedKFold(     n_splits=
+  [ 81] code     | # ΓöÇΓöÇ 10.3 Final Test Set Evaluation (Tuned RF + Tuned LR) ΓöÇΓöÇ # Evaluates both best_rf and best_lr on the held-
+  [ 82] code     | # ΓöÇΓöÇ Save Tuned Models ΓöÇΓöÇ  joblib.dump(     best_rf,     ARTIFACT_DIR / "tuned_rf.pkl" )  joblib.dump(     bes
+  [ 83] code     | cv_summary = pd.DataFrame({     "Model": ["Baseline RF", "Baseline LR"],     "CV Accuracy": [         mean_val
+  [ 84] code     | # ΓöÇΓöÇ Classification Reports (Tuned RF vs Tuned LR) ΓöÇΓöÇ  print("=== Tuned Random Forest Classification Report ==
+  [ 85] code     | # ΓöÇΓöÇ 10.4 Confusion Matrix Heatmaps (Before vs After Tuning) ΓöÇΓöÇ  # Baseline predictions rf_base.fit(X_train_c,
+  [ 86] markdown | # Model Benchmarking, Validation, and Generalization Assessment  ## Multi-Model Benchmark Comparison  To ident
+  [ 87] code     | for var in [     "X_rest",     "X_group",     "X_train_sc",     "X_test_sc",     "feat_var",     "feat_var_lis
+  [ 88] markdown | ## Section 11: SHAP Interpretability (Explainable AI)  ### Mathematical and Biological Foundation  To audit pr
+  [ 89] code     | # Load models & test data tuned_rf     = joblib.load(ARTIFACT_DIR / "tuned_rf.pkl") tuned_lr = joblib.load(ART
+  [ 90] code     | # ΓöÇΓöÇ 11.1 Compute SHAP Attributions for Both Models ΓöÇΓöÇ # Random Forest: TreeSHAP (non-linear) # Logistic Regre
+  [ 91] code     | # ΓöÇΓöÇ 11.2 Map Probe IDs via MyGene API ΓöÇΓöÇ # Query MyGene API for the top 30 ensemble consensus biomarkers  imp
+  [ 92] code     | # ΓöÇΓöÇ 11.3 Global SHAP Importance (Ensemble Consensus Visual) ΓöÇΓöÇ # Plot the top 20 ensemble biomarkers, annotat
+  [ 93] code     | # Create feature labels from the annotated SHAP table feature_labels = (     shap_df     .set_index("probe_id"
+  [ 94] code     | # Top 30 RF-SHAP biomarkers top30_idx = np.argsort(mean_abs_rf)[::-1][:30]  X_top30 = X_test_c[:, top30_idx]  
+  [ 95] code     | # Save importance parquet with both models and ensemble scores shap_df = pd.DataFrame({     'probe_id': consen
+  [ 96] markdown | # SHAP-Based Model Interpretability and Biomarker Discovery  ## Overview  To improve biological interpretabili
+  [ 97] markdown | ## Section 12: Pathway Enrichment Analysis (GO and KEGG) ###  Biological Context Do our model's top biomarkers
+  [ 98] code     | gene_level_shap = (     shap_df_annot     .groupby("gene_symbol", as_index=False)     .agg({         "ensemble
+  [ 99] code     | # ΓöÇΓöÇ GO & KEGG Pathway Enrichment Analysis ΓöÇΓöÇ  # Always load the annotated SHAP table generated in Section 11.
+  [100] markdown | #### Analysis of why breast cancer did not occur in plot
+  [101] code     | go_sig.head(15)[     ["Term", "Adjusted P-value", "Overlap"] ]
+  [102] code     | kegg_all = enr_kegg.results.copy()  bc = kegg_all[     kegg_all["Term"].str.contains(         "Breast",       
+  [103] code     | display(     shap_df_annot     .sort_values("ensemble_shap", ascending=False)     [["gene_symbol","ensemble_sh
+  [104] code     | print("Unique genes:",       shap_df_annot["gene_symbol"].nunique())  print("Unique probes:",       shap_df_an
+  [105] code     | top_genes_shap = (     shap_df_annot     .sort_values("ensemble_shap", ascending=False)     ["gene_symbol"]   
+  [106] code     | her2_amplicon = [     "ERBB2",     "GRB7",     "STARD3",     "PGAP3",     "MIEN1" ]  shap_df_annot[     shap_d
+  [107] code     | top20 = (     shap_df_annot     .sort_values("ensemble_shap", ascending=False)     .head(20) )  print(top20["g
+  [108] markdown | # Functional Enrichment Analysis of SHAP-Derived Biomarkers  ## Overview  To evaluate the biological relevance
+  [109] markdown | # Section 13: Summary and Conclusions  ## Final Project Summary, Biological Insights, and Diagnostic Conclusio
+  [110] markdown | # Section 14: Formal Academic Bibliography  The following peer-reviewed publications, methodological studies, 
+  [111] markdown | 

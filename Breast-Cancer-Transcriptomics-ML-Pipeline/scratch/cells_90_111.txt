@@ -1,0 +1,960 @@
+
+===== CELL [90] (code) =====
+# ── 11.1 Compute SHAP Attributions for Both Models ──
+# Random Forest: TreeSHAP (non-linear)
+# Logistic Regression: LinearSHAP (linear attributions)
+
+import shap
+
+# Compute TreeSHAP for Tuned Random Forest
+explainer_rf = shap.TreeExplainer(tuned_rf)
+shap_values_rf = explainer_rf.shap_values(X_test_c)
+
+# Handle multi-class TreeSHAP shape variations
+if isinstance(shap_values_rf, list):
+    shap_arr_rf = np.array(shap_values_rf)
+    mean_abs_rf = np.abs(shap_arr_rf).mean(axis=(0, 1))
+else:
+    shap_arr_rf = shap_values_rf
+    mean_abs_rf = np.abs(shap_arr_rf).mean(axis=(0, 2))
+
+# Compute LinearSHAP for Tuned Logistic Regression
+explainer_lr = shap.LinearExplainer(tuned_lr, X_test_c)
+shap_values_lr = explainer_lr.shap_values(X_test_c)
+
+# Handle multi-class LinearSHAP shape variations
+if isinstance(shap_values_lr, list):
+    shap_arr_lr = np.array(shap_values_lr)
+    mean_abs_lr = np.abs(shap_arr_lr).mean(axis=(0, 1))
+else:
+    shap_arr_lr = shap_values_lr
+    mean_abs_lr = np.abs(shap_arr_lr).mean(axis=(0, 2))
+
+# Compute an Ensemble Consensus SHAP score (normalized average)
+norm_rf = mean_abs_rf / mean_abs_rf.max()
+norm_lr = mean_abs_lr / mean_abs_lr.max()
+ensemble_shap = (norm_rf + norm_lr) / 2.0
+
+# Save computed SHAP importances to Parquet
+shap_df = pd.DataFrame({
+    'probe_id': consensus_genes,
+    'mean_abs_shap': mean_abs_rf,  # Maintain compatibility with baseline columns
+    'rf_mean_abs_shap': mean_abs_rf,
+    'lr_mean_abs_shap': mean_abs_lr,
+    'ensemble_shap': ensemble_shap
+})
+
+# Remove Affymetrix control probes
+shap_df = shap_df[
+    ~shap_df["probe_id"].str.startswith("AFFX", na=False)
+].copy()
+
+shap_df.to_parquet(ARTIFACT_DIR / "shap_importance_raw.parquet", index=False)
+
+===== CELL [91] (code) =====
+# ── 11.2 Map Probe IDs via MyGene API ──
+# Query MyGene API for the top 30 ensemble consensus biomarkers
+
+import mygene
+
+# Rank biomarkers after AFFX control probes have been removed
+top100_df = (
+    shap_df
+    .sort_values("ensemble_shap", ascending=False)
+    .head(100)
+)
+
+top100_probes = top100_df["probe_id"].tolist()
+
+print("Top 100 Ensemble Consensus Biomarkers Ranked by Normalized SHAP Impact:")
+
+try:
+    mg = mygene.MyGeneInfo()
+
+    results = mg.querymany(
+        top100_probes,
+        scopes="reporter",
+        fields="symbol,name",
+        species="human",
+        verbose=False
+    )
+
+    annotations = {}
+
+    for r in results:
+        probe = r.get("query", "")
+        annotations[probe] = {
+            "symbol": r.get("symbol", probe),   # fallback to probe ID
+            "name": r.get("name", "Unknown")
+        }
+
+    # Add annotations directly into shap_df for future analyses
+    shap_df["gene_symbol"] = shap_df["probe_id"].map(
+        lambda x: annotations.get(x, {}).get("symbol", x)
+    )
+
+    shap_df["gene_name"] = shap_df["probe_id"].map(
+        lambda x: annotations.get(x, {}).get("name", "Unknown")
+    )
+
+    # Ensure any unresolved probes show their probe ID instead of N/A
+    shap_df["gene_symbol"] = shap_df.apply(
+        lambda row:
+        row["probe_id"]
+        if pd.isna(row["gene_symbol"]) or row["gene_symbol"] == "N/A"
+        else row["gene_symbol"],
+        axis=1
+    )
+
+    # Save enriched SHAP table
+    shap_df.to_parquet(
+        ARTIFACT_DIR / "shap_importance.parquet",
+        index=False
+    )
+
+    # Print ranked biomarkers
+    for rank, probe in enumerate(top100_probes, start=1):
+        ann = annotations.get(
+            probe,
+            {"symbol": probe, "name": "Unknown"}
+        )
+
+        print(
+            f"  #{rank:<2}: "
+            f"{probe:<12} -> "
+            f"{ann['symbol']:<10} | "
+            f"{ann['name'][:55]}"
+        )
+
+    joblib.dump(
+        annotations,
+        ARTIFACT_DIR / "shap_annotations.pkl"
+    )
+
+except Exception as e:
+    print(f"MyGene API annotation failed: {e}")
+  --- OUTPUTS (1) ---
+  OUT: Top 100 Ensemble Consensus Biomarkers Ranked by Normalized SHAP Impact:
+  #1 : 224447_s_at  -> MIEN1      | migration and invasion enhancer 1
+  #2 : 234354_x_at  -> ERBB2      | erb-b2 receptor tyrosine kinase 2
+  #3 : 216836_s_at  -> ERBB2      | erb-b2 receptor tyrosine kinase 2
+  #4 : 202991_at    -> STARD3     | StAR related lipid transfer domain containing 3
+  #5 : 221811_at    -> PGAP3      | post-GPI attachment to proteins phospholipase 3
+  #6 : 210930_s_at  -> ERBB2      | erb-b2 receptor tyrosine kinase 2
+  #7 : 210761_s_at  -> GRB7       | growth factor receptor bound protein 7
+  #8 : 205225_at    -> ESR1       | estrogen receptor 1
+  #9 : 55616_at     -> PGAP3      | post-GPI attachment to proteins phospholipase 3
+  #10: 204862_s_at  -> NME3       | NME/NM23 nucleoside diphospha
+
+===== CELL [92] (code) =====
+# ── 11.3 Global SHAP Importance (Ensemble Consensus Visual) ──
+# Plot the top 20 ensemble biomarkers, annotated with their official HUGO gene symbols
+
+top_n = 30
+
+top_df = (
+    shap_df
+    .sort_values("ensemble_shap", ascending=False)
+    .head(top_n)
+    .copy()
+)
+
+# Create readable labels for plotting
+top_df["plot_label"] = top_df.apply(
+    lambda row:
+        f"{row['gene_symbol']} ({row['probe_id']})"
+        if row["gene_symbol"] != "N/A"
+        else row["probe_id"],
+    axis=1
+)
+
+plt.figure(figsize=(10, 6))
+
+sns.barplot(
+    data=top_df,
+    x="ensemble_shap",
+    y="plot_label",
+    hue="plot_label",
+    dodge=False,
+    palette="viridis",
+    legend=False
+)
+
+plt.title("Top 30 Ensemble Consensus Biomarkers (RF + LR SHAP)")
+plt.xlabel("Normalized Ensemble SHAP Impact Score")
+plt.ylabel("Biomarker (HUGO Symbol & Probe ID)")
+
+plt.tight_layout()
+
+# Save the global SHAP plot as an artifact for Streamlit
+plt.savefig(
+    ARTIFACT_DIR / "global_shap_importance.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+
+plt.show()
+plt.close()
+  --- OUTPUTS (1) ---
+  PLN: ['<Figure size 1000x600 with 1 Axes>']
+
+===== CELL [93] (code) =====
+# Create feature labels from the annotated SHAP table
+feature_labels = (
+    shap_df
+    .set_index("probe_id")["gene_symbol"]
+    .to_dict()
+)
+
+consensus_symbols = [
+    feature_labels.get(probe, probe)
+    for probe in consensus_genes
+]
+
+# SHAP values averaged across classes
+if shap_arr_rf.ndim == 3:
+    shap_summary = np.mean(np.abs(shap_arr_rf), axis=2)
+else:
+    shap_summary = np.abs(shap_arr_rf)
+
+shap.summary_plot(
+    shap_summary,
+    X_test_c,
+    feature_names=consensus_symbols,
+    max_display=30
+)
+  --- OUTPUTS (1) ---
+  PLN: ['<Figure size 800x1350 with 2 Axes>']
+
+===== CELL [94] (code) =====
+# Top 30 RF-SHAP biomarkers
+top30_idx = np.argsort(mean_abs_rf)[::-1][:30]
+
+X_top30 = X_test_c[:, top30_idx]
+
+corr_top30 = np.corrcoef(X_top30.T)
+
+# Build probe -> gene symbol lookup
+feature_labels = (
+    shap_df
+    .set_index("probe_id")["gene_symbol"]
+    .to_dict()
+)
+
+top30_labels = [
+    feature_labels.get(consensus_genes[i], consensus_genes[i])
+    for i in top30_idx
+]
+
+plt.figure(figsize=(10, 8))
+
+sns.heatmap(
+    corr_top30,
+    cmap="RdBu_r",
+    center=0,
+    xticklabels=top30_labels,
+    yticklabels=top30_labels
+)
+
+plt.title("Correlation Structure of Top RF-SHAP Biomarkers")
+plt.tight_layout()
+
+plt.savefig(
+    ARTIFACT_DIR / "top20_biomarker_correlation_heatmap.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+
+plt.show()
+plt.close()
+  --- OUTPUTS (1) ---
+  PLN: ['<Figure size 1000x800 with 2 Axes>']
+
+===== CELL [95] (code) =====
+# Save importance parquet with both models and ensemble scores
+shap_df = pd.DataFrame({
+    'probe_id': consensus_genes,
+    'mean_abs_shap': mean_abs_rf,  # Maintain compatibility with baseline columns
+    'rf_mean_abs_shap': mean_abs_rf,
+    'lr_mean_abs_shap': mean_abs_lr,
+    'ensemble_shap': ensemble_shap,
+    "shap_rank": np.argsort(np.argsort(-ensemble_shap)) + 1,
+})
+shap_df = shap_df.sort_values("shap_rank").reset_index(drop=True)
+shap_df.to_parquet(ARTIFACT_DIR / "shap_importance_raw.parquet", index=False)
+
+# Save numpy arrays with robust safety fallback for Windows/OneDrive locks
+try:
+    np.save(ARTIFACT_DIR / "shap_values_rf.npy", shap_values_rf)
+    np.save(ARTIFACT_DIR / "shap_values_lr.npy", shap_values_lr)
+    np.save(
+        ARTIFACT_DIR / "shap_values.npy",
+        shap_values_rf
+    )  # Match original filename for RF compatibility
+
+except OSError as e:
+    print(
+        "Note: SHAP values saved in memory. "
+        f"Local disk write bypassed/partially completed due to OS/OneDrive lock: {e}"
+    )
+
+# Compatibility aliases for downstream summary/correlation plots
+shap_arr = shap_arr_rf
+mean_abs_shap = ensemble_shap
+shap_values = shap_values_rf
+
+===== CELL [96] (markdown) =====
+# SHAP-Based Model Interpretability and Biomarker Discovery
+
+## Overview
+
+To improve biological interpretability and identify the molecular drivers underlying breast cancer subtype classification, an **Ensemble Consensus SHAP (SHapley Additive exPlanations)** framework was implemented using the two best-performing classifiers in the pipeline:
+
+1. **TreeSHAP (Non-Linear)** applied to the optimized Random Forest classifier (`tuned_rf`) to capture complex non-linear gene-gene interactions.
+2. **LinearSHAP (Linear)** applied to the optimized Logistic Regression classifier (`tuned_lr`) to quantify stable linear feature contributions.
+
+For each feature, absolute SHAP values were aggregated across all subtype classes. Random Forest and Logistic Regression SHAP importance scores were independently normalized and subsequently averaged to generate a unified **Ensemble SHAP Impact Score**.
+
+This consensus strategy reduces dependence on a single model architecture and identifies biomarkers that remain important across fundamentally different learning paradigms, thereby increasing biological confidence and interpretability.
+
+To ensure biological relevance, Affymetrix control probes (AFFX features) were excluded from biomarker ranking and downstream interpretation.
+
+---
+
+# 1. Global Ensemble Biomarker Importance
+
+The Ensemble SHAP framework identified a highly compact set of biomarkers that explain the majority of the model's predictive behavior.
+
+## Top 15 Ensemble Consensus Biomarkers
+
+| Rank    | Probe ID    | Gene Symbol           | Biological Relevance                                                                                               |
+| ------- | ----------- | --------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **#1**  | 224447_s_at | **MIEN1**             | Migration and invasion enhancer located within the HER2 amplicon; promotes tumor invasion and metastatic behavior. |
+| **#2**  | 234354_x_at | **ERBB2**             | HER2 receptor tyrosine kinase; defining driver of HER2-Enriched breast cancer.                                     |
+| **#3**  | 216836_s_at | **ERBB2**             | Independent probe validating HER2 amplification and signaling activity.                                            |
+| **#4**  | 202991_at   | **STARD3**            | HER2 amplicon gene involved in cholesterol transport and metabolic regulation.                                     |
+| **#5**  | 221811_at   | **PGAP3**             | HER2 amplicon-associated gene frequently co-amplified with ERBB2.                                                  |
+| **#6**  | 210930_s_at | **ERBB2**             | Additional ERBB2 probe reinforcing the dominant HER2 signal.                                                       |
+| **#7**  | 210761_s_at | **GRB7**              | HER2-associated signaling adaptor promoting migration and proliferation.                                           |
+| **#8**  | 205225_at   | **ESR1**              | Estrogen receptor alpha; primary marker of Luminal breast cancer.                                                  |
+| **#9**  | 55616_at    | **PGAP3**             | Alternative PGAP3 probe further supporting HER2 amplicon importance.                                               |
+| **#10** | 204862_s_at | **NME3**              | Nucleoside diphosphate kinase involved in cellular growth regulation.                                              |
+| **#11** | 1553749_at  | **FAM76B**            | Less-characterized transcript exhibiting subtype-discriminative expression.                                        |
+| **#12** | 233388_at   | **Unannotated Probe** | High-impact transcriptomic feature without current HUGO annotation.                                                |
+| **#13** | 229150_at   | **Unannotated Probe** | High-impact transcriptomic feature without current HUGO annotation.                                              
+
+===== CELL [97] (markdown) =====
+## Section 12: Pathway Enrichment Analysis (GO and KEGG)
+###  Biological Context
+Do our model's top biomarkers represent genuine breast cancer pathways? 
+To find out, we query the **Enrichr API** (Chen et al., 2013) using **GO (Gene Ontology) Biological Processes** and **KEGG Pathways** on the top 100 SHAP genes.
+We also perform **GSEA (Gene Set Enrichment Analysis) Prerank** on all consensus genes sorted by SHAP importance to discover coordinate expression shifts in molecular cascades.
+
+
+===== CELL [98] (code) =====
+gene_level_shap = (
+    shap_df_annot
+    .groupby("gene_symbol", as_index=False)
+    .agg({
+        "ensemble_shap": "max"
+    })
+    .sort_values("ensemble_shap", ascending=False)
+)
+
+gene_level_shap["gene_symbol"].tolist()
+  --- OUTPUTS (1) ---
+  PLN: ["['MIEN1',\n", " 'ERBB2',\n", " 'STARD3',\n", " 'PGAP3',\n", " 'GRB7',\n", " 'ESR1',\n", " 'NME3',\n", " 'FAM76B',\n", " 'GATA3',\n", " 'FGFR2',\n", " 'SERBP1',\n", " 'AR',\n", " 'FAM72A',\n", " 'ORMDL3',\n", " 'DEK',\n", " 'CA12',\n", " 'ASPM',\n", " 'H4C14',\n", " 'PPARA',\n", " 'FYCO1',\n", " 'PABPC4L',\n", " 'AGR3',\n", " 'MLPH',\n", " 'PREX1',\n", " 'ORMDL2',\n", " 'SLC39A6',\n", " 'DEPDC1',
+
+===== CELL [99] (code) =====
+# ── GO & KEGG Pathway Enrichment Analysis ──
+
+# Always load the annotated SHAP table generated in Section 11.2
+shap_df = pd.read_parquet(
+    ARTIFACT_DIR / "shap_importance.parquet"
+)
+
+print("Preparing SHAP-ranked genes for enrichment analysis...")
+
+try:
+
+    # Verify annotation columns exist
+    required_cols = {"gene_symbol", "gene_name"}
+    missing_cols = required_cols - set(shap_df.columns)
+
+    if missing_cols:
+        raise ValueError(
+            f"Missing required annotation columns: {missing_cols}. "
+            "Re-run Section 11.2 annotation step."
+        )
+
+    # Remove unresolved Affymetrix probe IDs and missing symbols
+    shap_df_annot = shap_df[
+        (~shap_df["gene_symbol"].isna()) &
+        (~shap_df["gene_symbol"].str.contains("_at", na=False))
+    ].copy()
+
+    print(
+        f"Successfully retained {len(shap_df_annot):,} annotated biomarkers."
+    )
+
+    # ── Convert probe-level SHAP to gene-level SHAP ──
+    # Multiple probes mapping to the same gene are collapsed
+    # using the maximum ensemble SHAP score.
+    gene_level_shap = (
+        shap_df_annot
+        .groupby(
+            ["gene_symbol", "gene_name"],
+            as_index=False
+        )
+        .agg({
+            "ensemble_shap": "max"
+        })
+        .sort_values(
+            "ensemble_shap",
+            ascending=False
+        )
+        .reset_index(drop=True)
+    )
+
+    top_genes_shap = (
+        gene_level_shap["gene_symbol"]
+        .tolist()
+    )
+
+    print(
+        f"\nUsing {len(top_genes_shap)} unique annotated genes."
+    )
+
+    # ── GO Biological Process Enrichment ──
+    print("\nRunning GO Biological Process enrichment...")
+
+    enr_go = gp.enrichr(
+        gene_list=top_genes_shap,
+        gene_sets="GO_Biological_Process_2023",
+        organism="human",
+        outdir=None,
+        verbose=False
+    )
+
+    go_sig = (
+        enr_go.results[
+            enr_go.results["Adjusted P-value"] < 0.05
+        ]
+        .sort_values("Adjusted P-value")
+        .reset_index(drop=True)
+    )
+
+    print(f"Significant GO terms: {len(go_sig)}")
+
+    # ── KEGG Pathway Enrichment ──
+    print("\nRunning KEGG enrichment...")
+
+    enr_kegg = gp.enrichr(
+        gene_list=top_genes_shap,
+        gene_sets="KEGG_2021_Human",
+        organism="human",
+        outdir=None,
+        verbose=False
+    )
+
+    kegg_sig = (
+        enr_kegg.results[
+            enr_kegg.results["Adjusted P-value"] < 0.05
+        ]
+        .sort_values("Adjusted P-value")
+        .reset_index(drop=True)
+    )
+
+    print(f"Significant KEGG pathways: {len(kegg_sig)}")
+
+    print("\nTop KEGG pathways:")
+
+    for _, row in kegg_sig.head(10).iterrows():
+        print(
+            f"{row['Term'][:55]:55s} "
+            f"FDR={row['Adjusted P-value']:.2e} "
+            f"Overlap={row['Overlap']}"
+        )
+
+    # Save outputs
+    go_sig.to_parquet(
+        ARTIFACT_DIR / "enrichr_go_results.parquet",
+        index=False
+    )
+
+    kegg_sig.to_parquet(
+        ARTIFACT_DIR / "enrichr_kegg_results.parquet",
+        index=False
+    )
+
+    gene_level_shap.to_parquet(
+        ARTIFACT_DIR / "gene_level_shap.parquet",
+        index=False
+    )
+
+    shap_df_annot.to_parquet(
+        ARTIFACT_DIR / "shap_importance_annotated.parquet",
+        index=False
+    )
+
+    # ── Plot KEGG Pathways ──
+    if len(kegg_sig) > 0:
+
+        plot_df = kegg_sig.copy()
+
+        plot_df["minus_log10_fdr"] = (
+            -np.log10(
+                plot_df["Adjusted P-value"].clip(lower=1e-300)
+            )
+        )
+
+        colors = [
+            "crimson"
+            if "breast cancer" in term.lower()
+            else "steelblue"
+            for term in plot_df["Term"]
+        ]
+
+        plt.figure(figsize=(11, 6), dpi=300)
+
+        plt.barh(
+            plot_df["Term"],
+            plot_df["minus_log10_fdr"],
+            color=colors,
+            edgecolor="black",
+            linewidth=0.8
+        )
+
+        plt.xlabel(
+            r"$-\log_{10}(\mathrm{Adjusted\ P\ Value})$",
+            fo
+  --- OUTPUTS (2) ---
+  OUT: Preparing SHAP-ranked genes for enrichment analysis...
+Successfully retained 95 annotated biomarkers.
+
+Using 81 unique annotated genes.
+
+Running GO Biological Process enrichment...
+Significant GO terms: 34
+
+Running KEGG enrichment...
+Significant KEGG pathways: 8
+
+Top KEGG pathways:
+Prostate cancer                                         FDR=3.30e-03 Overlap=5/97
+Pathways in cancer                                      FDR=3.30e-03 Overlap=10/531
+Acute myeloid leukemia                                  FDR=6.25e-03 Overlap=4/67
+Cell cycle                                              FDR=4.46e-02 Overlap=4/124
+Oocyte meiosis                                          FDR=4.46e-02 Overlap=4/129
+Chemical carcinogenesis                                 FDR=4.70e-02 Overlap=5/239
+Central carbon metab
+  PLN: ['<Figure size 3300x1800 with 1 Axes>']
+
+===== CELL [100] (markdown) =====
+#### Analysis of why breast cancer did not occur in plot
+
+===== CELL [101] (code) =====
+go_sig.head(15)[
+    ["Term", "Adjusted P-value", "Overlap"]
+]
+  --- OUTPUTS (1) ---
+  PLN: ['                                                 Term  Adjusted P-value  \\\n', '0      Regulation Of miRNA Transcription (GO:1902893)          0.003459   \n', '1   Positive Regulation Of Cell Cycle Process (GO:...          0.003582   \n', '2   Positive Regulation Of Chromosome Segregation ...          0.010735   \n', '3   Negative Regulation Of miRNA Transcription (GO...          0.010735   \n'
+
+===== CELL [102] (code) =====
+kegg_all = enr_kegg.results.copy()
+
+bc = kegg_all[
+    kegg_all["Term"].str.contains(
+        "Breast",
+        case=False,
+        na=False
+    )
+]
+
+bc[[
+    "Term",
+    "Adjusted P-value",
+    "Overlap"
+]]
+  --- OUTPUTS (1) ---
+  PLN: ['             Term  Adjusted P-value Overlap\n', '12  Breast cancer          0.196614   3/147']
+
+===== CELL [103] (code) =====
+display(
+    shap_df_annot
+    .sort_values("ensemble_shap", ascending=False)
+    [["gene_symbol","ensemble_shap"]]
+    .head(30)
+)
+  --- OUTPUTS (1) ---
+  PLN: ['     gene_symbol  ensemble_shap\n', '976        MIEN1       1.000000\n', '1299       ERBB2       0.868728\n', '674        ERBB2       0.849899\n', '202       STARD3       0.813746\n', '862        PGAP3       0.694897\n', '507        ERBB2       0.690904\n', '502         GRB7       0.666684\n', '338         ESR1       0.632172\n', '1447       PGAP3       0.627726\n', '318         NME3       0.581
+
+===== CELL [104] (code) =====
+print("Unique genes:",
+      shap_df_annot["gene_symbol"].nunique())
+
+print("Unique probes:",
+      shap_df_annot["probe_id"].nunique())
+  --- OUTPUTS (1) ---
+  OUT: Unique genes: 81
+Unique probes: 95
+
+
+===== CELL [105] (code) =====
+top_genes_shap = (
+    shap_df_annot
+    .sort_values("ensemble_shap", ascending=False)
+    ["gene_symbol"]
+    .drop_duplicates()
+    .head(300)
+    .tolist()
+)
+
+===== CELL [106] (code) =====
+her2_amplicon = [
+    "ERBB2",
+    "GRB7",
+    "STARD3",
+    "PGAP3",
+    "MIEN1"
+]
+
+shap_df_annot[
+    shap_df_annot["gene_symbol"].isin(her2_amplicon)
+].sort_values("ensemble_shap", ascending=False)
+  --- OUTPUTS (1) ---
+  PLN: ['         probe_id  mean_abs_shap  rf_mean_abs_shap  lr_mean_abs_shap  \\\n', '976   224447_s_at       0.002720          0.002720          0.006527   \n', '1299  234354_x_at       0.002342          0.002342          0.005720   \n', '674   216836_s_at       0.002200          0.002200          0.005814   \n', '202     202991_at       0.001910          0.001910          0.006040   \n', '862     2218
+
+===== CELL [107] (code) =====
+top20 = (
+    shap_df_annot
+    .sort_values("ensemble_shap", ascending=False)
+    .head(20)
+)
+
+print(top20["gene_symbol"].value_counts())
+  --- OUTPUTS (1) ---
+  OUT: gene_symbol
+ERBB2     3
+PGAP3     2
+MIEN1     1
+STARD3    1
+GRB7      1
+ESR1      1
+NME3      1
+FAM76B    1
+GATA3     1
+FGFR2     1
+SERBP1    1
+AR        1
+FAM72A    1
+ORMDL3    1
+DEK       1
+CA12      1
+ASPM      1
+Name: count, dtype: int64
+
+
+===== CELL [108] (markdown) =====
+# Functional Enrichment Analysis of SHAP-Derived Biomarkers
+
+## Overview
+
+To evaluate the biological relevance of the biomarkers identified by the ensemble SHAP framework, functional enrichment analysis was performed on the final SHAP-derived biomarker set. Affymetrix probe identifiers were mapped to official HUGO gene symbols using the MyGene API, yielding **95 annotated biomarkers corresponding to 81 unique genes** after collapsing multiple probes mapping to the same gene.
+
+Gene-level biomarkers were subsequently analyzed using Enrichr against:
+
+1. **GO Biological Process 2023**
+2. **KEGG 2021 Human**
+
+The objective of this analysis was to determine whether the machine learning models captured biologically meaningful breast cancer-associated transcriptional programs rather than dataset-specific expression patterns.
+
+---
+
+# Gene Ontology (GO) Biological Process Enrichment
+
+GO enrichment analysis identified **34 significantly enriched biological processes** after Benjamini-Hochberg false discovery rate (FDR) correction (*Adjusted P-value < 0.05*).
+
+The most significant biological processes were associated with:
+
+* Regulation of miRNA transcription
+* Positive regulation of cell-cycle processes
+* Mitotic cell-cycle phase transitions
+* Chromosome segregation
+* Mitotic spindle organization
+* Response to estrogen
+* Epithelial development
+* Intracellular signaling regulation
+
+These processes represent core mechanisms involved in tumor initiation, progression, proliferation, and subtype-specific biology.
+
+## Biological Interpretation
+
+### Cell-Cycle Regulation and Proliferation
+
+Several highly enriched GO terms were directly associated with mitosis and cell-cycle progression, including:
+
+* Positive Regulation of Cell Cycle Process
+* Mitotic Cell Cycle Phase Transition
+* Mitotic Sister Chromatid Segregation
+* Positive Regulation of Chromosome Segregation
+* Mitotic Spindle Organization
+
+These findings indicate that the biomarker panel captures proliferative activity and chromosomal instability, both of which are hallmarks of aggressive tumor behavior.
+
+Genes such as **ASPM**, **DEK**, **FGFR2**, and other proliferation-associated biomarkers likely contribute to these enrichment signals.
+
+### Estrogen Response Signaling
+
+One of the significantly enriched GO terms was:
+
+* Response to Estrogen (GO:0043627)
+
+This result is particularly relevant to breast cancer biology because several highly ranked biomarkers, including **ESR1**, **GATA3**, **FGFR2**, and **CA12**, are strongly associated with hormone-responsive breast cancer subtypes.
+
+The enrichment of estrogen-response processes provides pathway-level validation that the model captured biologically meaningful endocrine signaling programs.
+
+### miRNA Regulatory Networks
+
+The most statistically significant enrichment terms involved regulation of miRNA transcription and metabolism:
+
+* Regulation of miRNA Transcription
+* Negative Regulation of miRNA Transcription
+* Negative Regulation of miRNA Metabolic Process
+
+MicroRNA dysregulation is widely recognized as an important mechanism underlying tumor progression, metastasis, and therapeutic resistance in breast cancer.
+
+### Epithelial Development
+
+Enrichment of epithelial developmental processes, including epithelial tube formation, is consistent with the epithelial origin of breast tissue and further supports the biological relevance of the identified biomarkers.
+
+---
+
+# KEGG Pathway Enrichment Analysis
+
+KEGG enrichment analysis identified **8 significantly enriched pathways** following FDR correction.
+
+## Significant KEGG Pathways
+
+| Pathway                             | Overlap | Adjusted P-value |
+| ----------------------------------- | ------- | ---------------- |
+| Prostate Cancer                     | 5/97    | 3.30 × 10⁻³      |
+| Pathways in Cancer                  | 10/531  | 3.30 × 10⁻³      |
+| Acute Myeloid Leukemia              | 4/67    | 6.25 × 10⁻³      |
+| Cell Cycle                          | 4/124   | 4.46 × 10⁻²      |
+| O
+
+===== CELL [109] (markdown) =====
+# Section 13: Summary and Conclusions
+
+## Final Project Summary, Biological Insights, and Diagnostic Conclusions
+
+---
+
+# 1. Core Bioinformatics and Machine Learning Pipeline
+
+This project presents an end-to-end transcriptomics, machine learning, and explainable artificial intelligence (XAI) framework for the classification of breast cancer molecular subtypes using the GSE45827 microarray dataset. The study focused on distinguishing five clinically relevant breast cancer subtypes:
+
+* Basal
+* HER2-Enriched
+* Luminal A
+* Luminal B
+* Normal-like
+
+The analytical workflow consisted of the following major computational stages:
+
+1. **Quality Control and Data Preprocessing**
+
+   * Microarray expression profiles were normalized using Robust Multi-array Average (RMA) preprocessing and log-transformed expression values.
+   * Quality assessment confirmed suitability of the dataset for downstream transcriptomic analysis.
+
+2. **Differential Gene Expression Analysis**
+
+   * ANOVA-based statistical testing identified 5,096 significantly differentially expressed genes (FDR < 0.01) across breast cancer subtypes.
+   * These genes formed the basis for subsequent feature-selection procedures.
+
+3. **Exploratory Data Analysis and Unsupervised Validation**
+
+   * Principal Component Analysis (PCA), t-SNE, and hierarchical clustering revealed clear subtype-specific transcriptomic structure.
+   * Unsupervised clustering demonstrated strong biological separation among molecular subtypes.
+
+4. **Consensus Feature Selection**
+
+   * Multiple feature-selection approaches were integrated, including ANOVA F-statistics, Mutual Information, and Random Forest feature importance.
+   * Consensus biomarkers were retained to maximize biological relevance while reducing dimensionality.
+
+5. **Predictive Modeling**
+
+   * Random Forest and Logistic Regression models were trained and optimized using GridSearchCV.
+   * A Multi-Layer Perceptron (MLP) was additionally evaluated as a deep-learning benchmark.
+
+6. **Model Validation and Stability Assessment**
+
+   * Stratified cross-validation and repeated cross-validation analyses were performed to evaluate robustness and generalizability.
+   * Confidence intervals and variability estimates were computed to quantify model stability.
+
+7. **Explainable AI and Biological Validation**
+
+   * Ensemble SHAP analysis combined TreeSHAP and LinearSHAP interpretations.
+   * Functional enrichment analysis using GO and KEGG databases provided pathway-level biological validation of the discovered biomarkers.
+
+---
+
+# 2. Machine Learning Performance Summary
+
+Two optimized machine learning models emerged as the strongest classifiers:
+
+* Tuned Random Forest
+* Tuned Logistic Regression
+
+## Final Model Performance
+
+| Performance Metric        | Tuned Random Forest | Tuned Logistic Regression |
+| ------------------------- | ------------------- | ------------------------- |
+| GridSearchCV F1 Score     | 98.1%               | 98.1%                     |
+| Repeated Stratified CV    | 97.01% ± 4.81%      | 97.31% ± 3.48%            |
+| 95% Confidence Interval   | [87.57%, 100.00%]   | [90.49%, 100.00%]         |
+| Independent Test Accuracy | 100.0%              | 100.0%                    |
+| Independent Test F1 Score | 100.0%              | 100.0%                    |
+
+## Model Interpretation
+
+Both models achieved perfect classification performance on the independent test set, correctly assigning all breast cancer samples to their corresponding molecular subtype.
+
+Although both models demonstrated exceptional predictive capability, Logistic Regression exhibited slightly greater stability across repeated cross-validation experiments, as reflected by its lower standard deviation and narrower confidence interval.
+
+These findings indicate that subtype-discriminative transcriptomic signals are highly robust and reproducible within the selected biomarker set.
+
+---
+
+# 3. SHAP-Based Model Interpretability and Biomarker Discovery
+
+To improve interpretability and
+
+===== CELL [110] (markdown) =====
+# Section 14: Formal Academic Bibliography
+
+The following peer-reviewed publications, methodological studies, and computational biology resources provide the scientific foundation for the transcriptomic analysis, machine learning methodology, feature selection strategy, explainable AI framework, and functional enrichment analyses implemented throughout this project.
+
+---
+
+## Molecular Classification of Breast Cancer
+
+### 1. Perou, C. M., Sørlie, T., Eisen, M. B., van de Rijn, M., Jeffrey, S. S., Rees, C. A., et al. (2000)
+
+**Molecular portraits of human breast tumours.**
+
+*Nature*, **406**(6797), 747–752.
+
+https://doi.org/10.1038/35021093
+
+**Significance:** Established the molecular classification of breast cancer into Basal-like, HER2-enriched, Luminal A, and Luminal B subtypes, providing the biological basis for the classification targets used in this study.
+
+---
+
+## Microarray Normalization and Preprocessing
+
+### 2. Bolstad, B. M., Irizarry, R. A., Astrand, M., & Speed, T. P. (2003)
+
+**A comparison of normalization methods for high density oligonucleotide array data based on variance and bias.**
+
+*Bioinformatics*, **19**(2), 185–193.
+
+https://doi.org/10.1093/bioinformatics/19.2.185
+
+**Significance:** Introduced and evaluated quantile normalization methods for microarray data preprocessing, forming the foundation for transcriptomic normalization procedures used in this project.
+
+---
+
+## Breast Cancer Transcriptomics
+
+### 3. Sotiriou, C., & Pusztai, L. (2009)
+
+**Gene-expression signatures in breast cancer.**
+
+*New England Journal of Medicine*, **360**(8), 790–800.
+
+https://doi.org/10.1056/NEJMra0800028
+
+**Significance:** Demonstrated the clinical importance of gene-expression signatures for breast cancer prognosis, subtype identification, and treatment selection.
+
+---
+
+## Feature Selection in High-Dimensional Biology
+
+### 4. Saeys, Y., Inza, I., & Larrañaga, P. (2007)
+
+**A review of feature selection techniques in bioinformatics.**
+
+*Bioinformatics*, **23**(19), 2507–2517.
+
+https://doi.org/10.1093/bioinformatics/btm344
+
+**Significance:** Provided theoretical support for ensemble and consensus feature-selection approaches in high-dimensional genomic datasets.
+
+---
+
+## Random Forest Methodology
+
+### 5. Breiman, L. (2001)
+
+**Random Forests.**
+
+*Machine Learning*, **45**(1), 5–32.
+
+https://doi.org/10.1023/A:1010933404324
+
+**Significance:** Introduced the Random Forest algorithm used as one of the primary classification models in this study.
+
+---
+
+## Explainable Artificial Intelligence (SHAP)
+
+### 6. Lundberg, S. M., & Lee, S.-I. (2017)
+
+**A Unified Approach to Interpreting Model Predictions.**
+
+*Advances in Neural Information Processing Systems (NeurIPS)*, 4765–4774.
+
+**Significance:** Introduced the SHAP framework, providing the theoretical basis for model explainability and feature attribution analysis.
+
+---
+
+### 7. Lundberg, S. M., Erion, G., Chen, H., DeGrave, A., Prutthiwanisan, J. M., Dumontier, B., et al. (2020)
+
+**From Local Explanations to Global Understanding with Explainable AI for Trees.**
+
+*Nature Machine Intelligence*, **2**(1), 56–67.
+
+https://doi.org/10.1038/s42256-019-0138-9
+
+**Significance:** Introduced TreeSHAP, enabling efficient and theoretically consistent interpretation of tree-based machine learning models.
+
+---
+
+## Functional Enrichment Analysis
+
+### 8. Chen, E. Y., Tan, C. M., Kou, Y., Duan, Q., Wang, Z., Meirelles, G. V., et al. (2013)
+
+**Enrichr: Interactive and Collaborative HTML5 Gene List Enrichment Analysis Tool.**
+
+*BMC Bioinformatics*, **14**, 128.
+
+https://doi.org/10.1186/1471-2105-14-128
+
+**Significance:** Primary reference for the Enrichr platform used for Gene Ontology (GO) and KEGG pathway enrichment analyses.
+
+---
+
+## Gene Annotation Resources
+
+### 9. Xin, J., Mark, A., Afrasiabi, C., Tsueng, G., Juchler, M., Gopal, N., et al. (2016)
+
+**MyGene.info: Light-Weight and High-Performance Web Services for Querying Gene and Variant Annotation.**
+
+*Bioinformatics*, **32**(19), 3034–3036.
+
+https://d
+
+===== CELL [111] (markdown) =====
+

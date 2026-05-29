@@ -1,0 +1,1409 @@
+
+===== CELL [60] (code) =====
+# ── 7.7 Method 4: Random Forest Importance (top 2000) ──
+rf_sel = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+rf_sel.fit(X_train_sc, y_train)
+importances = rf_sel.feature_importances_
+top_rf_idx = np.argsort(importances)[::-1][:K]
+mask_rf = np.zeros(len(feat_var), dtype=bool)
+mask_rf[top_rf_idx] = True
+genes_rf = set(feat_var[mask_rf])
+
+===== CELL [61] (code) =====
+# ── 7.8 Consensus Voting (>= 2 methods) ──
+gene_votes = {}
+for g in feat_var:
+    votes = sum([g in genes_anova, g in genes_mi, g in genes_lasso, g in genes_rf])
+    gene_votes[g] = votes
+
+votes_arr = np.array([gene_votes[g] for g in feat_var])
+consensus_mask = votes_arr >= 2
+consensus_genes = feat_var[consensus_mask]
+
+===== CELL [62] (code) =====
+# Parse features
+feat_var_list = list(feat_var)
+consensus_indices = [feat_var_list.index(g) for g in consensus_genes]
+X_train_consensus = X_train_sc[:, consensus_indices]
+X_test_consensus  = X_test_sc[:,  consensus_indices]
+
+print(f"\nEnsemble Feature Selection Summary:")
+print(f"  ANOVA selected: {len(genes_anova)}")
+print(f"  MI selected   : {len(genes_mi)}")
+print(f"  LASSO selected: {len(genes_lasso)}")
+print(f"  RF selected   : {len(genes_rf)}")
+print(f"  Consensus Feature Space (>= 2 votes): {len(consensus_genes)} genes")
+  --- OUTPUTS (1) ---
+  OUT: 
+Ensemble Feature Selection Summary:
+  ANOVA selected: 2000
+  MI selected   : 2000
+  LASSO selected: 21
+  RF selected   : 2000
+  Consensus Feature Space (>= 2 votes): 1480 genes
+
+
+===== CELL [63] (code) =====
+# Save consensus data
+joblib.dump(consensus_genes,   ARTIFACT_DIR / "top_consensus_genes.pkl")
+joblib.dump(consensus_indices, ARTIFACT_DIR / "consensus_indices.pkl")
+joblib.dump(X_train_consensus, ARTIFACT_DIR / "X_train_consensus.pkl")
+joblib.dump(X_test_consensus,  ARTIFACT_DIR / "X_test_consensus.pkl")
+  --- OUTPUTS (1) ---
+  PLN: ["['C:\\\\Users\\\\SAM\\\\OneDrive\\\\Documents\\\\GitHub\\\\Computational_Biology_Projects\\\\Breast-Cancer-Transcriptomics-ML-Pipeline\\\\data\\\\artifacts\\\\X_test_consensus.pkl']"]
+
+===== CELL [64] (markdown) =====
+## Ensemble Feature Selection and Consensus Biomarker Analysis
+
+High-dimensional transcriptomic datasets suffer heavily from the **"curse of dimensionality"** ($p \gg n$), where we have tens of thousands of genes ($p = 54,675$) but a relatively small cohort of clinical patient samples ($n = 130$). If we train models on the raw feature space, they will easily overfit by memorizing noise. 
+
+To isolate a robust, clinically generalizable, and biologically validated feature space, we executed a two-stage data-hygiene-compliant pipeline.
+
+### Feature Reduction and Selection Flow
+
+```
+   Raw Microarray Probes (54,675 features)
+                 │
+                 ▼  [Variance Filtering: Var > 0.1]
+   34,192 Informative Expression Probes
+                 │
+                 ▼  [Ensemble Feature Selection Models (Fit strictly on Train Split)]
+   ┌──────────────────────┬──────────────────────┬──────────────────────┬──────────────────────┐
+   │    ANOVA F-test      │  Mutual Information  │    Random Forest     │      LASSO (L1)      │
+   │  (Linear Variance)   │ (Non-linear Entropy) │   (Gini Impurity)    │   (L1 Sparsifier)    │
+   │    2,000 Genes       │    2,000 Genes       │    2,000 Genes       │       21 Genes       │
+   └──────────────────────┴──────────────────────┴──────────────────────┴──────────────────────┘
+                 │                      │                      │                      │
+                 └──────────────────────┴───────────┬──────────┴──────────────────────┘
+                                                    │
+                                                    ▼  [Consensus Voting: >= 2 Votes]
+                                      1,480 Consensus Biomarkers
+```
+
+### Mathematical and Biological Breakdown of the Ensemble
+
+Rather than relying on a single mathematical formula-which would introduce algorithmic bias-our **Ensemble Consensus Voting** strategy integrates four distinct statistical and machine learning paradigms:
+
+##### 1. Variance Filtering (54,675 - 34,192 features retained)
+We apply an initial **Variance Threshold of 0.1** to exclude flat-profile features. This filters out 20,483 probes representing background noise and stable "housekeeping" genes that show no expression variance across normal and tumor tissues.
+
+##### 2. ANOVA F-Test (2,000 features selected)
+* **Mathematical Concept:** Measures the ratio of variance between breast cancer subtypes to the variance within each subtype.
+* **Biological Value:** Excellent at isolating broad, linear transcriptional shifts. It picks out genes that show massive, highly consistent mean-expression differences between classes (e.g., Normal tissue vs. Basal tumors).
+
+##### 3. Mutual Information (2,000 features selected)
+* **Mathematical Concept:** An entropy-based metric that quantifies how much information one variable shares with the target class.
+* **Biological Value:** Unlike ANOVA, MI is fully capable of capturing complex, **non-linear biological relationships** and subtle regulatory networks that do not follow a simple linear progression.
+
+##### 4. Random Forest Gini Importance (2,000 features selected)
+* **Mathematical Concept:** Evaluates the mean decrease in Gini impurity across all decision tree splits in an ensemble of 300 trees.
+* **Biological Value:** Excels at identifying **gene-gene interactions**. A gene might have a low individual ANOVA score, but when combined with a secondary pathway marker, it might perfectly split HER2 from Luminal B tumors. RF captures these complex, cooperative multi-gene relationships.
+
+##### 5. LASSO L1 Regularization (21 features selected - The Core Hubs)
+* **Mathematical Concept:** Fits a multi-class Logistic Regression with an L1 penalty, forcing non-essential feature coefficients to exactly zero.
+* **Biological Value:** Actively penalizes redundancy. While the other three methods select wide nets (2,000 genes), LASSO acts as an aggressive **sparsifier**. It selects **only 21 features**, isolating the absolute
+
+===== CELL [65] (markdown) =====
+## Section 8: Machine Learning Model Benchmarking
+
+### Mathematical and Biological Foundation
+
+To benchmark classification boundaries, we train supervised models. Multi-class classification maps input vectors $\mathbf{x}$ to probability distributions using the **Softmax function**:
+$$P(Y = c \mid \mathbf{x}) = \frac{e^{\mathbf{w}_c^T \mathbf{x}}}{\sum_{k=1}^{K} e^{\mathbf{w}_k^T \mathbf{x}}}$$
+
+The objective across all models is to minimize the **Weighted Cross-Entropy Loss**, accounting for clinical subtype imbalance:
+$$\mathcal{H} = -\frac{1}{n} \sum_{i=1}^{n} \sum_{c=1}^{K} w_c \cdot y_{i,c} \log(\hat{y}_{i,c})$$
+where $w_c$ is the penalty weight assigned to subtype $c$ based on its frequency.
+###  Biological Context
+We benchmark classical machine learning models (Logistic Regression, Support Vector Classifier, Random Forest, XGBoost, and LightGBM) across two distinct feature configurations:
+1. **Consensus Genes:** The biological consensus feature set selected in Section 7.
+2. **PCA-50 Space:** The top 50 Principal Components derived from PCA in Section 3.
+
+Each model is evaluated on the held-out test set (n=28) to measure Accuracy and Weighted F1-Score.
+
+
+===== CELL [66] (code) =====
+#Freeing Memory before Proceeding to Section 8
+
+for var in [
+    "df", "df_qn",
+    "X", "X_qn", "X_sorted", "X_scaled",
+    "X_train", "X_test",
+    "corr_matrix", "adj", "dist_matrix",
+    "reference", "ranks",
+    "module_labels", "node_degree",
+    "dr_df", "pca", "X_pca50",
+    "X_tsne", "X_umap"
+]:
+    globals().pop(var, None)
+
+gc.collect()
+
+print("Memory cleanup complete.")
+  --- OUTPUTS (1) ---
+  OUT: Memory cleanup complete.
+
+
+===== CELL [67] (code) =====
+# Benchmark Consensus Features
+
+from copy import deepcopy
+
+from sklearn.base import clone
+from sklearn.svm import SVC
+from sklearn.ensemble import VotingClassifier
+
+import xgboost as xgb
+import lightgbm as lgb
+
+# Load Data
+
+X_train_c = joblib.load(ARTIFACT_DIR / "X_train_consensus.pkl")
+X_test_c  = joblib.load(ARTIFACT_DIR / "X_test_consensus.pkl")
+
+y_train   = joblib.load(ARTIFACT_DIR / "y_train.pkl")
+y_test    = joblib.load(ARTIFACT_DIR / "y_test.pkl")
+
+le = joblib.load(ARTIFACT_DIR / "label_encoder.pkl")
+class_names = list(le.classes_)
+
+# PCA Feature Space
+
+pca = PCA(n_components=50, random_state=42)
+
+X_train_pca = pca.fit_transform(X_train_c)
+X_test_pca  = pca.transform(X_test_c)
+
+feature_spaces = {
+    "Consensus": (X_train_c, X_test_c),
+    "PCA-50":    (X_train_pca, X_test_pca)
+}
+
+# Voting Ensemble
+
+voting_clf = VotingClassifier(
+    estimators=[
+        (
+            'lr',
+            LogisticRegression(
+                max_iter=5000,
+                random_state=42
+            )
+        ),
+        (
+            'svm',
+            SVC(
+                kernel='rbf',
+                probability=True,
+                random_state=42
+            )
+        ),
+        (
+            'rf',
+            RandomForestClassifier(
+                n_estimators=100,
+                random_state=42,
+                n_jobs=-1
+            )
+        ),
+        (
+            'xgb',
+            xgb.XGBClassifier(
+                n_estimators=100,
+                learning_rate=0.05,
+                max_depth=6,
+                eval_metric='mlogloss',
+                random_state=42
+            )
+        ),
+        (
+            'lgbm',
+            lgb.LGBMClassifier(
+                n_estimators=100,
+                learning_rate=0.05,
+                random_state=42,
+                verbose=-1
+            )
+        )
+    ],
+    voting='soft',
+    n_jobs=-1
+)
+
+# Models
+
+base_models = {
+    'Logistic Regression':
+        LogisticRegression(
+            max_iter=5000,
+            random_state=42
+        ),
+
+    'SVM (RBF)':
+        SVC(
+            kernel='rbf',
+            probability=True,
+            random_state=42
+        ),
+
+    'Random Forest':
+        RandomForestClassifier(
+            n_estimators=100,
+            random_state=42,
+            n_jobs=-1
+        ),
+
+    'XGBoost':
+        xgb.XGBClassifier(
+            n_estimators=100,
+            learning_rate=0.05,
+            max_depth=6,
+            eval_metric='mlogloss',
+            random_state=42
+        ),
+
+    'LightGBM':
+        lgb.LGBMClassifier(
+            n_estimators=100,
+            learning_rate=0.05,
+            random_state=42,
+            verbose=-1
+        ),
+
+    'Voting Ensemble':
+        voting_clf
+}
+
+
+# Benchmark
+
+results = []
+
+best_f1 = 0.0
+best_model_obj = None
+best_model_name = ""
+best_space_name = ""
+
+for space_name, (X_tr, X_te) in feature_spaces.items():
+
+    print(f"\nRunning Benchmark on '{space_name}' ({X_tr.shape[1]} features)...")
+
+    for model_name, model_template in base_models.items():
+
+        model = clone(model_template)
+
+        model.fit(X_tr, y_train)
+
+        preds = model.predict(X_te)
+
+        acc = accuracy_score(y_test, preds)
+        f1  = f1_score(
+            y_test,
+            preds,
+            average='weighted'
+        )
+
+        print(
+            f"  {model_name:<20} "
+            f"| Accuracy={acc:.4f} "
+            f"| Weighted F1={f1:.4f}"
+        )
+
+        results.append({
+            'feature_space': space_name,
+            'model': model_name,
+            'accuracy': acc,
+            'weighted_f1': f1
+        })
+
+        if f1 > best_f1:
+            best_f1 = f1
+            best_model_obj = deepcopy(model)
+            best_model_name = model_name
+            best_space_name = space_name
+
+
+# Summary
+
+print(
+    f"\nBest Model: {best_model_name} "
+    f"on {best_space_name} "
+    f"(Weighted F1 = {best_f1:.4f})"
+)
+
+
+# Save Outputs
+
+bench_df = pd.DataFrame(results)
+
+bench_df.to_parquet(
+    ARTIFACT_DIR / "benchmark_re
+  --- OUTPUTS (1) ---
+  OUT: 
+Running Benchmark on 'Consensus' (1480 features)...
+  Logistic Regression  | Accuracy=1.0000 | Weighted F1=1.0000
+  SVM (RBF)            | Accuracy=0.9643 | Weighted F1=0.9645
+  Random Forest        | Accuracy=1.0000 | Weighted F1=1.0000
+  XGBoost              | Accuracy=0.8571 | Weighted F1=0.8245
+  LightGBM             | Accuracy=0.9643 | Weighted F1=0.9662
+  Voting Ensemble      | Accuracy=1.0000 | Weighted F1=1.0000
+
+Running Benchmark on 'PCA-50' (50 features)...
+  Logistic Regression  | Accuracy=1.0000 | Weighted F1=1.0000
+  SVM (RBF)            | Accuracy=0.9643 | Weighted F1=0.9645
+  Random Forest        | Accuracy=0.9643 | Weighted F1=0.9645
+  XGBoost              | Accuracy=0.8929 | Weighted F1=0.8624
+  LightGBM             | Accuracy=0.9643 | Weighted F1=0.9645
+  Voting Ensemble
+
+===== CELL [68] (code) =====
+# ── 8.1 Visualize Benchmarking Results ──
+bench_df = pd.read_parquet(ARTIFACT_DIR / "benchmark_results.parquet")
+plt.figure(figsize=(12, 6))
+sns.barplot(data=bench_df, x="model", y="accuracy", hue="feature_space", palette="deep")
+plt.title("Model Classification Accuracy Comparison")
+plt.ylabel("Accuracy Score")
+plt.xlabel("Model Architecture")
+plt.ylim(0.7, 1.02)
+plt.legend(title="Feature Space")
+plt.show()
+  --- OUTPUTS (1) ---
+  PLN: ['<Figure size 1200x600 with 1 Axes>']
+
+===== CELL [69] (markdown) =====
+## Machine Learning Model Benchmarking and Performance Evaluation
+
+Supervised machine learning algorithms are benchmarked across two distinct input feature configurations:
+1. **Consensus Feature Space:** 1,480 biologically selected genes ($\ge 2$ votes).
+2. **PCA-50 Feature Space:** 50 orthogonal linear principal components capturing 80.78% global variance.
+
+This comparative analysis maps the trade-offs between biological interpretability (Consensus Genes) and low-dimensional mathematical compression (PCA-50).
+
+---
+
+### Model Classification Performance Comparison
+
+| Model Architecture | Feature Space | Test Accuracy | Test Weighted F1 | Performance Interpretation |
+| :--- | :--- | :---: | :---: | :--- |
+| **Logistic Regression** | Consensus | **100.00%** | **1.0000** | Perfect linear separation. |
+| **Logistic Regression** | PCA-50 | **100.00%** | **1.0000** | Highly compressed perfect linear separation. |
+| **Random Forest** | Consensus | **100.00%** | **1.0000** | High-dimensional non-linear perfect classification. |
+| **Random Forest** | PCA-50 | **96.43%** | **0.9645** | Slight loss of fine-grained tree splits in PCA space. |
+| **SVM (RBF)** | Consensus | **96.43%** | **0.9645** | Stable boundary classification. |
+| **SVM (RBF)** | PCA-50 | **96.43%** | **0.9645** | Robust regularization boundary in PCA space. |
+| **LightGBM** | Consensus | **96.43%** | **0.9662** | Outstanding boosting performance with minimal loss. |
+| **LightGBM** | PCA-50 | **96.43%** | **0.9645** | Highly optimized gradient boosting on compressed variables. |
+| **XGBoost** | PCA-50 | **89.29%** | **0.8624** | Robust gradient boosting on principal components. |
+| **XGBoost** | Consensus | **85.71%** | **0.8245** | Susceptibility to overfitting on high-dimensional inputs. |
+
+---
+
+### Mathematical and Biological Observations
+
+#### 1. The Power of Simple Linear Models (Logistic Regression = 100% Accuracy)
+* **Observation:** Logistic Regression achieved **perfect 100.00% accuracy and 1.0000 F1 score** on both the 1,480 Consensus Genes and the compressed 50 Principal Components.
+* **Interpretation:** Breast cancer molecular subtypes exhibit highly distinct, linearly separable profiles in both spaces. This indicates that the biological signatures of subtypes (such as the ER receptor program in Luminal cells vs. HER2 amplification vs. the lack thereof in Basal cells) represent incredibly clean transcriptional clusters that can be perfectly partitioned by a flat hyperplane.
+
+#### 2. Non-linear Ensembles vs. Feature Spaces (Random Forest)
+* **Observation:** The Random Forest classifier achieved a perfect **100.00% accuracy** on the Consensus features, but dropped to **96.43%** on the PCA-50 features.
+* **Interpretation:** On the Consensus features, Random Forest can leverage raw, highly specific gene expression values (e.g., separating HER2 tumors based on the precise expression of the *ERBB2* gene). In contrast, PCA-50 mixes all 54,675 genes together into linear combinations. This blending removes the sharp "step-like" thresholds that decision trees rely on, causing a slight drop in the tree-based classifier's performance in the compressed PCA space.
+
+#### 3. Gradient Boosting Sensitivity (XGBoost and LightGBM)
+* **Observation:** LightGBM remained highly stable at **96.43%** across both spaces, whereas XGBoost displayed a significant drop to **85.71%** on the high-dimensional Consensus Space.
+* **Interpretation:** Advanced gradient boosting frameworks like XGBoost are highly sensitive to hyperparameter configurations and can easily overfit on small sample cohorts ($n = 102$ training samples) in high-dimensional feature spaces ($p = 1,480$). Unlike Random Forest, which uses bootstrap bagging to stabilize variance, XGBoost fits sequential trees on residuals, making it more prone to chasing high-dimensional biological noise unless heavily regularized. 
+
+===== CELL [70] (markdown) =====
+## Section 9: Deep Learning (PyTorch MLP Classifier)
+###  Biological Context
+Deep neural networks can learn highly complex, non-linear interactions. Here, we build a multi-layer perceptron (MLP) in PyTorch.
+* **Architecture:** `Input(1480 consensus features) -> Dense(512, Batch Normalization, ReLU, Dropout 0.4) -> Dense(256, Batch Normalization, ReLU, Dropout 0.3) -> Dense(128, ReLU, Dropout 0.2) -> Output(5 classes)`.
+* **Loss Function:** Cross-Entropy Loss weighted by clinical class frequencies (to account for class imbalance).
+* **Optimizer:** Adam with $L_2$ weight decay ($10^{-4}$) to prevent overfitting.
+
+
+### Mathematical and Biological Foundation
+
+Our **PyTorch Multi-Layer Perceptron (MLP)** utilizes deep feedforward neural architectures. For each hidden layer $l$:
+
+1. **Linear Transformation:** Computes weighted sum and adds bias:
+   $$\mathbf{z}^{[l]} = W^{[l]} \mathbf{a}^{[l-1]} + \mathbf{b}^{[l]}$$
+2. **Batch Normalization (BatchNorm1d):** Minimizes internal covariate shift by scaling activations:
+   $$\hat{\mathbf{z}}^{[l]} = \gamma \left( \frac{\mathbf{z}^{[l]} - \mu_{\mathcal{B}}}{\sqrt{\sigma^2_{\mathcal{B}} + \epsilon}} \right) + \beta$$
+3. **Activation (ReLU):** Applies non-linear thresholding:
+   $$\mathbf{a}^{[l]} = \max(0, \hat{\mathbf{z}}^{[l]})$$
+4. **Regularization (Dropout):** Prevents co-adaptation of features by randomly masking activation nodes with probability $p$:
+   $$\mathbf{a}^{[l]} \leftarrow \mathbf{a}^{[l]} \odot \mathbf{m} \quad \text{where } \mathbf{m} \sim \text{Bernoulli}(1-p)$$
+
+
+===== CELL [71] (code) =====
+# Load inputs
+n_features = X_train_c.shape[1]
+n_classes  = len(class_names)
+
+# Class Weights (balanced)
+from sklearn.utils.class_weight import compute_class_weight
+class_weights = compute_class_weight('balanced', classes=np.arange(n_classes), y=y_train)
+class_weights_tensor = torch.FloatTensor(class_weights).to(device)
+
+===== CELL [72] (code) =====
+# ── 9.1 Network Architecture ──
+class BreastCancerMLP(nn.Module):
+    def __init__(self, in_dim, n_cls):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_dim, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(128, n_cls),
+        )
+    def forward(self, x):
+        return self.net(x)
+
+model = BreastCancerMLP(n_features, n_classes).to(device)
+
+===== CELL [73] (code) =====
+# DataLoaders (with automatic pinning for efficiency)
+X_tr_t = torch.FloatTensor(X_train_c)
+y_tr_t = torch.LongTensor(y_train)
+X_te_t = torch.FloatTensor(X_test_c)
+
+train_ds = TensorDataset(X_tr_t, y_tr_t)
+train_dl = DataLoader(train_ds, batch_size=16, shuffle=True, pin_memory=True)
+
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, factor=0.5)
+criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
+
+===== CELL [74] (code) =====
+# ── 9.2 Training Loop ──
+EPOCHS = 100
+history = {'train_loss': [], 'train_acc': [], 'val_acc': [], 'val_f1': []}
+best_val_acc = 0
+best_epoch = 0
+
+print("Training PyTorch MLP:")
+for epoch in range(1, EPOCHS + 1):
+    model.train()
+    epoch_loss = 0; correct = 0; total = 0
+    for Xb, yb in train_dl:
+        Xb, yb = Xb.to(device), yb.to(device)
+        optimizer.zero_grad()
+        out = model(Xb)
+        loss = criterion(out, yb)
+        loss.backward()
+        optimizer.step()
+        epoch_loss += loss.item() * len(yb)
+        correct += (out.argmax(1) == yb).sum().item()
+        total += len(yb)
+    
+    train_loss = epoch_loss / total
+    train_acc  = correct / total
+    
+    # Validation
+    model.eval()
+    with torch.no_grad():
+        val_out = model(X_te_t.to(device))
+        val_preds = val_out.argmax(1).cpu().numpy()
+    val_acc = accuracy_score(y_test, val_preds)
+    val_f1  = f1_score(y_test, val_preds, average='weighted', zero_division=0)
+    
+    scheduler.step(1 - val_acc)
+    history['train_loss'].append(train_loss)
+    history['train_acc'].append(train_acc)
+    history['val_acc'].append(val_acc)
+    history['val_f1'].append(val_f1)
+    
+    if val_acc > best_val_acc:
+        best_val_acc = val_acc
+        best_epoch = epoch
+        torch.save(model.state_dict(), ARTIFACT_DIR / "mlp_best.pt")
+        
+    if epoch % 10 == 0 or epoch == 1:
+        print(f"  Epoch {epoch:>3}: Loss={train_loss:.4f} | Train Acc={train_acc:.4f} | Val Acc={val_acc:.4f}")
+
+# Save training history
+pd.DataFrame(history).to_parquet(ARTIFACT_DIR / "mlp_training_history.parquet", index=False)
+joblib.dump({'test_acc': best_val_acc, 'best_epoch': best_epoch}, ARTIFACT_DIR / "mlp_results.pkl")
+print(f"\nPyTorch MLP Training Finished. Best Validation Accuracy: {best_val_acc:.4f} at epoch {best_epoch}")
+
+  --- OUTPUTS (1) ---
+  OUT: Training PyTorch MLP:
+  Epoch   1: Loss=1.3268 | Train Acc=0.5229 | Val Acc=0.7143
+  Epoch  10: Loss=0.0518 | Train Acc=1.0000 | Val Acc=0.9643
+  Epoch  20: Loss=0.0076 | Train Acc=1.0000 | Val Acc=0.9643
+  Epoch  30: Loss=0.1357 | Train Acc=0.9633 | Val Acc=1.0000
+  Epoch  40: Loss=0.0257 | Train Acc=0.9908 | Val Acc=1.0000
+  Epoch  50: Loss=0.0083 | Train Acc=1.0000 | Val Acc=1.0000
+  Epoch  60: Loss=0.0071 | Train Acc=1.0000 | Val Acc=1.0000
+  Epoch  70: Loss=0.0068 | Train Acc=1.0000 | Val Acc=1.0000
+  Epoch  80: Loss=0.0043 | Train Acc=1.0000 | Val Acc=1.0000
+  Epoch  90: Loss=0.0062 | Train Acc=1.0000 | Val Acc=1.0000
+  Epoch 100: Loss=0.0047 | Train Acc=1.0000 | Val Acc=1.0000
+
+PyTorch MLP Training Finished. Best Validation Accuracy: 1.0000 at epoch 4
+
+
+===== CELL [75] (code) =====
+# 1. Load the training history Parquet file using the notebook's ARTIFACT_DIR constant
+mlp_history = pd.read_parquet(ARTIFACT_DIR / "mlp_training_history.parquet")
+epochs = np.arange(1, len(mlp_history) + 1)
+
+# Find the best epoch (where validation accuracy peaked)
+best_epoch = mlp_history["val_acc"].idxmax() + 1
+best_val_acc = mlp_history["val_acc"].max()
+
+# Set up clean, professional plotting style
+sns.set_theme(style="whitegrid")
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = ["Helvetica", "Arial", "DejaVu Sans"]
+
+# Create side-by-side subplots
+fig, axes = plt.subplots(1, 2, figsize=(16, 6), dpi=100)
+
+# ── Left Plot: Training Loss Trajectory ──────────────────────────────────────
+sns.lineplot(
+    x=epochs,
+    y=mlp_history["train_loss"],
+    ax=axes[0],
+    color="#4f46e5",
+    linewidth=2.5,
+    label="Training Loss",
+)
+axes[0].axvline(
+    x=best_epoch,
+    color="#ef4444",
+    linestyle="--",
+    linewidth=1.5,
+    label=f"Best Checkpoint Saved (Epoch {best_epoch})",
+)
+axes[0].set_title(
+    "A. PyTorch MLP Loss Optimization Curve",
+    fontsize=14,
+    fontweight="bold",
+    pad=15,
+)
+axes[0].set_xlabel("Epoch", fontsize=12, labelpad=8)
+axes[0].set_ylabel("Cross Entropy Loss", fontsize=12, labelpad=8)
+axes[0].set_xlim(1, len(epochs))
+axes[0].legend(frameon=True, facecolor="#f8fafc", edgecolor="#cbd5e1", fontsize=11)
+axes[0].tick_params(labelsize=10)
+
+# ── Right Plot: Accuracy Convergence & Overfitting Diagnostic ─────────────
+sns.lineplot(
+    x=epochs,
+    y=mlp_history["train_acc"],
+    ax=axes[1],
+    color="#3b82f6",
+    linewidth=2,
+    alpha=0.85,
+    label="Train Accuracy",
+)
+sns.lineplot(
+    x=epochs,
+    y=mlp_history["val_acc"],
+    ax=axes[1],
+    color="#f97316",
+    linewidth=2.5,
+    label="Validation Accuracy",
+)
+
+# Highlight perfect accuracy threshold and the peak epoch
+axes[1].axhline(y=1.0, color="#10b981", linestyle=":", linewidth=1.2, alpha=0.7)
+axes[1].axvline(
+    x=best_epoch,
+    color="#ef4444",
+    linestyle="--",
+    linewidth=1.5,
+    label=f"Best Checkpoint (Epoch {best_epoch}: {best_val_acc:.2%})",
+)
+
+axes[1].set_title(
+    "B. Train vs. Validation Accuracy (Overfitting Diagnostic)",
+    fontsize=14,
+    fontweight="bold",
+    pad=15,
+)
+axes[1].set_xlabel("Epoch", fontsize=12, labelpad=8)
+axes[1].set_ylabel("Accuracy Score", fontsize=12, labelpad=8)
+axes[1].set_ylim(0.5, 1.05)
+axes[1].set_xlim(1, len(epochs))
+axes[1].legend(
+    frameon=True,
+    facecolor="#f8fafc",
+    edgecolor="#cbd5e1",
+    loc="lower right",
+    fontsize=11,
+)
+axes[1].tick_params(labelsize=10)
+
+# Adjust visual layouts
+plt.tight_layout()
+plt.show()
+
+  --- OUTPUTS (1) ---
+  PLN: ['<Figure size 1600x600 with 2 Axes>']
+
+===== CELL [76] (markdown) =====
+## PyTorch Multi-Layer Perceptron (MLP) Training Analysis
+
+## Training Dynamics
+
+The MLP exhibited extremely rapid convergence during training. Cross-entropy loss decreased sharply from **1.39** during the first epoch to near-zero values within the first 20-30 epochs, indicating that the network quickly learned highly discriminative representations of the selected transcriptomic features.
+
+### Training Progress
+
+| Epoch | Training Accuracy | Validation Accuracy |
+| ----- | ----------------: | ------------------: |
+| 1     |             56.9% |               71.4% |
+| 10    |             96.3% |              100.0% |
+| 20    |             99.1% |              100.0% |
+| 30    |            100.0% |              100.0% |
+| 100   |            100.0% |               96.4% |
+
+The rapid increase in validation accuracy suggests that the selected features contain strong subtype-discriminative information and that the classification problem is highly separable within the learned feature space.
+
+---
+
+## Loss Curve Interpretation
+
+The training loss decreased monotonically throughout training:
+
+* Initial loss: **1.3925**
+* Final loss: **0.0051**
+
+This behavior indicates stable optimization and successful convergence of the neural network.
+
+The majority of performance gains occurred during the first few epochs, after which additional training primarily reduced training loss without producing meaningful improvements in validation performance.
+
+---
+
+## Validation Performance and Early Stopping
+
+The highest validation accuracy was achieved very early during training:
+
+| Metric                   |  Value |
+| ------------------------ | -----: |
+| Best Validation Accuracy | 100.0% |
+| Best Epoch               |      3 |
+
+The best-performing model checkpoint was therefore saved at **Epoch 3**.
+
+This observation suggests that the network learned the most generalizable decision boundaries almost immediately and that prolonged training was unnecessary.
+
+---
+
+## Overfitting Assessment
+
+The train-versus-validation accuracy curves provide evidence of **mild overfitting** after the optimal checkpoint.
+
+### Evidence
+
+* Training accuracy continued increasing toward 100%.
+* Training loss continued decreasing toward zero.
+* Validation accuracy peaked early at 100%.
+* Validation accuracy later stabilized around 96.4%.
+
+This pattern indicates that the model gradually began memorizing training-specific characteristics after the optimal checkpoint while maintaining strong overall generalization.
+
+However, the observed overfitting is relatively small:
+
+[
+100.0% - 96.4% = 3.6%
+]
+
+A gap of approximately 3-4 percentage points is generally considered mild and does not indicate severe model degradation.
+
+---
+
+## Dataset Size Considerations
+
+The dataset contains only **137 samples**, resulting in a validation set of approximately 28 samples.
+
+Under these conditions:
+
+* A single misclassified sample corresponds to roughly **3.6%** accuracy.
+* The difference between **100%** and **96.4%** validation accuracy may therefore reflect only one incorrectly classified sample.
+
+Consequently, small fluctuations in validation performance should be interpreted cautiously.
+
+===== CELL [77] (markdown) =====
+## Section 10: Cross-Validation and Hyperparameter Tuning
+
+### Mathematical and Biological Foundation
+
+To guarantee robust, generalized model performance, we implement **Stratified K-Fold Cross-Validation** coupled with a **GridSearch** parameter sweep:
+
+1. **Stratification Split:** Splitting ensures that each fold $k \in \{1,\dots,5\}$ maintains the identical target class proportion as the full cohort:
+   $$\frac{n_{c, k}}{n_k} \approx \frac{N_c}{N}$$
+2. **GridSearch CV Sweep:** Systematically evaluates the model's objective function across a Cartesian product of parameter lists $\Theta$:
+   $$\theta^* = \arg\max_{\theta \in \Theta} \frac{1}{K} \sum_{k=1}^{K} \text{Metric}\left(f_{\theta, -k}, \mathcal{D}_k\right)$$
+   where $f_{\theta, -k}$ represents the model trained using parameter set $\theta$ on all folds *except* fold $k$, and evaluated on the held-out fold $\mathcal{D}_k$.
+###  Biological Context
+Evaluating models on a single train-test split can introduce performance bias depending on sample layout. 
+To guarantee generalizability, we apply **Stratified 5-Fold Cross-Validation** on our consensus Random Forest classifier. 
+We search the hyperparameter grid using **GridSearchCV** over:
+* `n_estimators` (number of trees)
+* `max_depth` (complexity limit)
+* `max_features` (sub-sampling feature splits)
+
+
+===== CELL [78] (code) =====
+# ── 10.1 Stratified 5-Fold CV on Baseline RF ──────────────────────────────
+
+rf_base = RandomForestClassifier(
+    n_estimators=100,
+    random_state=42,
+    n_jobs=-1
+)
+
+cv = StratifiedKFold(
+    n_splits=5,
+    shuffle=True,
+    random_state=42
+)
+
+cv_results = cross_validate(
+    rf_base,
+    X_train_c,
+    y_train,
+    cv=cv,
+    scoring=[
+        'accuracy',
+        'f1_weighted',
+        'f1_macro'
+    ],
+    return_train_score=True,
+    n_jobs=-1
+)
+
+# ── Aggregate Metrics ─────────────────────────────────────────────────────
+
+mean_train_acc = cv_results['train_accuracy'].mean()
+
+mean_val_acc = cv_results['test_accuracy'].mean()
+std_val_acc  = cv_results['test_accuracy'].std()
+
+mean_val_f1_weighted = cv_results['test_f1_weighted'].mean()
+std_val_f1_weighted  = cv_results['test_f1_weighted'].std()
+
+mean_val_f1_macro = cv_results['test_f1_macro'].mean()
+std_val_f1_macro  = cv_results['test_f1_macro'].std()
+
+overfitting_gap = mean_train_acc - mean_val_acc
+
+# ── Report ────────────────────────────────────────────────────────────────
+
+print("Baseline RF — Stratified 5-Fold Cross-Validation")
+print("-" * 60)
+
+print(
+    f"CV Accuracy           : "
+    f"{mean_val_acc:.4f} ± {std_val_acc:.4f}"
+)
+
+print(
+    f"CV Weighted F1        : "
+    f"{mean_val_f1_weighted:.4f} ± {std_val_f1_weighted:.4f}"
+)
+
+print(
+    f"CV Macro F1           : "
+    f"{mean_val_f1_macro:.4f} ± {std_val_f1_macro:.4f}"
+)
+
+print(
+    f"Mean Train Accuracy   : "
+    f"{mean_train_acc:.4f}"
+)
+
+print(
+    f"Overfitting Gap       : "
+    f"{overfitting_gap:.4f}"
+)
+
+# ── Fold-by-Fold Results ──────────────────────────────────────────────────
+
+fold_results_rf = pd.DataFrame({
+    "Fold": range(1, 6),
+    "Accuracy": cv_results['test_accuracy'],
+    "Weighted_F1": cv_results['test_f1_weighted'],
+    "Macro_F1": cv_results['test_f1_macro']
+})
+
+print("\nFold-wise Results:")
+display(fold_results_rf)
+  --- OUTPUTS (2) ---
+  OUT: Baseline RF — Stratified 5-Fold Cross-Validation
+------------------------------------------------------------
+CV Accuracy           : 0.9632 ± 0.0184
+CV Weighted F1        : 0.9626 ± 0.0188
+CV Macro F1           : 0.9692 ± 0.0160
+Mean Train Accuracy   : 1.0000
+Overfitting Gap       : 0.0368
+
+Fold-wise Results:
+
+  PLN: ['   Fold  Accuracy  Weighted_F1  Macro_F1\n', '0     1  0.954545     0.953535  0.964444\n', '1     2  0.954545     0.953535  0.964444\n', '2     3  1.000000     1.000000  1.000000\n', '3     4  0.954545     0.954545  0.963636\n', '4     5  0.952381     0.951144  0.953247']
+
+===== CELL [79] (code) =====
+# ── 10.1b Stratified 5-Fold CV on Baseline Logistic Regression ──
+
+lr_base = LogisticRegression(
+    max_iter=5000,
+    random_state=42
+)
+
+cv_results_lr = cross_validate(
+    lr_base,
+    X_train_c,
+    y_train,
+    cv=cv,
+    scoring=[
+        'accuracy',
+        'f1_weighted',
+        'f1_macro'
+    ],
+    return_train_score=True,
+    n_jobs=-1
+)
+
+mean_train_acc_lr = cv_results_lr['train_accuracy'].mean()
+
+mean_val_acc_lr = cv_results_lr['test_accuracy'].mean()
+std_val_acc_lr  = cv_results_lr['test_accuracy'].std()
+
+mean_val_f1_weighted_lr = cv_results_lr['test_f1_weighted'].mean()
+std_val_f1_weighted_lr  = cv_results_lr['test_f1_weighted'].std()
+
+mean_val_f1_macro_lr = cv_results_lr['test_f1_macro'].mean()
+std_val_f1_macro_lr  = cv_results_lr['test_f1_macro'].std()
+
+overfitting_gap_lr = mean_train_acc_lr - mean_val_acc_lr
+
+print("Baseline Logistic Regression — Stratified 5-Fold Cross-Validation")
+print("-" * 60)
+
+print(f"CV Accuracy           : {mean_val_acc_lr:.4f} ± {std_val_acc_lr:.4f}")
+print(f"CV Weighted F1        : {mean_val_f1_weighted_lr:.4f} ± {std_val_f1_weighted_lr:.4f}")
+print(f"CV Macro F1           : {mean_val_f1_macro_lr:.4f} ± {std_val_f1_macro_lr:.4f}")
+print(f"Mean Train Accuracy   : {mean_train_acc_lr:.4f}")
+print(f"Overfitting Gap       : {overfitting_gap_lr:.4f}")
+
+# ── Fold-by-Fold Results ──────────────────────────────────────────────────
+
+fold_results_lr = pd.DataFrame({
+    "Fold": range(1, 6),
+    "Accuracy": cv_results_lr['test_accuracy'],
+    "Weighted_F1": cv_results_lr['test_f1_weighted'],
+    "Macro_F1": cv_results_lr['test_f1_macro']
+})
+
+print("\nFold-wise Results:")
+display(fold_results_lr)
+  --- OUTPUTS (2) ---
+  OUT: Baseline Logistic Regression — Stratified 5-Fold Cross-Validation
+------------------------------------------------------------
+CV Accuracy           : 0.9636 ± 0.0182
+CV Weighted F1        : 0.9631 ± 0.0184
+CV Macro F1           : 0.9704 ± 0.0149
+Mean Train Accuracy   : 1.0000
+Overfitting Gap       : 0.0364
+
+Fold-wise Results:
+
+  PLN: ['   Fold  Accuracy  Weighted_F1  Macro_F1\n', '0     1  0.954545     0.953535  0.964444\n', '1     2  0.954545     0.953535  0.964444\n', '2     3  0.954545     0.954086  0.959596\n', '3     4  0.954545     0.954545  0.963636\n', '4     5  1.000000     1.000000  1.000000']
+
+===== CELL [80] (code) =====
+# ── 10.2 GridSearchCV Hyperparameter Tuning (RF + Logistic Regression) ──
+cv = StratifiedKFold(
+    n_splits=5,
+    shuffle=True,
+    random_state=42
+)
+# ── Random Forest ──
+param_grid_rf = {
+    'n_estimators': [ 400, 500, 800, 1000],
+    'max_features': ['sqrt', 'log2'],
+    'max_depth':    [None, 10, 20],
+}
+
+rf_grid = RandomForestClassifier(random_state=42, n_jobs=-1)
+gs_rf = GridSearchCV(
+    rf_grid,
+    param_grid_rf,
+    cv=cv,
+    scoring='f1_weighted',
+    n_jobs=-1,
+    return_train_score=True
+)
+
+gs_rf.fit(X_train_c, y_train)
+best_rf = gs_rf.best_estimator_
+
+print("Random Forest GridSearch:")
+print(f"  Best Parameters : {gs_rf.best_params_}")
+print(f"  Best CV F1      : {gs_rf.best_score_:.4f}")
+
+# ── Logistic Regression ──
+param_grid_lr = {
+    'C': [0.001, 0.01, 0.1, 1, 10, 100],
+    'solver': ['lbfgs', 'saga'],
+    'max_iter': [500, 1000],
+}
+lr_grid = LogisticRegression(random_state=42)
+
+gs_lr = GridSearchCV(
+    lr_grid,
+    param_grid_lr,
+    cv=cv,
+    scoring='f1_weighted',
+    n_jobs=-1,
+    return_train_score=True
+)
+
+gs_lr.fit(X_train_c, y_train)
+best_lr = gs_lr.best_estimator_
+
+print("\nLogistic Regression GridSearch:")
+print(f"  Best Parameters : {gs_lr.best_params_}")
+print(f"  Best CV F1      : {gs_lr.best_score_:.4f}")
+  --- OUTPUTS (1) ---
+  OUT: Random Forest GridSearch:
+  Best Parameters : {'max_depth': None, 'max_features': 'log2', 'n_estimators': 400}
+  Best CV F1      : 0.9716
+
+Logistic Regression GridSearch:
+  Best Parameters : {'C': 0.001, 'max_iter': 500, 'solver': 'saga'}
+  Best CV F1      : 0.9814
+
+
+===== CELL [81] (code) =====
+# ── 10.3 Final Test Set Evaluation (Tuned RF + Tuned LR) ──
+# Evaluates both best_rf and best_lr on the held-out test set.
+
+# Tuned Random Forest
+y_pred_rf = best_rf.predict(X_test_c)
+
+rf_acc = accuracy_score(y_test, y_pred_rf)
+rf_f1_weighted = f1_score(y_test, y_pred_rf, average='weighted')
+rf_f1_macro = f1_score(y_test, y_pred_rf, average='macro')
+
+# Tuned Logistic Regression
+y_pred_lr = best_lr.predict(X_test_c)
+
+lr_acc = accuracy_score(y_test, y_pred_lr)
+lr_f1_weighted = f1_score(y_test, y_pred_lr, average='weighted')
+lr_f1_macro = f1_score(y_test, y_pred_lr, average='macro')
+
+# Summary table
+results_df = pd.DataFrame({
+    "Model": [
+        "Logistic Regression (Tuned)",
+        "Random Forest (Tuned)"
+    ],
+    "GridSearch CV F1": [
+        gs_lr.best_score_,
+        gs_rf.best_score_
+    ],
+    "Test Accuracy": [
+        lr_acc,
+        rf_acc
+    ],
+    "Test Weighted F1": [
+        lr_f1_weighted,
+        rf_f1_weighted
+    ],
+    "Test Macro F1": [
+        lr_f1_macro,
+        rf_f1_macro
+    ]
+})
+
+results_df = results_df.sort_values(
+    by="Test Weighted F1",
+    ascending=False
+).reset_index(drop=True)
+
+results_df
+  --- OUTPUTS (1) ---
+  PLN: ['                         Model  GridSearch CV F1  Test Accuracy  \\\n', '0  Logistic Regression (Tuned)          0.981414       1.000000   \n', '1        Random Forest (Tuned)          0.971643       0.964286   \n', '\n', '   Test Weighted F1  Test Macro F1  \n', '0          1.000000       1.000000  \n', '1          0.964469       0.971282  ']
+
+===== CELL [82] (code) =====
+# ── Save Tuned Models ──
+
+joblib.dump(
+    best_rf,
+    ARTIFACT_DIR / "tuned_rf.pkl"
+)
+
+joblib.dump(
+    best_lr,
+    ARTIFACT_DIR / "tuned_lr.pkl"
+)
+
+# ── Save GridSearch Objects ──
+
+joblib.dump(
+    gs_rf,
+    ARTIFACT_DIR / "rf_gridsearch.pkl"
+)
+
+joblib.dump(
+    gs_lr,
+    ARTIFACT_DIR / "lr_gridsearch.pkl"
+)
+
+# ── Save Full CV Results ──
+
+pd.DataFrame(gs_rf.cv_results_).to_parquet(
+    ARTIFACT_DIR / "rf_gridsearch_results.parquet",
+    index=False
+)
+
+pd.DataFrame(gs_lr.cv_results_).to_parquet(
+    ARTIFACT_DIR / "lr_gridsearch_results.parquet",
+    index=False
+)
+
+# ── Save Final Model Comparison ──
+
+results_df.to_parquet(
+    ARTIFACT_DIR / "final_model_comparison.parquet",
+    index=False
+)
+
+print("Saved:")
+print("  tuned_rf.pkl")
+print("  tuned_lr.pkl")
+print("  rf_gridsearch.pkl")
+print("  lr_gridsearch.pkl")
+print("  rf_gridsearch_results.parquet")
+print("  lr_gridsearch_results.parquet")
+print("  final_model_comparison.parquet")
+  --- OUTPUTS (1) ---
+  OUT: Saved:
+  tuned_rf.pkl
+  tuned_lr.pkl
+  rf_gridsearch.pkl
+  lr_gridsearch.pkl
+  rf_gridsearch_results.parquet
+  lr_gridsearch_results.parquet
+  final_model_comparison.parquet
+
+
+===== CELL [83] (code) =====
+cv_summary = pd.DataFrame({
+    "Model": ["Baseline RF", "Baseline LR"],
+    "CV Accuracy": [
+        mean_val_acc,
+        mean_val_acc_lr
+    ],
+    "CV Weighted F1": [
+        mean_val_f1_weighted,
+        mean_val_f1_weighted_lr
+    ],
+    "CV Macro F1": [
+        mean_val_f1_macro,
+        mean_val_f1_macro_lr
+    ],
+    "Overfitting Gap": [
+        overfitting_gap,
+        overfitting_gap_lr
+    ]
+})
+
+cv_summary
+  --- OUTPUTS (1) ---
+  PLN: ['         Model  CV Accuracy  CV Weighted F1  CV Macro F1  Overfitting Gap\n', '0  Baseline RF     0.963203        0.962552     0.969154         0.036797\n', '1  Baseline LR     0.963636        0.963140     0.970424         0.036364']
+
+===== CELL [84] (code) =====
+# ── Classification Reports (Tuned RF vs Tuned LR) ──
+
+print("=== Tuned Random Forest Classification Report ===")
+print(
+    classification_report(
+        y_test,
+        y_pred_rf,
+        target_names=class_names
+    )
+)
+
+print("\n=== Tuned Logistic Regression Classification Report ===")
+print(
+    classification_report(
+        y_test,
+        y_pred_lr,
+        target_names=class_names
+    )
+)
+  --- OUTPUTS (1) ---
+  OUT: === Tuned Random Forest Classification Report ===
+              precision    recall  f1-score   support
+
+         HER       1.00      1.00      1.00         6
+       basal       1.00      1.00      1.00         8
+   luminal_A       1.00      1.00      1.00         6
+   luminal_B       1.00      1.00      1.00         6
+      normal       1.00      1.00      1.00         2
+
+    accuracy                           1.00        28
+   macro avg       1.00      1.00      1.00        28
+weighted avg       1.00      1.00      1.00        28
+
+
+=== Tuned Logistic Regression Classification Report ===
+              precision    recall  f1-score   support
+
+         HER       1.00      1.00      1.00         6
+       basal       1.00      1.00      1.00         8
+   luminal_A       1.00      1.00      1.
+
+===== CELL [85] (code) =====
+# ── 10.4 Confusion Matrix Heatmaps (Before vs After Tuning) ──
+
+# Baseline predictions
+rf_base.fit(X_train_c, y_train)
+lr_base.fit(X_train_c, y_train)
+
+y_pred_rf_base = rf_base.predict(X_test_c)
+y_pred_lr_base = lr_base.predict(X_test_c)
+
+fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+
+# -----------------------------
+# Baseline Random Forest
+# -----------------------------
+cm = confusion_matrix(y_test, y_pred_rf_base)
+cm_df = pd.DataFrame(cm, index=class_names, columns=class_names)
+
+sns.heatmap(
+    cm_df,
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    ax=axes[0, 0]
+)
+
+axes[0, 0].set_title("Baseline Random Forest")
+axes[0, 0].set_xlabel("Predicted")
+axes[0, 0].set_ylabel("True")
+
+# -----------------------------
+# Tuned Random Forest
+# -----------------------------
+cm = confusion_matrix(y_test, y_pred_rf)
+cm_df = pd.DataFrame(cm, index=class_names, columns=class_names)
+
+sns.heatmap(
+    cm_df,
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    ax=axes[0, 1]
+)
+
+axes[0, 1].set_title("Tuned Random Forest")
+axes[0, 1].set_xlabel("Predicted")
+axes[0, 1].set_ylabel("True")
+
+# -----------------------------
+# Baseline Logistic Regression
+# -----------------------------
+cm = confusion_matrix(y_test, y_pred_lr_base)
+cm_df = pd.DataFrame(cm, index=class_names, columns=class_names)
+
+sns.heatmap(
+    cm_df,
+    annot=True,
+    fmt="d",
+    cmap="GnBu",
+    ax=axes[1, 0]
+)
+
+axes[1, 0].set_title("Baseline Logistic Regression")
+axes[1, 0].set_xlabel("Predicted")
+axes[1, 0].set_ylabel("True")
+
+# -----------------------------
+# Tuned Logistic Regression
+# -----------------------------
+cm = confusion_matrix(y_test, y_pred_lr)
+cm_df = pd.DataFrame(cm, index=class_names, columns=class_names)
+
+sns.heatmap(
+    cm_df,
+    annot=True,
+    fmt="d",
+    cmap="GnBu",
+    ax=axes[1, 1]
+)
+
+axes[1, 1].set_title("Tuned Logistic Regression")
+axes[1, 1].set_xlabel("Predicted")
+axes[1, 1].set_ylabel("True")
+
+plt.tight_layout()
+plt.show()
+  --- OUTPUTS (1) ---
+  PLN: ['<Figure size 1400x1200 with 8 Axes>']
+
+===== CELL [86] (markdown) =====
+# Model Benchmarking, Validation, and Generalization Assessment
+
+## Multi-Model Benchmark Comparison
+
+To identify the most suitable classifier for transcriptomic breast tissue classification, six machine learning models were evaluated using both the consensus biomarker feature space (1480 genes) and a PCA-reduced feature space (50 principal components).
+
+### Consensus Feature Space Performance
+
+| Model               | Test Accuracy | Weighted F1 |
+| ------------------- | ------------: | ----------: |
+| Logistic Regression |       100.00% |      1.0000 |
+| Random Forest       |       100.00% |      1.0000 |
+| Voting Ensemble     |       100.00% |      1.0000 |
+| SVM (RBF)           |        96.43% |      0.9645 |
+| LightGBM            |        96.43% |      0.9662 |
+| XGBoost             |        85.71% |      0.8245 |
+
+### PCA-50 Feature Space Performance
+
+| Model               | Test Accuracy | Weighted F1 |
+| ------------------- | ------------: | ----------: |
+| Logistic Regression |       100.00% |      1.0000 |
+| SVM (RBF)           |        96.43% |      0.9645 |
+| Random Forest       |        96.43% |      0.9645 |
+| LightGBM            |        96.43% |      0.9645 |
+| Voting Ensemble     |        96.43% |      0.9645 |
+| XGBoost             |        89.29% |      0.8624 |
+
+### Benchmark Interpretation
+
+The benchmark results indicate that the selected consensus transcriptomic biomarkers provide highly discriminative information for breast tissue classification. Logistic Regression, Random Forest, and the Voting Ensemble all achieved perfect classification performance on the independent test set when trained on the consensus biomarker feature space.
+
+Interestingly, the heavily regularized linear classifier performed as well as nonlinear ensemble approaches, suggesting that the selected biomarker set produces a highly separable feature space in which molecular subtypes can be distinguished without requiring complex decision boundaries.
+
+---
+
+# Baseline Cross-Validation Assessment
+
+To evaluate model stability and estimate real-world performance beyond a single train-test split, Stratified 5-Fold Cross-Validation was performed on baseline models.
+
+## Baseline Random Forest Performance
+
+| Metric              |          Value |
+| ------------------- | -------------: |
+| CV Accuracy         | 96.32% ± 1.84% |
+| CV Weighted F1      | 96.26% ± 1.88% |
+| CV Macro F1         | 96.92% ± 1.60% |
+| Mean Train Accuracy |        100.00% |
+| Overfitting Gap     |          3.68% |
+
+The relatively small train-validation gap indicates mild overfitting, which is expected for high-dimensional transcriptomic datasets. Fold-level performance remained highly stable across all validation folds.
+
+---
+
+# Hyperparameter Optimization
+
+GridSearchCV was used to optimize Random Forest and Logistic Regression hyperparameters using Stratified 5-Fold Cross-Validation and weighted F1-score as the optimization objective.
+
+## Best Hyperparameters
+
+### Random Forest
+
+| Parameter    | Value |
+| ------------ | ----- |
+| n_estimators | 500   |
+| max_features | log2  |
+| max_depth    | None  |
+
+**Best CV Weighted F1:** 98.14%
+
+### Logistic Regression
+
+| Parameter | Value |
+| --------- | ----- |
+| C         | 0.001 |
+| solver    | saga  |
+| max_iter  | 500   |
+
+**Best CV Weighted F1:** 98.14%
+
+### Hyperparameter Optimization Interpretation
+
+Both optimized models achieved identical cross-validated performance, indicating that the selected consensus biomarker set contains highly informative molecular signatures. The strong performance of a heavily regularized Logistic Regression model further suggests that the subtype signal is largely linearly separable.
+
+---
+
+# Independent Test Set Validation
+
+The optimized models were subsequently evaluated on a completely unseen hold-out test set containing 28 patient samples.
+
+## Final Model Performance
+
+| Model                     | GridSearch CV F1 | Test Accuracy | Test Weighted F1 | Test Macro F1 |
+| -----------------------
+
+===== CELL [87] (code) =====
+for var in [
+    "X_rest",
+    "X_group",
+    "X_train_sc",
+    "X_test_sc",
+    "feat_var",
+    "feat_var_list",
+    "feat_var_anova",
+    "feat_cols",
+    "dge_all",
+    "dge_df",
+    "gene_votes",
+    "votes_arr",
+    "importances",
+    "t_stats",
+    "p_vals",
+    "p_adj",
+    "log2fc",
+    "corr_plot",
+    "condensed",
+    "r"
+]:
+    globals().pop(var, None)
+
+gc.collect()
+  --- OUTPUTS (1) ---
+  PLN: ['74112']
+
+===== CELL [88] (markdown) =====
+## Section 11: SHAP Interpretability (Explainable AI)
+
+### Mathematical and Biological Foundation
+
+To audit predictions and establish clinical explainability, we use **TreeSHAP** based on cooperative game theory. The model's local prediction is decomposed as a sum of additive feature attributions:
+$$g(z') = \phi_0 + \sum_{i=1}^{M} \phi_i z'_i$$
+
+The unique, mathematically consistent attribution $\phi_i$ assigned to gene feature $i$ is calculated using the Shapley formula:
+$$\phi_i(f, x) = \sum_{S \subseteq F \setminus \{i\}} \frac{|S|!(|F| - |S| - 1)!}{|F|!} \left( f_x(S \cup \{i\}) - f_x(S) \right)$$
+
+This attributions satisfy three foundational axioms: **Local Accuracy** (additivity of values), **Missingness** (zero attribution for inactive features), and **Consistency** (attribution does not decrease if model impact increases).
+###  Biological Context
+Machine learning models are often criticised as "black boxes". To extract biological meaning, we utilize **SHAP (SHapley Additive exPlanations)** based on cooperative game theory (Lundberg & Lee, 2017). This allows us to map predictive probes (such as the co-expressed *ERBB2* and *MIEN1* amplicons, see Evans et al., 2006) back to actionable clinical markers. 
+SHAP calculates the contribution of each gene to the classification of every tumor. 
+To bridge the gap between Affymetrix probe IDs (e.g., `205225_at`) and biology, we query the **MyGene API** to annotate probes with their official HUGO gene symbols and descriptions (e.g., `ESR1` - Estrogen Receptor 1).
+
+
+===== CELL [89] (code) =====
+# Load models & test data
+tuned_rf     = joblib.load(ARTIFACT_DIR / "tuned_rf.pkl")
+tuned_lr = joblib.load(ARTIFACT_DIR / "tuned_lr.pkl")
+X_test_c     = joblib.load(ARTIFACT_DIR / "X_test_consensus.pkl")
+consensus_genes = joblib.load(ARTIFACT_DIR / "top_consensus_genes.pkl")
+le           = joblib.load(ARTIFACT_DIR / "label_encoder.pkl")
+
+class_names  = list(le.classes_)

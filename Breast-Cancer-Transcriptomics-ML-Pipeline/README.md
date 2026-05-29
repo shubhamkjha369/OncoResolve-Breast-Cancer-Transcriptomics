@@ -72,59 +72,58 @@ Due to the strong biological separability of the consensus biomarkers and the co
 | Model | Feature Space | Test Accuracy ($n=28$) | Test Weighted F1 | 5-Fold Stratified CV (Weighted F1) | Repeated CV (5-Fold, 10 Reps) |
 |---|---|---|---|---|---|
 | **Logistic Regression (Tuned)** | Consensus Genes | **100.00%** | **1.000** | **98.14%** (GridSearch) | **97.31% ± 3.48%** |
-| **Random Forest (Tuned)** | Consensus Genes | **100.00%** | **1.000** | **98.14%** (GridSearch) | **97.01% ± 4.81%** |
-| **Random Forest (Baseline)** | Consensus Genes | **100.00%** | **1.000** | **95.95% ± 3.36%** (Nested) | — |
-| **Support Vector Machine (RBF)** | Consensus Genes | **96.43%** | **0.964** | **96.01% ± 4.95%** (Nested) | — |
-| **Logistic Regression (Baseline)** | Consensus Genes | **100.00%** | **1.000** | **95.88% ± 5.18%** (Nested) | — |
-| **LightGBM Classifier** | Consensus Genes | **96.43%** | **0.966** | **92.80% ± 4.48%** (Nested) | — |
-| **XGBoost Classifier** | Consensus Genes | **85.71%** | **0.824** | **92.33% ± 2.43%** (Nested) | — |
+| **Random Forest (Tuned)** | Consensus Genes | **96.43%** | **0.964** | **97.16%** (GridSearch) | **97.01% ± 4.81%** |
+| **Random Forest (Baseline)** | Consensus Genes | **100.00%** | **1.000** | **96.32% ± 1.84%** (5-Fold) | — |
+| **Support Vector Machine (RBF)** | Consensus Genes | **96.43%** | **0.964** | — | — |
+| **Logistic Regression (Baseline)** | Consensus Genes | **100.00%** | **1.000** | **96.36% ± 1.82%** (5-Fold) | — |
+| **LightGBM Classifier** | Consensus Genes | **96.43%** | **0.966** | — | — |
+| **XGBoost Classifier** | Consensus Genes | **85.71%** | **0.824** | — | — |
 | **PyTorch MLP Neural Net** | Consensus Genes | **100.00%** | **1.000** | — | — |
 
-> *Note on Cross-Validation & Data Hygiene:* To prevent optimistic feature-selection leakage, the 5-Fold Stratified CV is executed with univariate feature selection (ANOVA SelectKBest) nested *inside* each CV fold on the pre-processed clinical cohort (stored in `cv_results.parquet`). The PyTorch MLP is trained on the full stratified training partition and evaluated on the independent held-out test split, utilizing early stopping on validation loss to prevent overfitting without excessive deep learning K-fold training overhead.
+> *Note on Cross-Validation & Data Hygiene:* To prevent optimistic feature-selection leakage, all feature selection steps are applied strictly on the training split only. The train/test split (80/20 stratified) is performed **before** any variance filtering, scaling, or selection. The PyTorch MLP is trained on the full stratified training partition and evaluated on the independent held-out test split, utilizing checkpoint-based early stopping (best epoch saved) to prevent overfitting.
 >
-> In stratified 5-fold cross-validation, the hyperparameter-tuned Logistic Regression and Random Forest models both achieved a **98.14% peak CV Weighted F1 score**. On our rigorous stability test (Repeated Stratified 5-Fold CV), the Tuned Logistic Regression model achieved a **97.31% Mean F1 (± 3.48% std)**, and Tuned Random Forest achieved a **97.01% Mean F1 (± 4.81% std)**. Both models strongly validate that the 100% test accuracy is biologically genuine and highly generalized.
+> In stratified 5-fold cross-validation, the hyperparameter-tuned Logistic Regression achieved a **98.14% peak CV Weighted F1 score**, and tuned Random Forest achieved **97.16%**. Both models strongly validate that the test accuracy is biologically genuine and highly generalized.
 
 ---
 
 ### 🧬 Key Consensus Biomarkers Identified (Ensemble SHAP)
-Explainable AI (Consensus TreeSHAP/LinearSHAP) mapped the most predictive consensus transcriptomic features back to their biological HUGO gene symbols:
+Explainable AI (Consensus TreeSHAP/LinearSHAP) mapped the most predictive consensus transcriptomic features back to their biological HUGO gene symbols, ranked by normalized Ensemble SHAP Impact Score:
 
-| Gene Symbol | Probe ID | Biological Role & Subtype Clinical Association |
-|---|---|---|
-| **ERBB2** (HER2) | 234354_x_at | **HER2 Receptor**: Tyrosine kinase amplification driver; primary diagnostic hallmark of **HER2-Enriched** subtype. |
-| **ERBB2** (HER2) | 216836_s_at | **HER2 Receptor**: Co-amplified probe targeting HER2 signaling; confirms high-intensity driver axis. |
-| **PGAP3** | 221811_at | **Post-GPI Phospholipase 3**: Located on the chromosome **17q12 amplicon**, tightly linked and co-amplified with ERBB2. |
-| **ESR1** (ERα) | 205225_at | **Estrogen Receptor Alpha**: Estrogen receptor signaling; master nuclear transcription hallmark of **Luminal A/B** subtypes. |
-| **MIEN1** | 224447_s_at | **Migration and Invasion Enhancer 1**: Located on the **17q12 amplicon**, drives migration and cell invasion in HER2+ tumors. |
-| **GRB7** | 210761_s_at | **Growth Factor Bound Protein 7**: Located on the **17q12 amplicon**, adaptor interacting with HER2 to promote migration. |
-| **STARD3** | 202991_at | **Lipid Transfer Protein**: Located on the **17q12 amplicon**, co-amplified with ERBB2, regulates metabolic transport. |
-| **PRR15** | 226961_at | **Proline Rich 15**: Associated with cellular growth, differentiation, and subtype-specific proliferation rates. |
-| **UGT8** | 228956_at | **UDP Glycosyltransferase 8**: Involved in EMT, cell progression, and aggressive metastasis. |
-| **CA12** | 214164_x_at | **Carbonic Anhydrase 12**: Estrogen-responsive marker highly expressed in well-differentiated, favorable **Luminal** tumors. |
-| **CDC6** | 203967_at | **Cell Division Cycle 6**: DNA replication regulator overexpressed in high-proliferation subtypes (**Basal-like** & **Luminal B**). |
-| **AGR3** | 228241_at | **Anterior Gradient 3**: Estrogen-responsive luminal marker regulating cell-cell adhesion and tumor invasion. |
+| Rank | Gene Symbol | Probe ID | Biological Role & Subtype Clinical Association |
+|---|---|---|---|
+| **#1** | **MIEN1** | 224447_s_at | **Migration and Invasion Enhancer 1**: Located on the chromosome **17q12 amplicon**, drives tumor cell migration and invasion in HER2+ tumors. |
+| **#2** | **ERBB2** (HER2) | 234354_x_at | **HER2 Receptor**: Tyrosine kinase amplification driver; primary diagnostic hallmark of **HER2-Enriched** subtype. |
+| **#3** | **ERBB2** (HER2) | 216836_s_at | **HER2 Receptor**: Independent probe validating HER2 amplification and signaling activity. |
+| **#4** | **STARD3** | 202991_at | **Lipid Transfer Protein**: Located on the **17q12 amplicon**, co-amplified with ERBB2, regulates metabolic cholesterol transport. |
+| **#5** | **PGAP3** | 221811_at | **Post-GPI Phospholipase 3**: Located on the chromosome **17q12 amplicon**, tightly linked and co-amplified with ERBB2. |
+| **#6** | **ERBB2** (HER2) | 210930_s_at | **HER2 Receptor**: Additional ERBB2 probe reinforcing the dominant HER2 amplicon signal. |
+| **#7** | **GRB7** | 210761_s_at | **Growth Factor Bound Protein 7**: Located on the **17q12 amplicon**, adaptor interacting with HER2 to promote migration. |
+| **#8** | **ESR1** (ERα) | 205225_at | **Estrogen Receptor Alpha**: Estrogen receptor signaling; master nuclear transcription hallmark of **Luminal A/B** subtypes. |
+| **#9** | **PGAP3** | 55616_at | **Post-GPI Phospholipase 3**: Alternative probe further supporting the HER2 amplicon importance. |
+| **#10** | **NME3** | 204862_s_at | **NME/NM23 Nucleoside Diphosphate Kinase**: Involved in cellular growth regulation and signaling. |
 
 ---
 
 ### 🗺️ Enriched Biological Pathways (KEGG 2021)
-The identified ensemble consensus biomarkers were automatically mapped to biological pathways using the **Enrichr API**:
+The identified ensemble consensus biomarkers were automatically mapped to biological pathways using the **Enrichr API** (8 significant pathways after FDR correction):
 
 | KEGG Pathway | Overlap | Adjusted P-value (FDR) | Biological & Clinical Homology in Breast Cancer |
 |---|---|---|---|
-| **Prostate cancer** | 5/97 | **0.0037** | Shares the hormone-driven nuclear receptor axis and downstream PI3K/Akt survival signaling cascades. |
-| **Pathways in cancer** | 10/531 | **0.0037** | Central somatic driving network representing essential oncogenes, suppressors, and growth loops. |
-| **Gastric cancer** | 5/149 | **0.0135** | Shares the high-frequency genomic co-amplification and targeted therapeutic clinical utility of **ERBB2 (HER2)**. |
-| **Cell cycle** | 4/124 | **0.0419** | Essential metabolic and replication machinery driving clinical mitotic proliferation indexes. |
-| **Oocyte meiosis** | 4/129 | **0.0419** | Spindle checkpoint, microtubule dynamics, and chromosomal segregation factors co-opted by tumor cells. |
+| **Prostate cancer** | 5/97 | **3.30 × 10⁻³** | Shares the hormone-driven nuclear receptor axis and downstream PI3K/Akt survival signaling cascades with breast cancer. |
+| **Pathways in cancer** | 10/531 | **3.30 × 10⁻³** | Central somatic driving network representing essential oncogenes, suppressors, and growth loops. |
+| **Acute myeloid leukemia** | 4/67 | **6.25 × 10⁻³** | Shared proliferative signaling pathways (FGFR2, DEK) and cell-cycle dysregulation mechanisms. |
+| **Cell cycle** | 4/124 | **4.46 × 10⁻²** | Essential replication machinery driving clinical mitotic proliferation indexes (ASPM, DEK, DEPDC1). |
+| **Oocyte meiosis** | 4/129 | **4.46 × 10⁻²** | Spindle checkpoint, microtubule dynamics, and chromosomal segregation factors co-opted by tumor cells. |
+| **Chemical carcinogenesis** | 5/239 | **4.70 × 10⁻²** | Metabolism and detoxification pathways reflecting carcinogen exposure signatures. |
 
 ---
 
 ### 🔀 Enriched Biological Processes (Gene Ontology 2023)
-Gene Ontology (GO) enrichment validated that our selected consensus biomarkers are primary upstream regulatory and mitotic checkpoint switches:
+Gene Ontology (GO) enrichment identified **34 significantly enriched biological processes** (FDR < 0.05) validating that our consensus biomarkers capture core cancer biology:
 
-* **Regulation Of miRNA Transcription (GO:1902893)** (Adjusted p-value: **0.00017**): Upstream post-transcriptional hubs that regulate Estrogen Receptor (`ESR1`) and `ERBB2` expression networks.
-* **Regulation Of Mitotic Cell Cycle Phase Transition (GO:0044772)** (Adjusted p-value: **0.00079**): Controls the entry and execution of cell division, differentiating high-proliferation Basal/Luminal B from indolent Luminal A tumors.
-* **Negative Regulation Of Epithelial Cell Apoptotic Process (GO:2001057)** (Adjusted p-value: **0.00613**): Major survival programming blocking apoptosis to sustain tumorigenesis under microenvironmental stress.
+* **Regulation Of miRNA Transcription (GO:1902893)** (Adjusted p-value: **3.46 × 10⁻³**): Upstream post-transcriptional hubs that regulate Estrogen Receptor (`ESR1`) and `ERBB2` expression networks.
+* **Positive Regulation Of Cell Cycle Process (GO:0090068)** (Adjusted p-value: **3.58 × 10⁻³**): Controls cell division entry and execution, differentiating high-proliferation Basal/Luminal B from indolent Luminal A tumors.
+* **Positive Regulation Of Chromosome Segregation (GO:2000387)** (Adjusted p-value: **1.07 × 10⁻²**): Chromosomal instability and mitotic checkpoint pathways associated with tumor aggressiveness.
 
 ---
 
@@ -136,15 +135,15 @@ We utilize the **GSE45827** dataset, sourced from the extensively curated [CuMiD
 
 * **Microarray Platform:** Affymetrix Human Genome U133 Plus 2.0
 * **Initial Cohort Size:** 151 total samples (comprising clinical tumors, adjacent normal controls, and laboratory cell lines)
-* **Pre-processed Cohort Size:** 137 clinical samples (after dropping cell-line confounding controls)
+* **Pre-processed Cohort Size:** 137 clinical samples (after dropping 14 cell-line confounding controls)
 * **Features:** 54,675 gene expression probes (Affymetrix reporter IDs)
 * **Subtype Target:** 5 clinical categories (Basal-like, HER2-enriched, Luminal A, Luminal B, and Normal adjacents)
 
 ### 🧬 Understanding Features for Non-Coders
 If you are a biologist or non-programmer, here is how the data is structured:
 1. **What is a Probe?** A microarray features thousands of tiny DNA sequences called **probes**. When a patient's mRNA binds to a probe, it emits a fluorescent signal. The intensity of this signal represents how active (expressed) that gene is in the tumor.
-2. **Features vs. Probes:** Out of the 54,675 probes, many represent "noise" or housekeeping genes that behave identically in all tissues. Our pipeline uses a **Variance Threshold (0.1)** to filter out these non-informative probes, shrinking the feature space to **35,192 probes** before model training.
-3. **Consensus Selection:** Because different mathematical formulas find different kinds of patterns, we run **4 distinct feature selectors** (ANOVA, Mutual Information, Random Forests, and LASSO). Probes selected by **at least 2 methods** are placed in the **Consensus Feature Space** (a refined, robust set of biomarkers).
+2. **Features vs. Probes:** Out of the 54,675 probes, many represent "noise" or housekeeping genes that behave identically in all tissues. Our pipeline uses a **Variance Threshold (0.1)** to filter out these non-informative probes, shrinking the feature space to **34,192 probes** before model training.
+3. **Consensus Selection:** Because different mathematical formulas find different kinds of patterns, we run **4 distinct feature selectors** (ANOVA, Mutual Information, Random Forests, and LASSO). Probes selected by **at least 2 methods** are placed in the **Consensus Feature Space** (a refined, robust set of 1,480 biomarkers).
 
 ### 🏷️ Subtype Class Distribution
 To focus exclusively on patient-derived tumor biology and clinically relevant tumor-microenvironment interactions, the **14 laboratory cell line samples** are removed during step 1.3 of the pipeline. This avoids potential genetic drift artifacts. The clinical subtype distribution analyzed in this study is as follows:
@@ -179,27 +178,28 @@ The pipeline executes a strict, leakage-free flow to guarantee that no test-set 
                             │
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  02 ─ DATA HYGIENE SPLIT     Stratified Train/Test Split (80/20)    │
+│  02 ─ QUANTILE NORMALIZATION Standardize signal distributions,      │
+│                              99.998% variability reduction          │
+└───────────────────────────┬──────────────────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  03 ─ DATA HYGIENE SPLIT     Stratified Train/Test Split (80/20)    │
 │                              (Train n=109 samples, Test n=28)       │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  03 ─ PREPROCESSING          Training Column-Median Imputation      │
-│                              Variance Filtering (Var > 0.1 on TRAIN)│
+│  04 ─ PREPROCESSING          Variance Filtering (Var > 0.1 on TRAIN)│
+│                              54,675 → 34,192 features               │
 │                              Fit & Apply StandardScaler on TRAIN    │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  04 ─ EDA & CLUSTERING       PCA/t-SNE/UMAP projections,            │
+│  05 ─ EDA & CLUSTERING       PCA/t-SNE/UMAP projections,            │
 │                              Hierarchical & K-Means clustering      │
-└───────────────────────────┬──────────────────────────────────────────┘
-                            │
-                            ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│  05 ─ DGE & NETWORKS         Differential Gene Expression (Welch t) │
-│                              Pearson Co-expression Network Modules  │
+│                              DGE (Welch t) + Co-expression Network  │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
@@ -207,21 +207,23 @@ The pipeline executes a strict, leakage-free flow to guarantee that no test-set 
 │  06 ─ FEATURE SELECTION      ANOVA F-test · Mutual Information ·    │
 │                              Random Forest Importance · LASSO (L1)  │
 │                              → Consensus Voting (≥2 of 4 methods)   │
+│                              → 1,480 Consensus Biomarkers           │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  07 ─ ML & DL BENCHMARK      Train 5 Classical ML Classifiers       │
+│  07 ─ ML & DL BENCHMARK      Train 6 Classical ML Classifiers       │
 │                              Train PyTorch MLP Deep Learning Net    │
+│                              GridSearchCV Hyperparameter Tuning     │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  08 ─ EXPLAINABILITY & PATHS Explain model via TreeSHAP             │
+│  08 ─ EXPLAINABILITY & PATHS Explain model via TreeSHAP + LinearSHAP│
 │                              Map probes to HUGO Symbols via MyGene  │
 │                              Enrichr API → KEGG & GO Enrichment     │
 └──────────────────────────────────────────────────────────────────────┘
-``````
+```
 
 ---
 
@@ -232,7 +234,7 @@ The pipeline executes a strict, leakage-free flow to guarantee that no test-set 
 Breast-Cancer-Transcriptomics-ML-Pipeline/
 │
 ├── notebooks/                          # Notebook directory
-│   └── Breast_Cancer_ML_Pipeline.ipynb # Verified unified end-to-end analytical notebook
+│   └── Breast_cancer_subtype_Transcriptomics_Pipeline.ipynb  # End-to-end analytical notebook
 │
 ├── data/
 │   ├── raw/                            # Raw GSE45827 CSV file (place here)
@@ -242,19 +244,22 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 │   │   ├── breast_cancer_qn.parquet
 │   │   └── pca_2d.parquet
 │   └── artifacts/                      # Pre-computed ML models & parquets
-│       ├── cv_results.parquet          # Cross-validation metrics
-│       ├── consensus_genes.parquet     # Selection methods voting
-│       ├── shap_importance.parquet     # Raw SHAP values
-│       ├── annotated_global_biomarkers.parquet # SHAP features + HUGO symbols
+│       ├── shap_importance.parquet     # SHAP values with HUGO gene annotations
+│       ├── shap_importance_annotated.parquet  # Annotated biomarker table
+│       ├── gene_level_shap.parquet     # Gene-level (collapsed probe) SHAP scores
 │       ├── enrichr_kegg_results.parquet
 │       ├── enrichr_go_results.parquet
-│       ├── mlp_best.pt                 # Trained PyTorch Neural Net
-│       ├── tuned_rf.pkl                # Optimized Random Forest pipeline
+│       ├── benchmark_results.parquet   # Multi-model benchmark comparison
+│       ├── final_model_comparison.parquet # Tuned RF vs LR performance
+│       ├── mlp_training_history.parquet # Epoch-by-epoch MLP training log
+│       ├── mlp_best.pt                 # Trained PyTorch Neural Net (best checkpoint)
+│       ├── tuned_rf.pkl                # Optimized Random Forest
+│       ├── tuned_lr.pkl                # Optimized Logistic Regression
 │       └── ...
 │
 ├── app.py                              # Streamlit recruiter-showcase dashboard
 ├── automl_page.py                      # AutoML user interface module
-├── pipeline_engine.py                  # Core backend for training and analysis
+├── pipeline_engine.py                  # Core backend for AutoML training and analysis
 ├── requirements.txt                    # Python environment dependencies
 ├── Dockerfile                          # Multi-stage Docker production build
 └── README.md                           # ← You are here
@@ -267,79 +272,100 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 
 <a id="1-data-loading-and-inspection"></a>
 ### 1. Data Loading and Inspection
-* **Action:** Ingests the high-dimensional GSE45827 microarray dataset, profiles clinical class distributions, casts data types to memory-efficient `float32` (reducing memory footprint by 50%), and drops laboratory cell line samples to focus purely on patient-derived tumor biology.
+* **Action:** Ingests the high-dimensional GSE45827 microarray dataset (151 samples × 54,677 features), profiles clinical class distributions, casts data types to memory-efficient `float32` (reducing memory footprint to ~30 MB), drops laboratory cell line samples (n=14), and keeps **137 clinical samples** for analysis.
+* **Key Output:** Raw shape confirmed — 5 clinical subtypes with distributions: Basal (41), HER2 (30), Luminal B (30), Luminal A (29), Normal (7).
 
 <a id="2-normalization-and-preprocessing"></a>
 ### 2. Normalization and Preprocessing
-* **Action:** Conducts **Quantile Normalization** on raw patient microarray intensities to standardize signal distributions across arrays and mitigate batch variation.
+* **Action:** Conducts **Quantile Normalization (QN)** on raw patient microarray intensities to standardize signal distributions across all 137 arrays and mitigate batch variation.
+* **Result:** QN reduced per-sample median variability by **99.998%** (Std: 0.0252 → 4.77 × 10⁻⁷). Mean sample Pearson correlation post-QN: **0.9274** with 8 detected outliers (3 Basal, 5 Normal) suggesting genuine biological heterogeneity.
 * **Data Hygiene (Anti-Leakage Protocol):**
   1. **Stratification Split:** Splitting into Train ($80\%$, $n=109$) and Test ($20\%$, $n=28$) occurs **first** before any feature-level transformations.
-  2. **Median Imputation:** Missing values are imputed using training-partition column medians only.
-  3. **Variance Filtering:** Probes with flat profiles (non-informative features) are filtered using a **Variance Threshold ($>0.1$)** fit exclusively on the training set, shrinking the feature space from 54,675 to 35,192 probes.
-  4. **Standardization:** A `StandardScaler` is fit on the training partition only and applied to both splits, strictly preventing scaling leakages.
+  2. **Variance Filtering:** Probes with flat profiles (non-informative features) are filtered using a **Variance Threshold ($>0.1$)** fit exclusively on the training set, shrinking the feature space from **54,675 to 34,192 probes**.
+  3. **Standardization:** A `StandardScaler` is fit on the training partition only and applied to both splits, strictly preventing scaling leakages.
 
 <a id="3-dimensionality-reduction-eda"></a>
 ### 3. Dimensionality Reduction & EDA
-* **Action:** Projects the massive feature space onto 2D and 3D using **PCA**, **t-SNE**, and **UMAP**.
-* **Finding:** PCA projects strong separation of the Basal and Normal subtypes, validating the presence of strong transcriptomic signatures.
+* **Action:** Projects the massive feature space onto 2D using **PCA**, **t-SNE**, and **UMAP** (pre-filtered on top 5,000 most variable genes, then 50 PCA components).
+* **Finding:**
+  * PCA: PC1 (20.54%), PC2 (9.36%), top 50 PCs = **80.78%** cumulative variance.
+  * t-SNE: Final KL Divergence 0.3574 — clean parallel banding of subtypes from Normal → Luminal A → Luminal B → HER2 → Basal.
+  * UMAP: Continuous biological lineage progression from Basal (bottom-left) to Normal (isolated upper-right island).
+  * Hierarchical clustering (Ward, k=5): ARI=0.694, NMI=0.723. K-Means (k=5): ARI=0.691, NMI=0.710.
 
 <a id="4-differential-gene-expression-dge"></a>
 ### 4. Differential Gene Expression (DGE)
-* **Action:** Applies ANOVA testing across subtypes to calculate Log2 Fold Change and p-values.
+* **Action:** Applies one-vs-rest **Welch's t-test** for each of 54,675 probes across 5 subtypes with **Benjamini-Hochberg FDR correction** (thresholds: FDR < 0.05, |log₂FC| > 1.0).
+* **Results:** Total DEGs per subtype: Normal (5,765) > Basal (2,178) > Luminal A (1,468) > Luminal B (533) > HER2 (410).
 * **Biologist Value:** Identifies probes that are statistically turned "on" or "off" in cancer tissue compared to normal controls.
 
 <a id="5-subtype-clustering-analysis"></a>
 ### 5. Subtype Clustering Analysis
-* **Action:** Runs K-Means and Hierarchical Clustering (using Ward linkage) on the expression space.
-* **Finding:** Clusters align with patient subtype labels, proving that the underlying transcriptomic profiles naturally group into their respective clinical classes.
+* **Action:** Runs K-Means (k=5) and Hierarchical Clustering (Ward linkage, Euclidean distance, top 2,000 variable genes) on the expression space.
+* **Finding:** Both clustering methods achieved ARI > 0.69 without using any label information, proving that transcriptomic profiles naturally group into clinical subtype classes.
 
 <a id="6-gene-co-expression-networks"></a>
 ### 6. Gene Co-expression Networks
-* **Action:** Computes correlation matrices for the top 500 high-variance probes and extracts high-correlation co-expression links.
-* **Finding:** Discovers dense, highly correlated gene modules that represent co-regulated biological complexes.
+* **Action:** Computes Pearson correlation matrices for the top 500 high-variance probes (training split only) and extracts co-expression links with |r| > 0.85.
+* **Finding:** Network statistics — 500 nodes, 527 edges. Top hub genes (degree 27): `216207_x_at`, `211645_x_at`, `211798_x_at`. Module detection via hierarchical clustering identified **318 co-expression modules**.
 
 <a id="7-consensus-feature-selection"></a>
 ### 7. Consensus Feature Selection
-* **Action:** Combines four independent selection tools to rank and select features:
-  1. **ANOVA F-Test:** Evaluates linear difference between classes.
-  2. **Mutual Information:** Captures non-linear dependencies.
-  3. **Random Forest Feature Importance:** Measures Gini impurity reduction.
-  4. **LASSO L1 Regularization:** Selects features with non-zero weights.
-* **Ensemble Strategy:** Features selected by **at least 2 methods** are retained as the **Consensus Space** to minimize mathematical bias.
+* **Action:** Combines four independent selection tools to rank and select features (all fit on training set only):
+  1. **ANOVA F-Test:** Top 2,000 genes by linear class separation.
+  2. **Mutual Information:** Top 2,000 genes by non-linear entropy dependency.
+  3. **Random Forest Feature Importance:** Top 2,000 genes by Gini impurity reduction.
+  4. **LASSO L1 Regularization:** 21 genes with non-zero coefficients (the most aggressive sparsifier).
+* **Ensemble Strategy:** Features selected by **at least 2 methods** are retained as the **Consensus Space** → **1,480 consensus biomarkers**.
 
 <a id="8-baseline-machine-learning-benchmarking"></a>
 ### 8. Baseline Machine Learning Benchmarking
-* **Action:** Benchmarks 5 algorithms (Logistic Regression, SVM, Random Forest, XGBoost, and LightGBM) on the consensus features.
-* **Finding:** Logistic Regression and Random Forest both achieved **100% accuracy** on the consensus features test set, proving that our consensus pipeline isolates highly separable transcriptomic patterns.
+* **Action:** Benchmarks 6 algorithms (Logistic Regression, SVM RBF, Random Forest, XGBoost, LightGBM, and a Soft Voting Ensemble) across two feature spaces: Consensus (1,480 features) and PCA-50.
+* **Finding:**
+  * Consensus space: LR, RF, and Voting Ensemble all achieved **100% accuracy**.
+  * XGBoost underperformed in the high-dimensional consensus space (85.71%) but improved in PCA-50 (89.29%).
+  * Logistic Regression achieved **100% accuracy** in **both** feature spaces, confirming strong linear separability of the subtype transcriptomic signatures.
 
 <a id="9-deep-learning-pytorch-mlp"></a>
 ### 9. Deep Learning (PyTorch MLP)
 * **Action:** Constructs a custom **PyTorch Multi-Layer Perceptron (MLP)**.
 * **Architecture:**
   ```
-  Input (Consensus) -> Linear(512) -> BatchNorm1d -> ReLU -> Dropout(0.4) 
-                   -> Linear(256) -> BatchNorm1d -> ReLU -> Dropout(0.3)
-                   -> Linear(128) -> ReLU -> Dropout(0.2)
-                   -> Linear(n_classes)
+  Input (1,480 consensus features)
+    → Linear(512) → BatchNorm1d → ReLU → Dropout(0.4)
+    → Linear(256) → BatchNorm1d → ReLU → Dropout(0.3)
+    → Linear(128) → ReLU → Dropout(0.2)
+    → Linear(5 classes)
   ```
-* **Training Details:** Uses weighted CrossEntropyLoss (addressing class imbalance) and the Adam optimizer (lr=1e-3, weight_decay=1e-4) over 100 epochs.
-* **Results:** Successfully achieved **100% accuracy** on the consensus test set by epoch 3.
+* **Training Details:** Uses weighted CrossEntropyLoss (addressing class imbalance), Adam optimizer (lr=1e-3, weight_decay=1e-4), ReduceLROnPlateau scheduler, over 100 epochs. Best checkpoint saved at epoch with highest validation accuracy.
+* **Results:** Best validation accuracy **100.00%** achieved at epoch 4 (then sustained through epoch 100). Final training loss = 0.0047.
 
 <a id="10-cross-validation-and-gridsearchcv-tuning"></a>
 ### 10. Cross-Validation and GridSearchCV Tuning
-* **Action:** Validates the Random Forest model using Stratified 5-Fold CV (re-selecting features inside each fold to prevent leakage).
-* **GridSearch Config:** Tunes the pipeline over feature size `k`, tree count, and depth.
-* **Tuned Params:** `k=500 features, max_depth=None, max_features='log2', n_estimators=300` yielding a **97.16% mean CV score**.
+* **Action:** Validates baseline models using Stratified 5-Fold CV on the consensus training set, then performs GridSearchCV hyperparameter optimization for both Random Forest and Logistic Regression.
+* **Baseline CV Results:**
+  * Baseline RF: CV Accuracy **96.32% ± 1.84%**, Overfitting Gap **3.68%**
+  * Baseline LR: CV Accuracy **96.36% ± 1.82%**, Overfitting Gap **3.64%**
+* **GridSearch Best Params:**
+  * **Random Forest:** `n_estimators=400, max_features='log2', max_depth=None` → Best CV F1: **97.16%**
+  * **Logistic Regression:** `C=0.001, solver='saga', max_iter=500` → Best CV F1: **98.14%**
+* **Final Test Set (Tuned Models):**
+  * Tuned LR: Test Accuracy **100%**, Test Weighted F1 **1.000**
+  * Tuned RF: Test Accuracy **96.43%**, Test Weighted F1 **0.964**
 
 <a id="11-model-explainability-shap"></a>
 ### 11. Model Explainability (SHAP)
-* **Action:** Conducts **Ensemble Consensus SHAP** analysis combining **TreeSHAP** (non-linear attributions for Random Forest) and **LinearSHAP** (linear coefficients for Logistic Regression).
-* **Clinician Value:** Quantifies and maps how much each probe pushes model predictions toward specific subtypes. Mathematically validates core biological axes (e.g. chromosome 17q12 amplicon cluster, estrogen-responsive elements, mitotic cell cycle replication markers) used to direct clinical treatment options.
+* **Action:** Conducts **Ensemble Consensus SHAP** analysis combining **TreeSHAP** (non-linear attributions for Tuned Random Forest) and **LinearSHAP** (linear coefficients for Tuned Logistic Regression). Scores are independently normalized then averaged.
+* **Probe → Gene Mapping:** Top 100 SHAP probes annotated via **MyGene API** → 95 annotated biomarkers → 81 unique HUGO gene symbols.
+* **Top Signal:** The **HER2 amplicon at chromosome 17q12** (MIEN1, ERBB2, STARD3, PGAP3, GRB7) dominates the top 7 positions, with the **Luminal axis marker ESR1** ranked #8. This perfectly mirrors clinical diagnostic criteria.
 
 <a id="12-functional-genomics-go-and-kegg"></a>
 ### 12. Functional Genomics (GO and KEGG)
-* **Action:** Queries the **Enrichr API** on the top 100 consensus biomarkers to map them onto GO biological processes and KEGG pathways.
-* **Biological Validation:** Uncovers significant post-transcriptional microRNA transcriptional regulators ($FDR = 1.66 \times 10^{-4}$), apoptotic survival pathways ($FDR = 6.13 \times 10^{-3}$), and cross-cancer therapeutic homologies such as **Gastric cancer** (representing shared `ERBB2` co-amplification and Trastuzumab clinical response).
+* **Action:** Queries the **Enrichr API** on the 81 unique annotated consensus biomarker genes to map them onto GO Biological Process 2023 and KEGG 2021 pathways.
+* **Results:**
+  * **GO Biological Process:** 34 significant terms (FDR < 0.05), top terms include regulation of miRNA transcription, positive regulation of cell cycle, and response to estrogen.
+  * **KEGG 2021:** 8 significant pathways (FDR < 0.05), including Pathways in Cancer, Prostate Cancer, Acute Myeloid Leukemia, and Cell Cycle — all sharing core oncogenic signaling axes with breast cancer.
+* **Breast Cancer KEGG Note:** The KEGG 2021 Human database's "Breast cancer" pathway entry did not reach significance (adjusted p=0.197, overlap 3/147) with the 81 annotated genes, as the ERBB2-driven biomarker signature shows stronger statistical overlap with the broader "Pathways in Cancer" and co-amplified oncogene modules catalogued under other cancer pathway entries.
 
 ---
 
@@ -388,7 +414,7 @@ pip install -r requirements.txt
 The analytical notebook is already fully compiled, structured, and verified cell-by-cell. To execute the pipeline end-to-end (which automatically processes the data, trains the models, and saves all Parquet/weights outputs to `data/artifacts/`):
 ```bash
 # Run the pipeline end-to-end (saves all artifacts to data/artifacts/)
-jupyter nbconvert --to notebook --execute --inplace notebooks/Breast_Cancer_ML_Pipeline.ipynb
+jupyter nbconvert --to notebook --execute --inplace notebooks/Breast_cancer_subtype_Transcriptomics_Pipeline.ipynb
 ```
 > **Note:** The raw CuMiDa dataset (`Breast_GSE45827.csv`, ~140 MB) must be placed in the `data/raw/` folder before executing the notebook. Download the dataset directly from the [official CuMiDa server](https://sbcb.inf.ufrgs.br/data/cumida/Genes/Breast/GSE45827/Breast_GSE45827.csv) or via [Kaggle](https://www.kaggle.com/datasets/brunogrisci/breast-cancer-gene-expression-cumida/data).
 
@@ -424,11 +450,11 @@ The Dockerfile uses a two-stage build to minimize the final container size:
 ## 🛠️ Technologies
 
 * **Programming Language:** Python 3.13
-* **Deep Learning Framework:** PyTorch
+* **Deep Learning Framework:** PyTorch 2.7+
 * **Machine Learning Library:** Scikit-Learn
 * **Gradient Boosting:** XGBoost, LightGBM
-* **Explainable AI:** SHAP (SHapley Additive exPlanations)
-* **Biological APIs:** MyGene API, Enrichr API (KEGG 2021, GO 2023)
+* **Explainable AI:** SHAP (SHapley Additive exPlanations) — TreeSHAP + LinearSHAP
+* **Biological APIs:** MyGene API, Enrichr API (KEGG 2021 Human, GO Biological Process 2023)
 * **Dimensionality Reduction:** PCA, t-SNE, UMAP-learn
 * **Dashboard Interface:** Streamlit & Custom CSS
 * **Interactive Plots:** Plotly Express & Plotly Graph Objects
@@ -447,7 +473,7 @@ The Dockerfile uses a two-stage build to minimize the final container size:
    * *Methodological Significance:* Formally introduced Quantile Normalization (QN), which we utilize in Section 2 to standardize microarray signal intensities and remove technical batch variation.
 
 3. **Evans, M. R., Classon, M., & Evans, H. M. (2006).** *MIEN1, a novel gene co-amplified with Her2, promotes cell migration and invasion in breast cancer.* **Oncogene**, 25(45), 6100-6112. [https://doi.org/10.1038/sj.onc.1209632](https://doi.org/10.1038/sj.onc.1209632)
-   * *Biological Validation:* Proves that *MIEN1* is physically located adjacent to the *ERBB2* (HER2) receptor at chromosome 17q12 and frequently co-amplified in HER2+ disease, validating our model's top global SHAP explainability insights.
+   * *Biological Validation:* Proves that *MIEN1* is physically located adjacent to the *ERBB2* (HER2) receptor at chromosome 17q12 and frequently co-amplified in HER2+ disease, validating our model's #1 ranked global SHAP biomarker.
 
 4. **Saeys, Y., Inza, I., & Larrañaga, P. (2007).** *A review of feature selection techniques in bioinformatics.* **Bioinformatics**, 23(19), 2507-2517. [https://doi.org/10.1093/bioinformatics/btm344](https://doi.org/10.1093/bioinformatics/btm344)
    * *Bioinformatics Foundation:* Outlines the stability advantages of ensemble and consensus feature selection frameworks in high-dimensional genomic feature spaces, forming the basis for our 4-method Consensus Voting framework in Section 7.
@@ -459,7 +485,7 @@ The Dockerfile uses a two-stage build to minimize the final container size:
    * *Enrichment API Foundation:* The peer-reviewed reference for the Enrichr tool and database API utilized in Section 12 for biological pathway enrichment and process validation.
 
 7. **Xin, J., Mark, A., Afrasiabi, C., Tsueng, G., Juchler, M., Gopal, N., ... & Su, A. I. (2016).** *MyGene.info: light-weight, high-performance query services for genes.* **Bioinformatics**, 32(19), 3034-3035. [https://doi.org/10.1093/bioinformatics/btw339](https://doi.org/10.1093/bioinformatics/btw339)
-   * *API Foundation:* The official citation for the high-throughput MyGene API query services utilized in Sections 11 and 12 to resolve biological probe IDs to HUGO symbols.
+   * *API Foundation:* The official citation for the high-throughput MyGene API query services utilized in Section 11 to resolve Affymetrix probe IDs to HUGO gene symbols.
 
 8. **Lundberg, S. M. & Lee, S.-I. (2017).** *A unified approach to interpreting model predictions.* **Advances in Neural Information Processing Systems (NeurIPS)**, 4765-4774.
    * *Explainable AI Theory:* Formally introduced the SHAP framework and Shapley additive explanations, which we utilize to guarantee mathematically consistent local and global interpretability.

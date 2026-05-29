@@ -512,7 +512,7 @@ elif page == "Feature Selection":
             3. **Mutual Information (2,000 genes):** Quantifies non-linear entropy-based correlation between genes and labels.
             4. **Random Forest (2,000 genes):** Selects genes based on Gini impurity reduction.
             5. **LASSO L1 Sparsifier (21 genes):** Retains variables with non-zero coefficients.
-            * **Consensus Voting:** Probes selected by **$\ge 2$ algorithms** are retained as consensus biomarkers (yielding **657 genes**).
+            * **Consensus Voting:** Probes selected by **$\ge 2$ algorithms** are retained as consensus biomarkers (yielding **1,480 genes**).
             """)
         with col_fs2:
             top = consensus_genes.head(25)
@@ -557,7 +557,7 @@ elif page == "Model Performance":
         <div class="success-box">
             <b>Benchmark Insights:</b>
             <ul style="margin: 8px 0 0 20px; padding: 0;">
-                <li style="margin-bottom: 6px;"><b>Linear Separability:</b> <b>Logistic Regression</b> achieved a perfect <b>100.00% accuracy and 1.0000 F1 score</b> on both the 657 Consensus Genes and the compressed 50 Principal Components. This demonstrates that breast cancer subtypes exhibit highly distinct transcriptomic ratios that can be cleanly separated by linear decision hyperplanes.</li>
+                <li style="margin-bottom: 6px;"><b>Linear Separability:</b> <b>Logistic Regression</b> achieved a perfect <b>100.00% accuracy and 1.0000 F1 score</b> on both the 1,480 Consensus Genes and the compressed 50 Principal Components. This demonstrates that breast cancer subtypes exhibit highly distinct transcriptomic ratios that can be cleanly separated by linear decision hyperplanes.</li>
                 <li><b>Non-Linear Dynamics:</b> <b>Random Forest</b> achieved <b>100.00% accuracy</b> in the Consensus feature space, but dropped to <b>96.43%</b> in the PCA space. Traditional SVM and LightGBM show stable boundary classification with <b>96.43% accuracy</b>.</li>
             </ul>
         </div>
@@ -571,7 +571,7 @@ elif page == "Model Performance":
             st.code("""
 BreastCancerMLP(
   (net): Sequential(
-    (0): Linear(in_features=657, out_features=512)
+    (0): Linear(in_features=1480, out_features=512)
     (1): BatchNorm1d(512)
     (2): ReLU()
     (3): Dropout(p=0.4)
@@ -659,7 +659,7 @@ elif page == "Cross Validation":
 
         st.markdown('<div class="section-title">Exhaustive GridSearchCV Log (Top Configurations)</div>', unsafe_allow_html=True)
         if grid_search_log is not None:
-            st.markdown(f'<div class="success-box">GridSearchCV evaluated multiple pipeline configurations.<br>Optimal Hyperparameters:<br>• <b>Tuned Random Forest:</b> <code>n_estimators=500, max_features="log2", max_depth=None</code> (Peak F1: <b>98.14%</b>)<br>• <b>Tuned Logistic Regression:</b> <code>C=0.001, max_iter=500, solver="saga"</code> (Peak F1: <b>98.14%</b>)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="success-box">GridSearchCV evaluated multiple pipeline configurations.<br>Optimal Hyperparameters:<br>• <b>Tuned Random Forest:</b> <code>n_estimators=400, max_features="log2", max_depth=None</code> (Peak F1: <b>97.16%</b>)<br>• <b>Tuned Logistic Regression:</b> <code>C=0.001, max_iter=500, solver="saga"</code> (Peak F1: <b>98.14%</b>)</div>', unsafe_allow_html=True)
             with st.expander("📋 View Top 10 GridSearchCV Hyperparameter Hubs"):
                 top_cfg = grid_search_log.nlargest(10, "mean_test_score")[["params","mean_test_score","std_test_score","rank_test_score"]].copy()
                 top_cfg.columns = ["Parameters Explored","Mean Test F1","Std F1 Deviation","Overall Rank"]
@@ -695,12 +695,12 @@ elif page == "SHAP Explainability":
         with col_shap2:
             st.markdown("""
             ###  Ensemble SHAP Hub Biomarkers
-            * **Rank #1: ERBB2 (HER2)** (`234354_x_at`) — Receptor tyrosine kinase amplification driver; diagnostic hallmark of the **HER2-Enriched** subtype.
-            * **Rank #2: ERBB2** (`216836_s_at`) — Co-amplified probe targeting HER2 receptor signaling; confirms dominant classification axis.
-            * **Rank #3: PGAP3** (`221811_at`) — Post-GPI attachment to proteins phospholipase 3; located on the **17q12 amplicon**, co-amplified with ERBB2.
-            * **Rank #4: ESR1 (ERα)** (`205225_at`) — Estrogen Receptor 1; master regulator of hormone-responsive transcription and diagnostic hallmark of **Luminal A & B** subtypes.
-            * **PRR15 (Proline-rich 15)** (`226961_at`) — Associated with cell proliferation, differentiation, and subtype-specific growth rates.
-            * **CA12 (Carbonic anhydrase 12)** (`214164_x_at`) — Estrogen-responsive, highly expressed in well-differentiated Luminal tumors.
+            * **Rank #1: MIEN1** (`224447_s_at`) — Migration and invasion enhancer 1; located on the **17q12 HER2 amplicon**, drives tumor cell migration in HER2+ tumors.
+            * **Rank #2: ERBB2 (HER2)** (`234354_x_at`) — Receptor tyrosine kinase amplification driver; diagnostic hallmark of the **HER2-Enriched** subtype.
+            * **Rank #3: ERBB2** (`216836_s_at`) — Independent probe validating HER2 amplification and signaling activity.
+            * **Rank #4: STARD3** (`202991_at`) — StAR-related lipid transfer domain protein; co-amplified with ERBB2 on the **17q12 amplicon**.
+            * **Rank #5: PGAP3** (`221811_at`) — Post-GPI phospholipase 3; located on the **17q12 amplicon**, tightly linked to ERBB2.
+            * **Rank #8: ESR1 (ERα)** (`205225_at`) — Estrogen Receptor 1; master regulator of hormone-responsive transcription and diagnostic hallmark of **Luminal A & B** subtypes.
             """)
         
         with st.expander("📋 View Comprehensive SHAP Annotated Biomarkers (Top 40)"):
@@ -791,7 +791,7 @@ elif page == "SHAP Explainability":
         st.markdown("""
         <div class="success-box">
             <b>Biomedical Validation:</b><br>
-            Our models automatically prioritize <b>ERBB2</b> (the HER2 receptor) and <b>ESR1</b> (the Estrogen receptor), which are the exact diagnostic proteins used in clinical pathology to guide targeted chemotherapy and hormonal treatment!
+            Our models automatically prioritize the entire <b>chromosome 17q12 HER2 amplicon cluster</b> (MIEN1, ERBB2, STARD3, PGAP3, GRB7) as the top 7 features, followed by <b>ESR1</b> (the Estrogen receptor) at rank #8 — exactly the diagnostic markers used in clinical pathology to guide targeted Trastuzumab (HER2+) and hormonal therapies (ER+)!
         </div>
         """, unsafe_allow_html=True)
 
@@ -859,9 +859,9 @@ elif page == "Functional Genomics":
             
             st.markdown(r"""
             <div class="success-box">
-                <b>Clinical Re-prioritization Insight:</b>
+                <b>Pathway Enrichment Insight:</b>
                 <ul style="margin: 8px 0 0 20px; padding: 0;">
-                    <li><b>Context-Driven Ranking:</b> The <b>Breast Cancer</b> pathway is prioritized at the very top of our enrichment benchmarks. While generic hormone-receptor networks like Prostate Cancer share common overlapping elements (e.g. Androgen Receptor <i>AR</i> vs Estrogen Receptor <i>ESR1</i>) and tyrosine kinases (<i>ERBB2</i>, <i>FGFR2</i>), the <b>Breast Cancer</b> pathway holds absolute biological priority as it represents the native transcriptomic disease context of our dataset and specifically contains the Estrogen Receptor alpha (<b>ESR1</b>) driver (which is absent in prostate-specific signaling).</li>
+                    <li><b>Cross-Cancer Homology:</b> The top significant KEGG pathways — <b>Prostate Cancer</b> and <b>Pathways in Cancer</b> — share the hormone-driven receptor and tyrosine kinase axes (ESR1/AR, ERBB2, FGFR2) that are central to breast cancer biology. The KEGG 2021 "Breast cancer" entry did not independently reach significance (adj. p=0.197, overlap 3/147) because our ERBB2-dominated signature has broader statistical overlap with the pan-cancer pathway catalogue. The biological signal is entirely consistent — our biomarkers are textbook breast cancer drivers.</li>
                 </ul>
             </div>
             """, unsafe_allow_html=True)
