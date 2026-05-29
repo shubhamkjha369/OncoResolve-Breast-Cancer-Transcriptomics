@@ -121,7 +121,7 @@ Gene Ontology (GO) enrichment validated that our selected biomarkers are key dri
 ## 📊 Dataset, Features & Details
 
 ### 📂 Dataset Overview
-We utilize the **GSE45827** dataset, sourced from the extensively curated **CuMiDa (Curated Microarray Database)** repository. 
+We utilize the **GSE45827** dataset, sourced from the extensively curated [CuMiDa (Curated Microarray Database)](https://sbcb.inf.ufrgs.br/data/cumida/Genes/Breast/GSE45827/Breast_GSE45827.csv) repository. 
 
 * **Microarray Platform:** Affymetrix Human Genome U133 Plus 2.0
 * **Initial Cohort Size:** 151 total samples (comprising clinical tumors, adjacent normal controls, and laboratory cell lines)
@@ -379,7 +379,7 @@ The analytical notebook is already fully compiled, structured, and verified cell
 # Run the pipeline end-to-end (saves all artifacts to data/artifacts/)
 jupyter nbconvert --to notebook --execute --inplace notebooks/Breast_Cancer_ML_Pipeline.ipynb
 ```
-> **Note:** The raw CuMiDa dataset (`Breast_GSE45827.csv`, ~140 MB) must be placed in the `data/raw/` folder before executing the notebook. Download the dataset from [Kaggle](https://www.kaggle.com/datasets/brunogrisci/breast-cancer-gene-expression-cumida/data).
+> **Note:** The raw CuMiDa dataset (`Breast_GSE45827.csv`, ~140 MB) must be placed in the `data/raw/` folder before executing the notebook. Download the dataset directly from the [official CuMiDa server](https://sbcb.inf.ufrgs.br/data/cumida/Genes/Breast/GSE45827/Breast_GSE45827.csv) or via [Kaggle](https://www.kaggle.com/datasets/brunogrisci/breast-cancer-gene-expression-cumida/data).
 
 <a id="running-the-dashboard"></a>
 ### 🖥️ Running the Dashboard
