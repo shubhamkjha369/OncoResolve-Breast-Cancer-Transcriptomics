@@ -555,9 +555,11 @@ elif page == "Model Performance":
 
         st.markdown("""
         <div class="success-box">
-            <b>Benchmark Insights:</b><br>
-            * <b>Linear Separability:</b> <b>Logistic Regression</b> achieved a perfect <b>100.00% accuracy and 1.0000 F1 score</b> on both the 657 Consensus Genes and the compressed 50 Principal Components. This demonstrates that breast cancer subtypes exhibit highly distinct transcriptomic ratios that can be cleanly separated by linear decision hyperplanes.
-            * <b>Non-Linear Dynamics:</b> **Random Forest** achieved <b>100.00% accuracy</b> in the Consensus feature space, but dropped to <b>96.43%</b> in the PCA space. Traditional SVM and LightGBM show stable boundary classification with <b>96.43% accuracy</b>.
+            <b>Benchmark Insights:</b>
+            <ul style="margin: 8px 0 0 20px; padding: 0;">
+                <li style="margin-bottom: 6px;"><b>Linear Separability:</b> <b>Logistic Regression</b> achieved a perfect <b>100.00% accuracy and 1.0000 F1 score</b> on both the 657 Consensus Genes and the compressed 50 Principal Components. This demonstrates that breast cancer subtypes exhibit highly distinct transcriptomic ratios that can be cleanly separated by linear decision hyperplanes.</li>
+                <li><b>Non-Linear Dynamics:</b> <b>Random Forest</b> achieved <b>100.00% accuracy</b> in the Consensus feature space, but dropped to <b>96.43%</b> in the PCA space. Traditional SVM and LightGBM show stable boundary classification with <b>96.43% accuracy</b>.</li>
+            </ul>
         </div>
         """, unsafe_allow_html=True)
 
@@ -789,7 +791,7 @@ elif page == "SHAP Explainability":
         st.markdown("""
         <div class="success-box">
             <b>Biomedical Validation:</b><br>
-            Our models automatically prioritize **ERBB2** (the HER2 receptor) and **ESR1** (the Estrogen receptor), which are the exact diagnostic proteins used in clinical pathology to guide targeted chemotherapy and hormonal treatment!
+            Our models automatically prioritize <b>ERBB2</b> (the HER2 receptor) and <b>ESR1</b> (the Estrogen receptor), which are the exact diagnostic proteins used in clinical pathology to guide targeted chemotherapy and hormonal treatment!
         </div>
         """, unsafe_allow_html=True)
 
@@ -855,8 +857,10 @@ elif page == "Functional Genomics":
             
             st.markdown(r"""
             <div class="success-box">
-                <b>Clinical Re-prioritization Insight:</b><br>
-                * **Context-Driven Ranking:** The **Breast Cancer** pathway is prioritized at the very top of our enrichment benchmarks. While generic hormone-receptor networks like Prostate Cancer share common overlapping elements (e.g. Androgen Receptor *AR* vs Estrogen Receptor *ESR1*) and tyrosine kinases (*ERBB2*, *FGFR2*), the **Breast Cancer** pathway holds absolute biological priority as it represents the native transcriptomic disease context of our dataset and specifically contains the Estrogen Receptor alpha (**ESR1**) driver (which is absent in prostate-specific signaling).
+                <b>Clinical Re-prioritization Insight:</b>
+                <ul style="margin: 8px 0 0 20px; padding: 0;">
+                    <li><b>Context-Driven Ranking:</b> The <b>Breast Cancer</b> pathway is prioritized at the very top of our enrichment benchmarks. While generic hormone-receptor networks like Prostate Cancer share common overlapping elements (e.g. Androgen Receptor <i>AR</i> vs Estrogen Receptor <i>ESR1</i>) and tyrosine kinases (<i>ERBB2</i>, <i>FGFR2</i>), the <b>Breast Cancer</b> pathway holds absolute biological priority as it represents the native transcriptomic disease context of our dataset and specifically contains the Estrogen Receptor alpha (<b>ESR1</b>) driver (which is absent in prostate-specific signaling).</li>
+                </ul>
             </div>
             """, unsafe_allow_html=True)
             
