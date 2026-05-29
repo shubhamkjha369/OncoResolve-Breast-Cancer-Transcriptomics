@@ -75,6 +75,139 @@ def custom_card(val, label, accent=False):
     return f'<div class="{cls}"><div class="metric-value">{val}</div><div class="metric-label">{label}</div></div>'
 
 def render(card_fn=None):
+    # Inject Custom Clinical Premium Styles
+    st.markdown("""
+<style>
+/* Pill-based segment tabs */
+div[data-baseweb="tab-list"] {
+    background-color: #ebebe5 !important;
+    padding: 6px !important;
+    border-radius: 12px !important;
+    gap: 4px !important;
+    border-bottom: none !important;
+}
+div[data-baseweb="tab"] {
+    background-color: transparent !important;
+    color: #475569 !important;
+    border-radius: 10px !important;
+    padding: 8px 20px !important;
+    font-weight: 600 !important;
+    border: none !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+div[data-baseweb="tab"]:hover {
+    color: #4f46e5 !important;
+    background-color: rgba(255, 255, 255, 0.3) !important;
+}
+div[data-baseweb="tab"][aria-selected="true"] {
+    background-color: #ffffff !important;
+    color: #4f46e5 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+div[data-baseweb="tab-border"] {
+    display: none !important;
+}
+
+/* Premium Card Layout containers */
+div[data-testid="stVerticalBlockBordered"] {
+    background-color: #ffffff !important;
+    border: 1px solid #dcdcd3 !important;
+    border-radius: 16px !important;
+    padding: 28px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.015) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+div[data-testid="stVerticalBlockBordered"]:hover {
+    border-color: #4f46e5 !important;
+    box-shadow: 0 10px 30px rgba(79, 70, 229, 0.07) !important;
+    transform: translateY(-2px);
+}
+
+/* Form inputs: selectbox, number input, sliders */
+div[data-testid="stSelectbox"] > div, 
+div[data-testid="stNumberInput"] > div, 
+div[data-testid="stSlider"] > div {
+    border-radius: 8px !important;
+}
+
+/* Custom styled action buttons */
+div[data-testid="stVerticalBlockBordered"] button[data-testid="baseButton-secondary"] {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 12px 24px !important;
+    font-weight: 700 !important;
+    font-size: 15px !important;
+    letter-spacing: 0.5px !important;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    width: 100% !important;
+}
+div[data-testid="stVerticalBlockBordered"] button[data-testid="baseButton-secondary"]:hover {
+    background: linear-gradient(135deg, #4338ca, #6d28d9) !important;
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35) !important;
+    transform: translateY(-1px) !important;
+}
+div[data-testid="stVerticalBlockBordered"] button[data-testid="baseButton-secondary"]:active {
+    transform: translateY(1px) !important;
+}
+
+/* File Uploader styling */
+div[data-testid="stFileUploader"] {
+    background-color: #fcfcfb !important;
+    border: 1px dashed #4f46e5 !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    transition: all 0.2s ease !important;
+}
+div[data-testid="stFileUploader"]:hover {
+    background-color: #f8f8f6 !important;
+    border-color: #7c3aed !important;
+}
+
+/* Diagnostic molecular panels */
+.diag-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.015);
+    border: 1px solid #eeefe9;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.diag-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.035);
+    border-color: #dcdcd3;
+}
+.diag-card-basal { border-left: 6px solid #ef4444; }
+.diag-card-her { border-left: 6px solid #f59e0b; }
+.diag-card-luma { border-left: 6px solid #10b981; }
+.diag-card-lumb { border-left: 6px solid #3b82f6; }
+.diag-card-normal { border-left: 6px solid #ec4899; }
+
+.diag-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+}
+.diag-title-basal { color: #dc2626; }
+.diag-title-her { color: #d97706; }
+.diag-title-luma { color: #059669; }
+.diag-title-lumb { color: #2563eb; }
+.diag-title-normal { color: #db2777; }
+
+.diag-desc {
+    color: #475569;
+    font-size: 14px;
+    line-height: 1.65;
+}
+</style>
+""", unsafe_allow_html=True)
+
     st.markdown('<div class="main-title">AutoML Pipeline and Clinical Diagnostic Predictor</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-title">Deploy pre-trained models for diagnostic subtype prediction, or train a custom end-to-end machine learning pipeline.</div>', unsafe_allow_html=True)
     
@@ -93,27 +226,29 @@ def _render_predictor_tab():
     st.markdown("### Clinical Subtype Predictor")
     st.markdown('<div class="info-box">Upload a gene expression matrix (microarray probes/signals) to predict patient molecular subtypes using our pre-trained, validated models. No retraining is required.</div>', unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
-    with col1:
-        data_source = st.radio(
-            "Select Evaluation Dataset Source",
-            ["Internal Clinical Cohort (GSE45827 - 137 Patients)", "Upload Custom Gene Expression Dataset (CSV/Parquet)"],
-            key="pred_source"
-        )
-    with col2:
-        classifier_choice = st.radio(
-            "Select Pre-Trained Diagnostic Classifier",
-            ["Tuned Logistic Regression (CV Stability: 97.31% ± 3.48%)", "Tuned Random Forest (CV Stability: 97.01% ± 4.81%)"],
-            key="pred_classifier"
-        )
-        
-    uploaded_file = None
-    if "Upload Custom" in data_source:
-        uploaded_file = st.file_uploader("Upload gene expression dataset", type=["csv","parquet"], key="pred_file_uploader")
-        
-    if st.button("Run Subtype Prediction", key="btn_run_prediction"):
-        with st.spinner("Analyzing transcriptomic features and generating diagnostic predictions..."):
-            _execute_prediction(data_source, uploaded_file, classifier_choice)
+    with st.container(border=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            data_source = st.radio(
+                "Select Evaluation Dataset Source",
+                ["Internal Clinical Cohort (GSE45827 - 137 Patients)", "Upload Custom Gene Expression Dataset (CSV/Parquet)"],
+                key="pred_source"
+            )
+        with col2:
+            classifier_choice = st.radio(
+                "Select Pre-Trained Diagnostic Classifier",
+                ["Tuned Logistic Regression (CV Stability: 97.31% ± 3.48%)", "Tuned Random Forest (CV Stability: 97.01% ± 4.81%)"],
+                key="pred_classifier"
+            )
+            
+        uploaded_file = None
+        if "Upload Custom" in data_source:
+            uploaded_file = st.file_uploader("Upload gene expression dataset", type=["csv","parquet"], key="pred_file_uploader")
+            
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+        if st.button("Run Subtype Prediction", key="btn_run_prediction", use_container_width=True):
+            with st.spinner("Analyzing transcriptomic features and generating diagnostic predictions..."):
+                _execute_prediction(data_source, uploaded_file, classifier_choice)
 
 def _execute_prediction(data_source, uploaded_file, classifier_choice):
     # Paths & Artifacts
@@ -292,13 +427,30 @@ def _execute_prediction(data_source, uploaded_file, classifier_choice):
         st.markdown("### Clinical Interpretation of Detected Subtypes")
         st.markdown("""
         The molecular subtypes identified in the analyzed cohort represent distinct transcriptomic profiles with established clinical, pathological, and therapeutic implications:
-        
-        * **basal (Basal-like):** Typically corresponds to Triple-Negative Breast Cancer (TNBC). Characterized by high proliferation indices and the absence of hormone receptors and HER2 amplification. These tumors do not respond to endocrine therapy or Herceptin, and are clinically managed using aggressive systemic chemotherapy and emerging immunotherapies.
-        * **HER (HER2-Enriched):** Driven primarily by the amplification and over-expression of the *ERBB2* (*HER2*) gene on chromosome 17q. These tumors exhibit aggressive behavior but are highly responsive to anti-HER2 targeted monoclonal antibodies such as Trastuzumab (Herceptin) and Pertuzumab.
-        * **luminal_A (Luminal A):** The most common and low-grade molecular subtype. Characterized by high expression of estrogen (*ESR1*) and progesterone receptors, low proliferation markers (e.g., Ki-67), and slow growth. These patients have a favorable prognosis and are highly responsive to hormonal/endocrine therapies (e.g., Tamoxifen, Aromatase inhibitors).
-        * **luminal_B (Luminal B):** Expresses hormone receptors but exhibits higher growth rates, higher cellular proliferation markers, and occasionally co-amplification of HER2. These tumors have a more guarded prognosis than Luminal A and often require a combination of chemotherapy and endocrine therapy.
-        * **normal (Normal-like):** A rare molecular subtype showing expression profiles similar to non-tumor, healthy breast epithelial cells. They are typically managed similarly to luminal tumors but require careful pathological review to rule out stromal contamination.
         """)
+        
+        st.markdown("""
+        <div class="diag-card diag-card-basal">
+            <div class="diag-title diag-title-basal">Basal-like (basal)</div>
+            <div class="diag-desc">Typically corresponds to Triple-Negative Breast Cancer (TNBC). Characterized by high proliferation indices and the absence of hormone receptors and HER2 amplification. These tumors do not respond to endocrine therapy or Herceptin, and are clinically managed using aggressive systemic chemotherapy and emerging immunotherapies.</div>
+        </div>
+        <div class="diag-card diag-card-her">
+            <div class="diag-title diag-title-her">HER2-Enriched (HER)</div>
+            <div class="diag-desc">Driven primarily by the amplification and over-expression of the <i>ERBB2</i> (<i>HER2</i>) gene on chromosome 17q. These tumors exhibit aggressive behavior but are highly responsive to anti-HER2 targeted monoclonal antibodies such as Trastuzumab (Herceptin) and Pertuzumab.</div>
+        </div>
+        <div class="diag-card diag-card-luma">
+            <div class="diag-title diag-title-luma">Luminal A (luminal_A)</div>
+            <div class="diag-desc">The most common and low-grade molecular subtype. Characterized by high expression of estrogen (<i>ESR1</i>) and progesterone receptors, low proliferation markers (e.g., Ki-67), and slow growth. These patients have a favorable prognosis and are highly responsive to hormonal/endocrine therapies (e.g., Tamoxifen, Aromatase inhibitors).</div>
+        </div>
+        <div class="diag-card diag-card-lumb">
+            <div class="diag-title diag-title-lumb">Luminal B (luminal_B)</div>
+            <div class="diag-desc">Expresses hormone receptors but exhibits higher growth rates, higher cellular proliferation markers, and occasionally co-amplification of HER2. These tumors have a more guarded prognosis than Luminal A and often require a combination of chemotherapy and endocrine therapy.</div>
+        </div>
+        <div class="diag-card diag-card-normal">
+            <div class="diag-title diag-title-normal">Normal-like (normal)</div>
+            <div class="diag-desc">A rare molecular subtype showing expression profiles similar to non-tumor, healthy breast epithelial cells. They are typically managed similarly to luminal tumors but require careful pathological review to rule out stromal contamination.</div>
+        </div>
+        """, unsafe_allow_html=True)
         
     except Exception as e:
         st.error(f"An error occurred during prediction parsing: {e}")
@@ -312,33 +464,41 @@ def _render_training_tab():
     st.markdown("### End-to-End AutoML Training")
     st.markdown('<div class="info-box">Upload a training dataset (CSV/Parquet) and click one button to execute the entire computational biology machine learning pipeline. You can follow live progress in the terminal console below.</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("Upload custom training dataset", type=["csv","parquet"], key="train_file_uploader")
-    
-    if uploaded_file is not None:
-        try:
-            if uploaded_file.name.endswith(".parquet"):
-                raw_df = pd.read_parquet(uploaded_file)
-            else:
-                raw_df = pd.read_csv(uploaded_file)
+    with st.container(border=True):
+        uploaded_file = st.file_uploader("Upload custom training dataset", type=["csv","parquet"], key="train_file_uploader")
+        
+        if uploaded_file is not None:
+            try:
+                if uploaded_file.name.endswith(".parquet"):
+                    raw_df = pd.read_parquet(uploaded_file)
+                else:
+                    raw_df = pd.read_csv(uploaded_file)
+                    
+                st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+                st.markdown("#### Dataset Preview")
+                st.dataframe(raw_df.head(10), use_container_width=True, hide_index=True)
                 
-            st.dataframe(raw_df.head(10), use_container_width=True, hide_index=True)
-            target_col = st.selectbox("Select Target Label Column", raw_df.columns.tolist(), index=len(raw_df.columns)-1, key="train_target_col")
-            
-            c_inputs = st.columns(3)
-            with c_inputs[0]:
-                var_thresh = st.number_input("Variance Filter Threshold", value=0.1, min_value=0.0, step=0.01, key="train_var_t")
-            with c_inputs[1]:
-                test_size = st.slider("Evaluation Test Size", 0.1, 0.4, 0.2, 0.05, key="train_test_s")
-            with c_inputs[2]:
-                top_k = st.number_input("Consensus Top-K features", value=250, min_value=10, key="train_top_k")
+                target_col = st.selectbox("Select Target Label Column", raw_df.columns.tolist(), index=len(raw_df.columns)-1, key="train_target_col")
                 
-            if st.button("Start Complete End-to-End AutoML", key="btn_run_automl"):
-                _execute_automl_pipeline(raw_df, target_col, var_thresh, test_size, top_k)
+                st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
+                st.markdown("#### Hyperparameter and Preprocessing Tuning Options")
                 
-        except Exception as e:
-            st.error(f"Error parsing training file: {e}")
-    else:
-        st.markdown('<div class="info-box">Please upload a training dataset to start the pipeline.</div>', unsafe_allow_html=True)
+                c_inputs = st.columns(3)
+                with c_inputs[0]:
+                    var_thresh = st.number_input("Variance Filter Threshold", value=0.1, min_value=0.0, step=0.01, key="train_var_t")
+                with c_inputs[1]:
+                    test_size = st.slider("Evaluation Test Size", 0.1, 0.4, 0.2, 0.05, key="train_test_s")
+                with c_inputs[2]:
+                    top_k = st.number_input("Consensus Top-K features", value=250, min_value=10, key="train_top_k")
+                    
+                st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
+                if st.button("Start Complete End-to-End AutoML", key="btn_run_automl", use_container_width=True):
+                    _execute_automl_pipeline(raw_df, target_col, var_thresh, test_size, top_k)
+                    
+            except Exception as e:
+                st.error(f"Error parsing training file: {e}")
+        else:
+            st.info("Please upload a CSV or Parquet training dataset to initialize the custom pipeline.")
 
 def _execute_automl_pipeline(df, target_col, var_threshold, test_size, top_k):
     # Setup live progress tracking
