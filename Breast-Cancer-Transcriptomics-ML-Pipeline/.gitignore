@@ -14,10 +14,12 @@ notebooks/*.html
 # Reports directory
 reports/
 
-# Data and ML artifacts directory
-data/
+# Ignore only the sample datasets folder inside data/
+data/sample datasets/
+data/sample_datasets/
 
 # OS-specific files
 .DS_Store
 Thumbs.db
+
 
