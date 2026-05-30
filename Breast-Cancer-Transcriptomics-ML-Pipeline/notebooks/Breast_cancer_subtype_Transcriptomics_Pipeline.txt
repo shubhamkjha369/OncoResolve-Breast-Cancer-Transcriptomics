@@ -12,17 +12,6 @@
 #     name: python3
 # ---
 
-# %%
-﻿# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.19.3
-# ---
-
 # %% [markdown]
 # # Breast Cancer Transcriptomics and Machine Learning Pipeline
 #
@@ -163,7 +152,7 @@ print("Environment ready. All audit libraries loaded.")
 #
 
 # %%
-# ?????? 1.1 Load Raw CSV Data ??????
+# ── 1.1 Load Raw CSV Data ──
 csv_path = RAW_DATA_DIR / "Breast_GSE45827.csv"
 df_raw = pd.read_csv(csv_path)
 
@@ -171,38 +160,38 @@ print(f"Raw dataset shape: {df_raw.shape[0]} samples x {df_raw.shape[1]:,} featu
 print(f"Unique class labels present: {df_raw['type'].unique().tolist()}")
 
 # %%
-# ?????? 1.2 Class Distribution Before Filtering ??????
+# ── 1.2 Class Distribution Before Filtering ──
 print("\nClass distribution before removing cell lines:")
 vc_all = df_raw['type'].value_counts()
 for label, count in vc_all.items():
     print(f"  {label:<15}: {count:>3} samples ({count/len(df_raw)*100:.1f}%)")
 
 # %%
-# ?????? 1.3 Remove Cell Line Samples & ID Column ??????
+# ── 1.3 Remove Cell Line Samples & ID Column ──
 df = df_raw[df_raw['type'] != 'cell_line'].copy()
 df = df.drop(columns=['samples'])
 print(f"\nRemoved {len(df_raw) - len(df)} cell line samples.")
 print(f"Remaining clinical samples shape: {df.shape[0]} samples x {df.shape[1]:,} features")
 
 # %%
-# ?????? 1.4 Class Distribution of Clinical Subtypes ??????
+# ── 1.4 Class Distribution of Clinical Subtypes ──
 print("\nClass distribution of clinical subtypes:")
 vc_clinical = df['type'].value_counts()
 for label, count in vc_clinical.items():
     print(f"  {label:<15}: {count:>3} samples ({count/len(df)*100:.1f}%)")
 
 # %%
-# ?????? 1.5 Optimize Memory via Downcasting ??????
+# ── 1.5 Optimize Memory via Downcasting ──
 feat_cols = df.columns.drop("type") #feat_cols = feature columns (for clarity)
 df[feat_cols] = df[feat_cols].astype(np.float32)
 mem_mb = df[feat_cols].memory_usage(deep=True).sum() / 1e6 #mem_mb = memory in mb
 print(f"\nMemory footprint of expression values: {mem_mb:.2f} MB")
 
 # %%
-# ?????? 1.6 Expression Scale Verification ??????
+# ── 1.6 Expression Scale Verification ──
 # Sample 1% of the data to perform distribution checks
 
-# ?????? 1.6 Expression Scale Verification ??????
+# ── 1.6 Expression Scale Verification ──
 
 sample_vals = df[feat_cols].values.flatten()[::100]
 
@@ -247,7 +236,7 @@ print(f"  Holdout Cohort   : {X_holdout.shape[0]:>3} samples  → locked until f
 print(f"{'='*60}")
 
 # %%
-# ?????? 1.7 Visualize Subtypes Before vs. After Filtering ??????
+# ── 1.7 Visualize Subtypes Before vs. After Filtering ──
 fig, axes = plt.subplots(1, 2, figsize=(15, 5))
 
 # Before
@@ -266,7 +255,7 @@ plt.tight_layout()
 plt.show()
 
 # %%
-# ?????? 1.8 Free Up Global Notebook RAM ??????
+# ── 1.8 Free Up Global Notebook RAM ──
 # Deleting massive raw dataframes that are no longer needed
 del df_raw
 
@@ -328,7 +317,7 @@ print("QuantileNormalizer class defined (used inside CV Pipeline in Section 10).
 print("NOTE: The global QN below is for EDA/visualization only — NOT fed into ML models.")
 
 # %%
-# ?????? 2.1 ?????? Per-Sample Medians BEFORE Normalization ??????
+# ── 2.1 ── Per-Sample Medians BEFORE Normalization ──
 per_sample_median_before = np.median(X, axis=1)
 
 before_stats = pd.Series({
@@ -341,7 +330,7 @@ before_stats = pd.Series({
 before_stats
 
 # %%
-# ?????? 2.2 ?????? Perform Quantile Normalization ??????
+# ── 2.2 ── Perform Quantile Normalization ──
 # Sort columns (samples) to find rank order
 X_sorted = np.sort(X, axis=1)
 reference = X_sorted.mean(axis=0)  # average profile
@@ -350,7 +339,7 @@ ranks = np.argsort(np.argsort(X, axis=1), axis=1)  # indices of sorted values
 X_qn = reference[ranks]            # project ranks onto average profile
 
 # %%
-# ?????? 2.3 ?????? Normalization Metadata
+# ── 2.3 ── Normalization Metadata
 qn_summary = pd.Series({
     "Samples": X.shape[0],
     "Features": X.shape[1],
@@ -366,7 +355,7 @@ qn_summary
 # Normalizatoin Metadata: This is plausible for log2-transformed microarray expression values.
 
 # %%
-# ?????? 2.4 ?????? Per-Sample Medians AFTER Normalization ??????
+# ── 2.4 ── Per-Sample Medians AFTER Normalization ──
 per_sample_median_after = np.median(X_qn, axis=1)
 
 after_stats = pd.Series({
@@ -379,7 +368,7 @@ after_stats = pd.Series({
 after_stats
 
 # %%
-# ?????? 2.5 ?????? Before vs After Comparison
+# ── 2.5 ── Before vs After Comparison
 variability_reduction = (
     1 - per_sample_median_after.std() / per_sample_median_before.std()
 ) * 100
@@ -415,18 +404,18 @@ median_comparison
 # | Metric             | Before QN |    After QN |
 # | ------------------ | --------: | ----------: |
 # | Mean               |    5.1848 |      5.1848 |
-# | Standard Deviation |    0.0252 | 4.77 ?? 10?????? |
+# | Standard Deviation |    0.0252 | 4.77 x 10^-7 |
 # | Minimum            |    5.1303 |      5.1848 |
 # | Maximum            |    5.2736 |      5.1848 |
 #
 # #### Interpretation
 #
 # * The post-normalization standard deviation is effectively zero.
-# * The remaining variation (`4.77 ?? 10??????`) is attributable to floating-point precision rather than biological or technical variability.
+# * The remaining variation (`4.77 x 10^-7`) is attributable to floating-point precision rather than biological or technical variability.
 # * Quantile normalization reduced per-sample median variability by approximately **99.998%**, indicating near-complete removal of technical distributional differences between samples.
 
 # %%
-# ?????? 2.6 ?????? Outlier Sample Detection ??????
+# ── 2.6 ── Outlier Sample Detection ──
 corr_matrix = np.corrcoef(X_qn)  # (130, 130) sample-sample correlation
 np.fill_diagonal(corr_matrix, np.nan)
 mean_corr_per_sample = np.nanmean(corr_matrix, axis=1)
@@ -508,7 +497,7 @@ print(
 #
 
 # %%
-# ?????? 2.7 Save Normalized Data ??????
+# ── 2.7 Save Normalized Data ──
 median_comparison.to_csv(
     ARTIFACT_DIR / "quantile_normalization_summary.csv"
 )
@@ -519,7 +508,7 @@ np.save(
 )
 print("\nSaved quantile-normalized data to: 'quantile_normalization_summary.csv'")
 
-# ?????? Save Quantile-Normalized Dataset ??????
+# ── Save Quantile-Normalized Dataset ──
 df_qn = pd.DataFrame(X_qn, columns=feat_cols)
 df_qn["type"] = y
 
@@ -530,11 +519,11 @@ df_qn.to_parquet(
 
 print(
     f"Saved quantile-normalized dataset: "
-    f"{df_qn.shape[0]} samples ?? {df_qn.shape[1]-1:,} genes"
+    f"{df_qn.shape[0]} samples x {df_qn.shape[1]-1:,} genes"
 )
 
 # %%
-# ?????? 2.8 Visualize Normalization Effects ??????
+# ── 2.8 Visualize Normalization Effects ──
 
 corr_plot = corr_matrix.copy()
 np.fill_diagonal(corr_plot, 1.0)  # restore self-correlations for plotting
@@ -572,7 +561,7 @@ plt.tight_layout()
 plt.show()
 
 # %%
-# ?????? 2.9 Visualize PCA Effects ??????
+# ── 2.9 Visualize PCA Effects ──
 pca = PCA(n_components=2)
 X_pca = pca.fit_transform(X_qn)
 
@@ -590,7 +579,7 @@ plt.legend()
 plt.show()
 
 # %%
-# ?????? 2.10 Saving Outliers in a DF ??????
+# ── 2.10 Saving Outliers in a DF ──
 outlier_idx = np.where(outlier_mask)[0]
 
 pd.DataFrame({
@@ -644,7 +633,7 @@ pd.DataFrame({
 #
 
 # %%
-# ?????? Free RAM Before Dimensionality Reduction ??????
+# ── Free RAM Before Dimensionality Reduction ──
 
 del df
 del X
@@ -691,13 +680,13 @@ X = df[feat_cols].values.astype(np.float32)
 y = df['type'].values
 
 # %%
-# ?????? 3.1 Pre-filter to Top 5000 Most Variable Genes ??????
+# ── 3.1 Pre-filter to Top 5000 Most Variable Genes ──
 gene_vars = np.var(X, axis=0)
 top5k_idx = np.argsort(gene_vars)[-5000:]
 X_top5k = X[:, top5k_idx]
 
 # %%
-# ?????? 3.2 Standard Scaling & PCA (50 Components) ??????
+# ── 3.2 Standard Scaling & PCA (50 Components) ──
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X_top5k)
 pca = PCA(n_components=50, random_state=42)
@@ -716,18 +705,18 @@ print(f"  Top 50 PCs cumulative: {cumvar[49]*100:.2f}%")
 pca2_df = pd.DataFrame({'PC1': X_pca50[:, 0], 'PC2': X_pca50[:, 1], 'subtype': y})
 pca2_df.to_parquet(PROCESSED_DATA_DIR / "pca_2d.parquet", index=False)
 
-# ?????? 3.3 t-SNE ??????
+# ── 3.3 t-SNE ──
 tsne = TSNE(n_components=2, perplexity=30, random_state=42, init='pca', n_iter=1000)
 X_tsne = tsne.fit_transform(X_pca50)
 print(f"\nt-SNE completed. Final KL Divergence: {tsne.kl_divergence_:.4f}")
-# ?????? 3.4 UMAP ??????
+# ── 3.4 UMAP ──
 import umap
 reducer = umap.UMAP(n_neighbors=15, min_dist=0.1, n_components=2, random_state=42)
 X_umap = reducer.fit_transform(X_pca50)
 print("UMAP completed.")
 
 # %%
-# ?????? 3.5 Save Dimensionality Reduction Coordinates ??????
+# ── 3.5 Save Dimensionality Reduction Coordinates ──
 dr_df = pd.DataFrame({
     'subtype': y,
     'PC1': X_pca50[:, 0], 'PC2': X_pca50[:, 1], 'PC3': X_pca50[:, 2],
@@ -739,7 +728,7 @@ joblib.dump(pca, ARTIFACT_DIR / "pca_50.pkl")
 print("Saved DR coordinates and pca_50.pkl model.")
 
 # %%
-# ?????? 3.6 Visualize PCA, t-SNE, and UMAP ??????
+# ── 3.6 Visualize PCA, t-SNE, and UMAP ──
 fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 subtypes_list = sorted(list(np.unique(y)))
 
@@ -960,7 +949,7 @@ n_true = len(np.unique(y_enc))
 print(dict(enumerate(le.classes_)))
 
 # %%
-# ?????? 5.1 Hierarchical Clustering (Ward) ??????
+# ── 5.1 Hierarchical Clustering (Ward) ──
 feat_cols = [c for c in df_qn.columns if c != 'type']
 X_qn = df_qn[feat_cols].values
 
@@ -980,7 +969,7 @@ print(f"  Adjusted Rand Index (ARI): {h_ari:.4f}")
 print(f"  Normalized Mutual Info   : {h_nmi:.4f}")
 
 # %%
-# ?????? 5.2 K-Means Clustering ??????
+# ── 5.2 K-Means Clustering ──
 km5 = KMeans(n_clusters=n_true, random_state=42, n_init=20)
 km5_labels = km5.fit_predict(X_pca_full)
 km_ari = adjusted_rand_score(y_enc, km5_labels)
@@ -1002,7 +991,7 @@ joblib.dump(Z, ARTIFACT_DIR / "hierarchical_linkage.pkl")
 joblib.dump(km5_labels, ARTIFACT_DIR / "kmeans5_labels.pkl")
 
 # %%
-# ?????? 5.3 Visualize True Labels vs. K-means clusters ??????
+# ── 5.3 Visualize True Labels vs. K-means clusters ──
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
 # True labels
@@ -1054,11 +1043,11 @@ top500_idx = np.argsort(gene_vars)[-500:]
 top500_probes = [feat_cols[i] for i in top500_idx]
 X_net = X_train[:, top500_idx]
 
-# ?????? 6.1 Pearson Correlation Network ??????
+# ── 6.1 Pearson Correlation Network ──
 corr_matrix = np.corrcoef(X_net.T)
 np.fill_diagonal(corr_matrix, 0) # remove self loops
 
-# ?????? 6.2 Adjacency Matrix & Connectivity ??????
+# ── 6.2 Adjacency Matrix & Connectivity ──
 THR = 0.85
 adj = (np.abs(corr_matrix) > THR).astype(int)
 node_degree = adj.sum(axis=1)
@@ -1075,7 +1064,7 @@ for idx in top_hubs:
     print(f"  Gene: {top500_probes[idx]:<25} | Degree: {node_degree[idx]}")
 
 # %%
-# ?????? 6.3 Module Detection via Hierarchical Clustering ??????
+# ── 6.3 Module Detection via Hierarchical Clustering ──
 dist_matrix = 1 - np.abs(corr_matrix)
 np.fill_diagonal(dist_matrix, 0)
 dist_matrix = (dist_matrix + dist_matrix.T) / 2.0  # force exact symmetry
@@ -1100,7 +1089,7 @@ joblib.dump(top500_probes, ARTIFACT_DIR / "top500_probes.pkl")
 joblib.dump(module_labels, ARTIFACT_DIR / "module_labels.pkl")
 
 # %%
-# ?????? 6.4 Heatmap of Sorted Co-expression Modules ??????
+# ── 6.4 Heatmap of Sorted Co-expression Modules ──
 # Sort correlation matrix by module labels to show block structures
 sort_idx = np.argsort(module_labels)
 sorted_corr = corr_matrix[sort_idx, :][:, sort_idx]
@@ -1182,7 +1171,7 @@ y = df['type'].values
 le = LabelEncoder()
 y_enc = le.fit_transform(y)
 
-# ?????? 7.1 Stratified Train-Test Split (BEFORE selection) ??????
+# ── 7.1 Stratified Train-Test Split (BEFORE selection) ──
 X_train, X_test, y_train, y_test = train_test_split(X, y_enc, test_size=0.2, stratify=y_enc, random_state=42)
 
 # Save target arrays
@@ -1191,7 +1180,7 @@ joblib.dump(y_test,  ARTIFACT_DIR / "y_test.pkl")
 joblib.dump(le,      ARTIFACT_DIR / "label_encoder.pkl")
 
 # %%
-# ?????? 7.2 Variance Threshold Filtering ??????
+# ── 7.2 Variance Threshold Filtering ──
 vt = VarianceThreshold(threshold=0.1)
 vt.fit(X_train)
 mask_var = vt.get_support()
@@ -1204,7 +1193,7 @@ joblib.dump(list(feat_cols), ARTIFACT_DIR / 'feat_cols.pkl')
 print('Saved feat_cols to artifacts.')
 
 # %%
-# ?????? 7.3 Standardize training set ??????
+# ── 7.3 Standardize training set ──
 scaler = StandardScaler()
 X_train_sc = scaler.fit_transform(X_train_vt)
 X_test_sc  = scaler.transform(X_test_vt)
@@ -1213,7 +1202,7 @@ joblib.dump(X_train_sc,    ARTIFACT_DIR / "X_train_scaled.pkl")
 joblib.dump(X_test_sc,     ARTIFACT_DIR / "X_test_scaled.pkl")
 
 # %%
-# ?????? 7.4 Method 1: ANOVA F-test (select top 2000) ??????
+# ── 7.4 Method 1: ANOVA F-test (select top 2000) ──
 K = 2000
 anova = SelectKBest(f_classif, k=K)
 anova.fit(X_train_sc, y_train)
@@ -1221,7 +1210,7 @@ mask_anova = anova.get_support()
 genes_anova = set(feat_var[mask_anova])
 
 # %%
-# ?????? 7.5 Method 2: Mutual Information (select top 2000) ??????
+# ── 7.5 Method 2: Mutual Information (select top 2000) ──
 from functools import partial
 mi_scorer = partial(mutual_info_classif, random_state=42)
 mi = SelectKBest(mi_scorer, k=K)
@@ -1230,7 +1219,7 @@ mask_mi = mi.get_support()
 genes_mi = set(feat_var[mask_mi])
 
 # %%
-# ?????? 7.6 Method 3: LASSO (C=0.05, Liblinear solver, on ANOVA top 2000) ??????
+# ── 7.6 Method 3: LASSO (C=0.05, Liblinear solver, on ANOVA top 2000) ──
 X_train_anova = X_train_sc[:, mask_anova]
 lasso_lr = LogisticRegression(penalty='l1', C=0.05, solver='liblinear', max_iter=1000, random_state=42)
 from sklearn.multiclass import OneVsRestClassifier
@@ -1246,7 +1235,7 @@ for est in lasso_ovr.estimators_:
 genes_lasso = set(feat_var_anova[lasso_nonzero])
 
 # %%
-# ?????? 7.7 Method 4: Random Forest Importance (top 2000) ??????
+# ── 7.7 Method 4: Random Forest Importance (top 2000) ──
 rf_sel = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
 rf_sel.fit(X_train_sc, y_train)
 importances = rf_sel.feature_importances_
@@ -1256,7 +1245,7 @@ mask_rf[top_rf_idx] = True
 genes_rf = set(feat_var[mask_rf])
 
 # %%
-# ?????? 7.8 Consensus Voting (>= 2 methods) ??????
+# ── 7.8 Consensus Voting (>= 2 methods) ──
 gene_votes = {}
 for g in feat_var:
     votes = sum([g in genes_anova, g in genes_mi, g in genes_lasso, g in genes_rf])
@@ -1298,20 +1287,20 @@ joblib.dump(X_test_consensus,  ARTIFACT_DIR / "X_test_consensus.pkl")
 #
 # ```
 #    Raw Microarray Probes (54,675 features)
-#                  ???
-#                  ???  [Variance Filtering: Var > 0.1]
+#                  │
+#                  ▼  [Variance Filtering: Var > 0.1]
 #    34,192 Informative Expression Probes
-#                  ???
-#                  ???  [Ensemble Feature Selection Models (Fit strictly on Train Split)]
-#    ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
-#    ???    ANOVA F-test      ???  Mutual Information  ???    Random Forest     ???      LASSO (L1)      ???
-#    ???  (Linear Variance)   ??? (Non-linear Entropy) ???   (Gini Impurity)    ???   (L1 Sparsifier)    ???
-#    ???    2,000 Genes       ???    2,000 Genes       ???    2,000 Genes       ???       21 Genes       ???
-#    ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
-#                  ???                      ???                      ???                      ???
-#                  ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
-#                                                     ???
-#                                                     ???  [Consensus Voting: >= 2 Votes]
+#                  │
+#                  ▼  [Ensemble Feature Selection Models (Fit strictly on Train Split)]
+#    ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
+#    │    ANOVA F-test       │  Mutual Information  │    Random Forest     │          LASSO (L1)           │
+#    │  (Linear Variance)    │ (Non-linear Entropy) │   (Gini Impurity)    │       (L1 Sparsifier)        │
+#    │    2,000 Genes        │    2,000 Genes       │    2,000 Genes       │           21 Genes           │
+#    ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
+#                  │                        │                      │                      │
+#                  └────────────────────────┴──────────────────────┴──────────────────────┘
+#                                                     │
+#                                                     ▼  [Consensus Voting: >= 2 Votes]
 #                                       1,480 Consensus Biomarkers
 # ```
 #
@@ -1601,7 +1590,7 @@ joblib.dump(
 print("\nBenchmark complete.")
 
 # %%
-# ?????? 8.1 Visualize Benchmarking Results ??????
+# ── 8.1 Visualize Benchmarking Results ──
 bench_df = pd.read_parquet(ARTIFACT_DIR / "benchmark_results.parquet")
 plt.figure(figsize=(12, 6))
 sns.barplot(data=bench_df, x="model", y="accuracy", hue="feature_space", palette="deep")
@@ -1699,9 +1688,9 @@ plt.show()
 #
 # | Metric              |          Value |
 # | ------------------- | -------------: |
-# | CV Accuracy         | 96.32% ?? 1.84% |
-# | CV Weighted F1      | 96.26% ?? 1.88% |
-# | CV Macro F1         | 96.92% ?? 1.60% |
+# | CV Accuracy         | 96.32% ± 1.84% |
+# | CV Weighted F1      | 96.26% ± 1.88% |
+# | CV Macro F1         | 96.92% ± 1.60% |
 # | Mean Train Accuracy |        100.00% |
 # | Overfitting Gap     |          3.68% |
 #
@@ -2111,7 +2100,7 @@ X_test_c    = _fs_fitted.transform(X_hold_qn)
 print(f"SHAP inputs: {X_disc_sel.shape[0]} Discovery samples, {len(consensus_genes)} consensus genes")
 
 # %%
-# ?????? 11.1 Compute SHAP Attributions for Both Models ??????
+# ── 11.1 Compute SHAP Attributions for Both Models ──
 # Random Forest: TreeSHAP (non-linear)
 # Logistic Regression: LinearSHAP (linear attributions)
 
@@ -2151,7 +2140,7 @@ shap_df = shap_df[
 shap_df.to_parquet(ARTIFACT_DIR / "shap_importance_raw.parquet", index=False)
 
 # %%
-# ?????? 11.2 Map Probe IDs via MyGene API ??????
+# ── 11.2 Map Probe IDs via MyGene API ──
 # Query MyGene API for the top 30 ensemble consensus biomarkers
 
 import mygene
@@ -2234,7 +2223,7 @@ except Exception as e:
     print(f"MyGene API annotation failed: {e}")
 
 # %%
-# ?????? 11.3 Global SHAP Importance (Ensemble Consensus Visual) ??????
+# ── 11.3 Global SHAP Importance (Ensemble Consensus Visual) ──
 # Plot the top 20 ensemble biomarkers, annotated with their official HUGO gene symbols
 
 top_n = 30
@@ -2571,7 +2560,7 @@ shap_values = shap_values_rf
 #
 
 # %%
-# ?????? GO & KEGG Pathway Enrichment Analysis ??????
+# ── GO & KEGG Pathway Enrichment Analysis ──
 
 # Always load the annotated SHAP table generated in Section 11.2
 shap_df = pd.read_parquet(
@@ -2612,7 +2601,7 @@ try:
         f"Successfully retained {len(shap_df_annot):,} annotated biomarkers."
     )
 
-    # ?????? Convert probe-level SHAP to gene-level SHAP ??????
+    # ── Convert probe-level SHAP to gene-level SHAP ──
     # Multiple probes mapping to the same gene are collapsed
     # using the maximum ensemble SHAP score.
     gene_level_shap = (
@@ -2640,7 +2629,7 @@ try:
         f"\nUsing {len(top_genes_shap)} unique annotated genes."
     )
 
-    # ?????? GO Biological Process Enrichment ??????
+    # ── GO Biological Process Enrichment ──
     print("\nRunning GO Biological Process enrichment...")
 
     enr_go = gp.enrichr(
@@ -2661,7 +2650,7 @@ try:
 
     print(f"Significant GO terms: {len(go_sig)}")
 
-    # ?????? KEGG Pathway Enrichment ??????
+    # ── KEGG Pathway Enrichment ──
     print("\nRunning KEGG enrichment...")
 
     enr_kegg = gp.enrichr(
@@ -2712,7 +2701,7 @@ try:
         index=False
     )
 
-    # ?????? Plot KEGG Pathways ??????
+    # ── Plot KEGG Pathways ──
     if len(kegg_sig) > 0:
 
         plot_df = kegg_sig.copy()
@@ -2946,14 +2935,14 @@ print(top20["gene_symbol"].value_counts())
 #
 # | Pathway                             | Overlap | Adjusted P-value |
 # | ----------------------------------- | ------- | ---------------- |
-# | Prostate Cancer                     | 5/97    | 3.30 ?? 10?????      |
-# | Pathways in Cancer                  | 10/531  | 3.30 ?? 10?????      |
-# | Acute Myeloid Leukemia              | 4/67    | 6.25 ?? 10?????      |
-# | Cell Cycle                          | 4/124   | 4.46 ?? 10?????      |
-# | Oocyte Meiosis                      | 4/129   | 4.46 ?? 10?????      |
-# | Chemical Carcinogenesis             | 5/239   | 4.70 ?? 10?????      |
-# | Central Carbon Metabolism in Cancer | 3/70    | 4.70 ?? 10?????      |
-# | Gastric Cancer                      | 4/149   | 4.70 ?? 10?????      |
+# | Prostate Cancer                     | 5/97    | 3.30 x 10^-5      |
+# | Pathways in Cancer                  | 10/531  | 3.30 x 10^-5      |
+# | Acute Myeloid Leukemia              | 4/67    | 6.25 x 10^-5      |
+# | Cell Cycle                          | 4/124   | 4.46 x 10^-5      |
+# | Oocyte Meiosis                      | 4/129   | 4.46 x 10^-5      |
+# | Chemical Carcinogenesis             | 5/239   | 4.70 x 10^-5      |
+# | Central Carbon Metabolism in Cancer | 3/70    | 4.70 x 10^-5      |
+# | Gastric Cancer                      | 4/149   | 4.70 x 10^-5      |
 #
 # ---
 #
@@ -2997,7 +2986,7 @@ print(top20["gene_symbol"].value_counts())
 # | STARD3       | HER2 amplicon-associated gene                           |
 # | PGAP3        | HER2 amplicon-associated gene                           |
 # | GRB7         | Frequently co-amplified with ERBB2                      |
-# | ESR1         | Encodes Estrogen Receptor ??                             |
+# | ESR1         | Encodes Estrogen Receptor Alpha                             |
 # | GATA3        | Canonical luminal breast cancer marker                  |
 # | FGFR2        | Breast cancer susceptibility and progression gene       |
 # | AR           | Androgen receptor involved in subtype-specific biology  |
@@ -3172,7 +3161,7 @@ print(top20["gene_symbol"].value_counts())
 # | Performance Metric        | Tuned Random Forest | Tuned Logistic Regression |
 # | ------------------------- | ------------------- | ------------------------- |
 # | GridSearchCV F1 Score     | 98.1%               | 98.1%                     |
-# | Repeated Stratified CV    | 97.01% ?? 4.81%      | 97.31% ?? 3.48%            |
+# | Repeated Stratified CV    | 97.01% ± 4.81%      | 97.31% ± 3.48%            |
 # | 95% Confidence Interval   | [87.57%, 100.00%]   | [90.49%, 100.00%]         |
 # | Independent Test Accuracy | 100.0%              | 100.0%                    |
 # | Independent Test F1 Score | 100.0%              | 100.0%                    |
@@ -3282,14 +3271,14 @@ print(top20["gene_symbol"].value_counts())
 #
 # | Pathway                             | Overlap | Adjusted P-value |
 # | ----------------------------------- | ------- | ---------------- |
-# | Prostate Cancer                     | 5/97    | 3.30 ?? 10?????      |
-# | Pathways in Cancer                  | 10/531  | 3.30 ?? 10?????      |
-# | Acute Myeloid Leukemia              | 4/67    | 6.25 ?? 10?????      |
-# | Cell Cycle                          | 4/124   | 4.46 ?? 10?????      |
-# | Oocyte Meiosis                      | 4/129   | 4.46 ?? 10?????      |
-# | Chemical Carcinogenesis             | 5/239   | 4.70 ?? 10?????      |
-# | Central Carbon Metabolism in Cancer | 3/70    | 4.70 ?? 10?????      |
-# | Gastric Cancer                      | 4/149   | 4.70 ?? 10?????      |
+# | Prostate Cancer                     | 5/97    | 3.30 x 10^-5      |
+# | Pathways in Cancer                  | 10/531  | 3.30 x 10^-5      |
+# | Acute Myeloid Leukemia              | 4/67    | 6.25 x 10^-5      |
+# | Cell Cycle                          | 4/124   | 4.46 x 10^-5      |
+# | Oocyte Meiosis                      | 4/129   | 4.46 x 10^-5      |
+# | Chemical Carcinogenesis             | 5/239   | 4.70 x 10^-5      |
+# | Central Carbon Metabolism in Cancer | 3/70    | 4.70 x 10^-5      |
+# | Gastric Cancer                      | 4/149   | 4.70 x 10^-5      |
 #
 # ### Interpretation of Cancer-Related Pathways
 #
@@ -3310,26 +3299,26 @@ print(top20["gene_symbol"].value_counts())
 #
 # ### Differential Expression Analysis
 #
-# ???
+# * Identified highly significant differential expression signatures (e.g., *ERBB2*, *ESR1*) separating normal breast tissues from tumor samples, showing distinct biological separation.
 #
 # ### Consensus Feature Selection
 #
-# ???
+# * Filtered high-dimensional probes down to a robust panel of 1,480 consensus genes across 4 independent statistical, regularization, and ensemble tree-based models, strictly fitted on the training split to avoid data leakage.
 #
 # ### Machine Learning Classification
 #
-# ???
+# * Obtained near-perfect subtype classification accuracy and stability across repeated nested cross-validation and independent holdout sets, confirming highly reproducible predictive models.
 #
 # ### SHAP Biomarker Discovery
 #
-# ???
+# * Explained multi-model classifications using SHAP attributions, identifying primary drivers like *ERBB2*, *GRB7*, *ESR1*, *GATA3*, and *FGFR2* that perfectly map to known molecular subtypes and clinical breast cancer pathways.
 #
 # ### GO and KEGG Enrichment Validation
 #
 # Across all analytical stages, three major biological themes repeatedly emerged:
 #
 # 1. HER2 amplification and receptor tyrosine kinase signaling.
-# 2. Hormone receptor???mediated transcriptional programs.
+# 2. Hormone receptor-mediated transcriptional programs.
 # 3. Cell-cycle progression and proliferative activity.
 #
 # The recurrence of these themes throughout the pipeline provides strong evidence that the models learned biologically meaningful molecular signatures rather than dataset-specific artifacts.
@@ -3380,11 +3369,11 @@ print(top20["gene_symbol"].value_counts())
 #
 # ## Molecular Classification of Breast Cancer
 #
-# ### 1. Perou, C. M., S??rlie, T., Eisen, M. B., van de Rijn, M., Jeffrey, S. S., Rees, C. A., et al. (2000)
+# ### 1. Perou, C. M., Sørlie, T., Eisen, M. B., van de Rijn, M., Jeffrey, S. S., Rees, C. A., et al. (2000)
 #
 # **Molecular portraits of human breast tumours.**
 #
-# *Nature*, **406**(6797), 747???752.
+# *Nature*, **406**(6797), 747-752.
 #
 # https://doi.org/10.1038/35021093
 #
@@ -3398,7 +3387,7 @@ print(top20["gene_symbol"].value_counts())
 #
 # **A comparison of normalization methods for high density oligonucleotide array data based on variance and bias.**
 #
-# *Bioinformatics*, **19**(2), 185???193.
+# *Bioinformatics*, **19**(2), 185-193.
 #
 # https://doi.org/10.1093/bioinformatics/19.2.185
 #
@@ -3412,7 +3401,7 @@ print(top20["gene_symbol"].value_counts())
 #
 # **Gene-expression signatures in breast cancer.**
 #
-# *New England Journal of Medicine*, **360**(8), 790???800.
+# *New England Journal of Medicine*, **360**(8), 790-800.
 #
 # https://doi.org/10.1056/NEJMra0800028
 #
@@ -3422,11 +3411,11 @@ print(top20["gene_symbol"].value_counts())
 #
 # ## Feature Selection in High-Dimensional Biology
 #
-# ### 4. Saeys, Y., Inza, I., & Larra??aga, P. (2007)
+# ### 4. Saeys, Y., Inza, I., & Larrañaga, P. (2007)
 #
 # **A review of feature selection techniques in bioinformatics.**
 #
-# *Bioinformatics*, **23**(19), 2507???2517.
+# *Bioinformatics*, **23**(19), 2507-2517.
 #
 # https://doi.org/10.1093/bioinformatics/btm344
 #
@@ -3440,7 +3429,7 @@ print(top20["gene_symbol"].value_counts())
 #
 # **Random Forests.**
 #
-# *Machine Learning*, **45**(1), 5???32.
+# *Machine Learning*, **45**(1), 5-32.
 #
 # https://doi.org/10.1023/A:1010933404324
 #
@@ -3454,7 +3443,7 @@ print(top20["gene_symbol"].value_counts())
 #
 # **A Unified Approach to Interpreting Model Predictions.**
 #
-# *Advances in Neural Information Processing Systems (NeurIPS)*, 4765???4774.
+# *Advances in Neural Information Processing Systems (NeurIPS)*, 4765-4774.
 #
 # **Significance:** Introduced the SHAP framework, providing the theoretical basis for model explainability and feature attribution analysis.
 #
@@ -3464,7 +3453,7 @@ print(top20["gene_symbol"].value_counts())
 #
 # **From Local Explanations to Global Understanding with Explainable AI for Trees.**
 #
-# *Nature Machine Intelligence*, **2**(1), 56???67.
+# *Nature Machine Intelligence*, **2**(1), 56-67.
 #
 # https://doi.org/10.1038/s42256-019-0138-9
 #
@@ -3492,7 +3481,7 @@ print(top20["gene_symbol"].value_counts())
 #
 # **MyGene.info: Light-Weight and High-Performance Web Services for Querying Gene and Variant Annotation.**
 #
-# *Bioinformatics*, **32**(19), 3034???3036.
+# *Bioinformatics*, **32**(19), 3034-3036.
 #
 # https://doi.org/10.1093/bioinformatics/btw339
 #
@@ -3506,7 +3495,7 @@ print(top20["gene_symbol"].value_counts())
 #
 # **CuMiDa: An Extensively Curated Microarray Database for Benchmarking and Testing of Machine Learning Approaches in Cancer Research.**
 #
-# *Journal of Computational Biology*, **26**(3), 254???263.
+# *Journal of Computational Biology*, **26**(3), 254-263.
 #
 # https://doi.org/10.1089/cmb.2018.0238
 #
@@ -3520,7 +3509,7 @@ print(top20["gene_symbol"].value_counts())
 #
 # **MIEN1, a Novel Gene Co-Amplified with HER2, Promotes Cell Migration and Invasion in Breast Cancer.**
 #
-# *Oncogene*, **25**(45), 6100???6112.
+# *Oncogene*, **25**(45), 6100-6112.
 #
 # https://doi.org/10.1038/sj.onc.1209632
 #
