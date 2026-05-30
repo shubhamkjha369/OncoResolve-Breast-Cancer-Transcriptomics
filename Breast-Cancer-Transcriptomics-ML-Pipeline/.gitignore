@@ -1,0 +1,23 @@
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python caches
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Sync files and HTML renderings
+notebooks/*.txt
+notebooks/*.html
+
+# Reports directory
+reports/
+
+# Data and ML artifacts directory
+data/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
