@@ -1,0 +1,5 @@
+ascp -P33001 -i "C:\aspera\cli\etc\asperaweb_id_dsa.openssh" --host=fasp.ebi.ac.uk --user=bsaspera --mode=recv  "nfs/E-MTAB-/297/E-MTAB-16297/Files/matrix.mtx.gz" ./
+ascp -P33001 -i "C:\aspera\cli\etc\asperaweb_id_dsa.openssh" --host=fasp.ebi.ac.uk --user=bsaspera --mode=recv  "nfs/E-MTAB-/297/E-MTAB-16297/Files/features.tsv.gz" ./
+ascp -P33001 -i "C:\aspera\cli\etc\asperaweb_id_dsa.openssh" --host=fasp.ebi.ac.uk --user=bsaspera --mode=recv  "nfs/E-MTAB-/297/E-MTAB-16297/Files/barcodes.tsv.gz" ./
+ascp -P33001 -i "C:\aspera\cli\etc\asperaweb_id_dsa.openssh" --host=fasp.ebi.ac.uk --user=bsaspera --mode=recv  "nfs/E-MTAB-/297/E-MTAB-16297/Files/E-MTAB-16297.idf.txt" ./
+ascp -P33001 -i "C:\aspera\cli\etc\asperaweb_id_dsa.openssh" --host=fasp.ebi.ac.uk --user=bsaspera --mode=recv  "nfs/E-MTAB-/297/E-MTAB-16297/Files/E-MTAB-16297.sdrf.txt" ./

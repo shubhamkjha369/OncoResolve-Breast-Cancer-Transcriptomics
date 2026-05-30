@@ -1,0 +1,22 @@
+; Run this file in cmd shell with this command:  ftp -i -s:./<filename>
+open ftp.ebi.ac.uk
+anonymous
+youremail@domain.com
+cd biostudies/nfs/E-MTAB-/055/E-MTAB-17055/Files
+binary
+mget "LNEN084-IARC-B-raw_feature_bc_matrix.txt"
+mget "LNEN206-IARC-D-filtered_feature_bc_matrix.txt"
+mget "LNEN084-IARC-B-filtered_feature_bc_matrix.txt"
+mget "LNEN107-IARC-C-raw_feature_bc_matrix.txt"
+mget "LNEN071-IARC-A-raw_feature_bc_matrix.txt"
+mget "LNEN206-IARC-D.tif"
+mget "LNEN071-IARC-A.tif"
+mget "LNEN071-IARC-A-filtered_feature_bc_matrix.txt"
+mget "LNEN206-IARC-D-raw_feature_bc_matrix.txt"
+mget "LNEN084-IARC-B.tif"
+mget "LNEN107-IARC-C.tif"
+mget "LNEN107-IARC-C-filtered_feature_bc_matrix.txt"
+mget "E-MTAB-17055.idf.txt"
+mget "E-MTAB-17055.sdrf.txt"
+disconnect
+quit
