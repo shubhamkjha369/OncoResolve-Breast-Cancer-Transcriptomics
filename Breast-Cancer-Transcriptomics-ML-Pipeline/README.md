@@ -45,7 +45,7 @@
 * **Verifiable Empirical Facts:** Every single metric—from the **100.00% holdout accuracy** to the **92.89% Mean CV F1 score** and **82.70% external accuracy**—is extracted directly from parquet artifacts and saved models in `data/artifacts/` generated during verified cell-by-cell notebook execution.
 * **Fully Operational Interface:** It does not just present mathematical formulas. It features a complete production Streamlit analytics dashboard (`app.py`), a multi-stage Dockerfile, and an active **AutoML tab** capable of training pipeline models on *any* custom transcriptomic upload with live terminal tracking.
 
-### 5. Why should a clinician or wet lab person read this?
+### 5. Why Should Clinicians and Wet-Lab Researchers Care?
 * **Interpretable Therapeutic Mapping:** Uses explainable AI (LinearSHAP) to map predictions back to clinically relevant targets (e.g. `ERBB2` for Herceptin/Trastuzumab, `ESR1` for endocrine Tamoxifen therapy, and `CDK12` for emerging inhibitors) which are directly validated against KEGG and GO pathway processes.
 * **Actionable Research Framework:** Provides wet lab researchers with a standardized, leakage-free computational framework to analyze high-dimensional genomic datasets and discover stable biomarkers or individual patient uniqueness in their own experiments.
 
