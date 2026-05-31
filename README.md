@@ -14,6 +14,33 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
+## 📖 Citation & Academic Use
+
+If you use this repository, code, methodology, biomarker framework, patient-centric heterogeneity analysis, figures, results, or derived software in academic research, publications, presentations, educational materials, or derivative projects, please cite the archived software release.
+
+### Recommended Citation
+
+Jha, S. (2026). *OncoResolve: Breast Cancer Transcriptomics and Explainable AI Pipeline* (Version 1.0.3) [Software]. Zenodo. https://doi.org/10.5281/zenodo.20477715
+
+### BibTeX
+
+```bibtex
+@software{jha2026oncoresolve,
+  author       = {Shubham Jha},
+  title        = {OncoResolve: Breast Cancer Transcriptomics and Explainable AI Pipeline},
+  year         = {2026},
+  version      = {1.0.3},
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.20477715},
+  url          = {https://doi.org/10.5281/zenodo.20477715}
+}
+```
+
+### Reproducibility
+
+The DOI-linked Zenodo archive represents the immutable research record associated with this release. Researchers are encouraged to reference the DOI rather than a moving GitHub branch to ensure reproducibility.
+
+---
 
 > **End-to-end machine learning and deep learning workflow for breast cancer molecular subtype classification using high-dimensional gene expression data — from exploratory analysis and co-expression networks through model explainability and biological pathway validation.**
 
