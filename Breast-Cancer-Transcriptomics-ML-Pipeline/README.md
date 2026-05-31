@@ -9,6 +9,10 @@
 
 # OncoResolve: A High-Hygiene Explainable AI & Patient-Centric Uniqueness Framework for Breast Cancer Subtyping and Cross-Platform Translation
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20476870.svg)](https://doi.org/10.5281/zenodo.20476870)
+
+---
+
 [![Streamlit App](https://docs.streamlit.io/logo.svg)](https://breast-cancer-subtype-analysis.streamlit.app/) : Streamlit App 🧬
 
 ---
