@@ -9,7 +9,7 @@
 
 # OncoResolve: A High-Hygiene Explainable AI & Patient-Centric Uniqueness Framework for Breast Cancer Subtyping and Cross-Platform Translation
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20476870.svg)](https://doi.org/10.5281/zenodo.20476870)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20477715.svg)](https://doi.org/10.5281/zenodo.20477715)
 
 ---
 
