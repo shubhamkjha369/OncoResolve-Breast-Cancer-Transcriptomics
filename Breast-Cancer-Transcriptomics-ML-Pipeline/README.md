@@ -489,19 +489,19 @@ The Dockerfile uses a two-stage build to minimize the final container size:
 2. **Bolstad, B. M., Irizarry, R. A., Astrand, M., & Speed, T. P. (2003).** *A comparison of normalization methods for high density oligonucleotide array data based on variance and bias.* **Bioinformatics**, 19(2), 185-193. [https://doi.org/10.1093/bioinformatics/19.2.185](https://doi.org/10.1093/bioinformatics/19.2.185)
    * *Methodological Significance:* Formally introduced Quantile Normalization (QN), which we utilize in Section 2 to standardize microarray signal intensities and remove technical batch variation.
 
-3. **Evans, M. R., Classon, M., & Evans, H. M. (2006).** *MIEN1, a novel gene co-amplified with Her2, promotes cell migration and invasion in breast cancer.* **Oncogene**, 25(45), 6100-6112. [https://doi.org/10.1038/sj.onc.1209632](https://doi.org/10.1038/sj.onc.1209632)
-   * *Biological Validation:* Proves that *MIEN1* is physically located adjacent to the *ERBB2* (HER2) receptor at chromosome 17q12 and frequently co-amplified in HER2+ disease, validating our model's #1 ranked global SHAP biomarker.
+3. **Evans, E. E., Henn, A. D., Jonason, A., Paris, M. J., Schiffhauer, L. M., Borrello, M. A., Smith, E. S., Sahasrabudhe, D. M., & Zauderer, M. (2006).** *C35 (C17orf37) is a novel tumor biomarker abundantly expressed in breast cancer.* **Molecular Cancer Therapeutics**, 5(11), 2919–2930. [https://doi.org/10.1158/1535-7163.MCT-06-0389](https://doi.org/10.1158/1535-7163.MCT-06-0389)
+   * *Biological Validation:* Identifies C35 (also known as C17orf37 or MIEN1) as a novel tumor-associated antigen abundantly expressed in breast cancer and co-amplified within the chromosome 17q12 HER2 amplicon, validating our model's #1 ranked global SHAP biomarker.
 
 4. **Saeys, Y., Inza, I., & Larrañaga, P. (2007).** *A review of feature selection techniques in bioinformatics.* **Bioinformatics**, 23(19), 2507-2517. [https://doi.org/10.1093/bioinformatics/btm344](https://doi.org/10.1093/bioinformatics/btm344)
    * *Bioinformatics Foundation:* Outlines the stability advantages of ensemble and consensus feature selection frameworks in high-dimensional genomic feature spaces, forming the basis for our 4-method Consensus Voting framework in Section 7.
 
-5. **Sotiriou, C. & Pusztai, L. (2009).** *Gene-expression signatures in breast cancer.* **New England Journal of Medicine**, 360(8), 790-800. [https://doi.org/10.1056/NEJMra0800028](https://doi.org/10.1056/NEJMra0800028)
+5. **Sotiriou, C. & Pusztai, L. (2009).** *Gene-expression signatures in breast cancer.* **New England Journal of Medicine**, 360(8), 790-800. [https://doi.org/10.1056/NEJMra081289](https://doi.org/10.1056/NEJMra081289)
    * *Oncology Translation:* Establishes how global multi-gene expression signatures translate to clinical prognosis and chemotherapy selection in primary breast cancer.
 
 6. **Chen, E. Y., Tan, C. M., Kou, Y., Banavathu, H. S., Farndon, G., & Ma'ayan, A. (2013).** *Enrichr: interactive and collaborative HTML5 gene list enrichment analysis tool.* **BMC Bioinformatics**, 14(1), 128. [https://doi.org/10.1186/1471-2105-14-128](https://doi.org/10.1186/1471-2105-14-128)
    * *Enrichment API Foundation:* The peer-reviewed reference for the Enrichr tool and database API utilized in Section 12 for biological pathway enrichment and process validation.
 
-7. **Xin, J., Mark, A., Afrasiabi, C., Tsueng, G., Juchler, M., Gopal, N., ... & Su, A. I. (2016).** *MyGene.info: light-weight, high-performance query services for genes.* **Bioinformatics**, 32(19), 3034-3035. [https://doi.org/10.1093/bioinformatics/btw339](https://doi.org/10.1093/bioinformatics/btw339)
+7. **Xin, J., Mark, A., Afrasiabi, C., Tsueng, G., Juchler, M., Gopal, N., ... & Su, A. I. (2016).** *High-performance web services for querying gene and variant annotation.* **Genome Biology**, 17(91), 1-10. [https://doi.org/10.1186/s13059-016-0953-9](https://doi.org/10.1186/s13059-016-0953-9)
    * *API Foundation:* The official citation for the high-throughput MyGene API query services utilized in Section 11 to resolve Affymetrix probe IDs to HUGO gene symbols.
 
 8. **Lundberg, S. M. & Lee, S.-I. (2017).** *A unified approach to interpreting model predictions.* **Advances in Neural Information Processing Systems (NeurIPS)**, 4765-4774.
@@ -510,8 +510,8 @@ The Dockerfile uses a two-stage build to minimize the final container size:
 9. **Feltes, B. C. et al. (2019).** *CuMiDa: An Extensively Curated Microarray Database for Benchmarking and Testing of Machine Learning Approaches in Cancer Research.* **Journal of Computational Biology**, 26(3), 254-263. [https://doi.org/10.1089/cmb.2018.0238](https://doi.org/10.1089/cmb.2018.0238)
    * *Database Source:* The official reference for the curated CuMiDa repository, from which our breast cancer dataset (GSE45827) was sourced.
 
-10. **Lundberg, S. M., Erion, G., Chen, H., DeGrave, A., Prutthiwanisan, J. M., Dumontier, B., ... & Lee, S. I. (2020).** *From local explanations to global understanding with explainable AI for trees.* **Nature Machine Intelligence**, 2(1), 56-67. [https://doi.org/10.1038/s42256-019-0138-9](https://doi.org/10.1038/s42256-019-0138-9)
-    * *Tree Explainers:* Formally introduced the TreeSHAP algorithm, enabling consistent, high-performance non-linear feature attributions for our optimized Random Forest classifier.
+10. **Cortes, C., & Vapnik, V. (1995).** *Support-vector networks.* **Machine Learning**, 20(3), 273-297. [https://doi.org/10.1007/BF00994018](https://doi.org/10.1007/BF00994018)
+    * *Methodological Significance:* Formally introduced the Support Vector Machine (SVM) algorithm, which we utilize in Section 10 as one of our primary high-performance classification models.
 
 ---
 
