@@ -10,6 +10,7 @@
 # Breast Cancer Transcriptomic ML Pipeline
 
 [![Streamlit App](https://docs.streamlit.io/logo.svg)](https://breast-cancer-subtype-analysis.streamlit.app/) : Streamlit App 🧬
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shubhamkjha369/Computational_Biology_Projects/blob/main/Breast-Cancer-Transcriptomics-ML-Pipeline/notebooks/Breast_cancer_subtype_Transcriptomics_Pipeline.ipynb)
 
 > **End-to-end machine learning and deep learning workflow for breast cancer molecular subtype classification using high-dimensional gene expression data — from exploratory analysis and co-expression networks through model explainability and biological pathway validation.**
 
