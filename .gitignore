@@ -1,15 +1,57 @@
-# Byte-compiled / optimized / DLL files
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python caches
 **/__pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# Notebook Checkpoints
-**/.ipynb_checkpoints/
+# Virtual environments
+.venv/
+venv/
+env/
 
-# Raw Data Directory (contains large CSV files > 100MB)
-Breast-Cancer-Transcriptomics-ML-Pipeline/data/raw/
+# Environment variables / secrets
 
-# OS generated files
+.env
+.env.*
+
+# Sync files and HTML renderings
+notebooks/*.txt
+notebooks/*.html
+
+# Reports directory
+reports/
+
+# OS-specific files
 .DS_Store
 Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Large raw and processed external cohort datasets
+data/external_cohort/Breast_GSE70947.csv
+data/external_cohort/Breast_GSE70947.parquet
+
+# Large raw and processed datasets
+data/raw/
+data/processed/
+
+#Large model checkpoints
+*.pt
+*.pth
+*.ckpt
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+
+# Windows
+desktop.ini
