@@ -13,7 +13,7 @@
 
 ---
 
-[![Streamlit App](https://docs.streamlit.io/logo.svg)](https://breast-cancer-subtype-analysis.streamlit.app/) : Streamlit App 🧬
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://oncoresolve.streamlit.app/)
 
 ---
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shubhamkjha369/Computational_Biology_Projects/blob/main/Breast-Cancer-Transcriptomics-ML-Pipeline/notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb)
