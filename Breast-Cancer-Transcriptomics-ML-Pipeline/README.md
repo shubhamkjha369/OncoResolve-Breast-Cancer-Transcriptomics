@@ -24,7 +24,7 @@
 
 ---
 
-## 🧬 Executive Diagnostic & Technical Q&A (Clinical & Wet Lab Grade)
+## 🧬 Executive Diagnostic & Technical Q&A
 
 ### 1. What does this project prove?
 * **High-Separability Sparse Biomarkers:** It proves that a highly sparse signature of **exactly 257 genes** (filtered strictly without data leakage from 54,675 probes) contains sufficient biological information to **perfectly classify breast cancer molecular subtypes** (Basal, HER2, Luminal A, Luminal B, and Normal) with **100.00% holdout accuracy** ($n=28$ samples) across multiple classifiers.
