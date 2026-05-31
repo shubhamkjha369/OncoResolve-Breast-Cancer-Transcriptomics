@@ -46,10 +46,10 @@ The DOI-linked Zenodo archive represents the immutable research record associate
 
 ---
 
-## 🧬 Executive Diagnostic & Technical Q&A
+## ## Executive Summary
 
 ### 1. What does this project prove?
-* **High-Separability Sparse Biomarkers:** It proves that a highly sparse signature of **exactly 257 genes** (filtered strictly without data leakage from 54,675 probes) contains sufficient biological information to **perfectly classify breast cancer molecular subtypes** (Basal, HER2, Luminal A, Luminal B, and Normal) with **100.00% holdout accuracy** ($n=28$ samples) across multiple classifiers.
+* **High-Separability Sparse Biomarkers:** It demonstrates that a highly sparse signature of exactly 257 genes contains sufficient biological information to achieve *100.00% holdout accuracy* for breast cancer molecular subtype classification (Basal, HER2, Luminal A, Luminal B, and Normal) on the held-out test set.
 * **Cross-Platform Generalization:** It proves that this signature is highly robust, transcending microarray-to-beadchip platform differences to achieve an outstanding **82.70% binary accuracy** on a completely independent real cohort of **289 patients** (GSE70947, Illumina BeadChip) under a calibrated decision threshold ($0.02$) that corrects for the training class imbalance.
 * **Population vs. Private Biology:** By demonstrating that patient-centric uniqueness (CUS) has a **0.0000 Jaccard overlap** with cohort-wide subtype differential expression pathways, it mathematically proves that the biology driving individual tumor individuality is completely uncoupled from broad homeostatic subtypes.
 
@@ -127,7 +127,7 @@ This project delivers a **complete, end-to-end transcriptomic machine learning a
 All results reported below are fully authentic, verified, and extracted directly from our end-to-end pipeline executions:
 
 ### Model Performance Comparison (Cells 67, 73, 75, 77)
-Due to the exceptional biological separability of the selected consensus biomarkers, multiple classifiers achieve **100.00% perfect classification** on the independent, strictly held-out test partition ($n=28$ samples). 
+Due to the exceptional biological separability of the selected consensus biomarkers, multiple classifiers achieve **100.00% holdout accuracy** on the independent, strictly held-out test partition ($n=28$ samples). 
 
 To ensure complete statistical validity and eliminate random chance, we evaluate models using both the independent holdout partition and stratified cross-validation (CV) on the training set.
 
@@ -685,14 +685,17 @@ The Dockerfile uses a two-stage build to minimize the final container size:
     * *Methodological Significance:* Formally introduced the Support Vector Machine (SVM) algorithm, which we utilize in Section 10 as one of our primary high-performance classification models.
 
 ---
-
 <a id="license"></a>
 ## 📄 License
 
 This project is open-source and intended for academic, research, and technical recruitment demonstration purposes. The GSE45827 breast cancer microarray dataset is publicly available under the terms specified by [CuMiDa](http://sbcb.inf.ufrgs.br/cumida).
 
 ---
+## Research Disclaimer
 
+This software is intended for research and educational purposes only and is not approved for clinical diagnosis, treatment selection, or medical decision-making.
+
+---
 <p align="center">
   <sub>Built with 🧬 for interpretable, clinically-grounded transcriptomic deep learning</sub>
 </p>
