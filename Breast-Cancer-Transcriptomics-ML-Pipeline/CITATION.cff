@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+title: "OncoResolve: Breast Cancer Transcriptomics and Explainable AI Pipeline"
+message: "If you use this project, please cite it using the metadata below."
+type: software
+authors:
+
+* family-names: Jha
+  given-names: Shubham
+  doi: 10.5281/zenodo.20476870
+  repository-code: "https://github.com/shubhamkjha369/Computational_Biology_Projects"
+  license: MIT
+  version: v1.0.0
