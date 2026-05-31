@@ -46,11 +46,11 @@ The DOI-linked Zenodo archive represents the immutable research record associate
 
 ---
 
-## ## Executive Summary
+## Executive Summary
 
 ### 1. What does this project prove?
 * **High-Separability Sparse Biomarkers:** It demonstrates that a highly sparse signature of exactly 257 genes contains sufficient biological information to achieve *100.00% holdout accuracy* for breast cancer molecular subtype classification (Basal, HER2, Luminal A, Luminal B, and Normal) on the held-out test set.
-* **Cross-Platform Generalization:** It proves that this signature is highly robust, transcending microarray-to-beadchip platform differences to achieve an outstanding **82.70% binary accuracy** on a completely independent real cohort of **289 patients** (GSE70947, Illumina BeadChip) under a calibrated decision threshold ($0.02$) that corrects for the training class imbalance.
+* **Cross-Platform Generalization:** The analysis suggests that this signature is highly robust, transcending microarray-to-beadchip platform differences to achieve an outstanding **82.70% binary accuracy** on a completely independent real cohort of **289 patients** (GSE70947, Illumina BeadChip) under a calibrated decision threshold ($0.02$) that corrects for the training class imbalance.
 * **Population vs. Private Biology:** By demonstrating that patient-centric uniqueness (CUS) has a **0.0000 Jaccard overlap** with cohort-wide subtype differential expression pathways, it mathematically proves that the biology driving individual tumor individuality is completely uncoupled from broad homeostatic subtypes.
 
 ### 2. Why is this useful?
@@ -585,8 +585,7 @@ The Streamlit analytics dashboard (`app.py`) provides an interactive interface b
 ### 💻 Installation
 ```bash
 # Clone the repository
-git clone https://github.com/shubhamkjha369/Computational_Biology_Projects.git
-cd Computational_Biology_Projects/Breast-Cancer-Transcriptomics-ML-Pipeline
+https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics.git
 
 # Create a virtual environment
 python -m venv .venv
@@ -691,10 +690,18 @@ The Dockerfile uses a two-stage build to minimize the final container size:
 This project is open-source and intended for academic, research, and technical recruitment demonstration purposes. The GSE45827 breast cancer microarray dataset is publicly available under the terms specified by [CuMiDa](http://sbcb.inf.ufrgs.br/cumida).
 
 ---
-## Research Disclaimer
+## ⚠️ Research Status
 
-This software is intended for research and educational purposes only and is not approved for clinical diagnosis, treatment selection, or medical decision-making.
+This project represents an independent computational biology research study and software framework.
 
+Current status:
+
+- Software archived on Zenodo with DOI
+- Public source code and reproducible workflow available
+- Independent external cohort validation performed (GSE70947)
+- Not peer reviewed
+- Not clinically validated for diagnostic use
+- Intended for research and educational purposes
 ---
 <p align="center">
   <sub>Built with 🧬 for interpretable, clinically-grounded transcriptomic deep learning</sub>
