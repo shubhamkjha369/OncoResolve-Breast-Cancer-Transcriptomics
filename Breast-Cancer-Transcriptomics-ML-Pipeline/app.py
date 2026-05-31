@@ -671,15 +671,15 @@ elif page == "Cross Validation":
 
 elif page == "SHAP Explainability":
     st.markdown('<div class="main-title">SHAP <span class="main-title-accent">Explainable AI and Biomarkers</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">Using TreeSHAP explainers, we extract the mathematically exact feature contributions of gene probes driving subtype decisions, creating trust for clinical PIs.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">Using LinearSHAP explainers, we extract the mathematically exact feature contributions of gene probes driving subtype decisions, creating trust for clinical PIs.</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="section-title">Global Feature Impact (TreeSHAP)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Global Feature Impact (LinearSHAP)</div>', unsafe_allow_html=True)
     show_artifact_image("global_shap_importance.png", "Global SHAP Biomarker Contribution Plot")
 
     if annotated_biomarkers is not None:
         st.markdown('<div class="section-title">Verified Biomarker HUGO Symbol Translations</div>', unsafe_allow_html=True)
         st.markdown("""
-        To resolve black-box limitations and achieve biological explainability, we combine **TreeSHAP** (non-linear attributions on Random Forest) and **LinearSHAP** (gradients on Logistic Regression) into a robust **Ensemble SHAP Impact Score**:
+        To resolve black-box limitations and achieve biological explainability, we utilize **LinearSHAP** explanations on our tuned **Logistic Regression** model to quantify mathematically exact biomarker impact scores:
         """)
         
         col_shap1, col_shap2 = st.columns([2, 1])

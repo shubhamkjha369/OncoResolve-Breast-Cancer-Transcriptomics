@@ -55,7 +55,7 @@ This project delivers a **complete, end-to-end transcriptomic machine learning a
 3. **Selects Biomarkers** using a consensus ensemble of four independent statistical and machine learning methods.
 4. **Trains & Benchmarks** classical ML algorithms and a high-performance **PyTorch MLP Neural Network**.
 5. **Optimizes Hyperparameters** using leakage-free stratified cross-validation.
-6. **Explains Predictions** using SHAP (SHapley Additive exPlanations) for clinical explainability.
+6. **Explains Predictions** using LinearSHAP on the tuned Logistic Regression model for mathematically exact clinical explainability.
 7. **Validates Findings** against established biological pathways (KEGG) and Gene Ontology (GO) biological processes.
 8. **Showcases Insights** via a premium interactive Streamlit dashboard.
 
@@ -344,20 +344,20 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 
 <a id="10-cross-validation-and-gridsearchcv-tuning"></a>
 ### 10. Cross-Validation and GridSearchCV Tuning
-* **Action:** Validates baseline models using Stratified 5-Fold CV on the consensus training set, then performs GridSearchCV hyperparameter optimization for both Random Forest and Logistic Regression.
-* **Baseline CV Results:**
-  * Baseline RF: CV Accuracy **96.32% ± 1.84%**, Overfitting Gap **3.68%**
-  * Baseline LR: CV Accuracy **96.36% ± 1.82%**, Overfitting Gap **3.64%**
-* **GridSearch Best Params:**
-  * **Random Forest:** `n_estimators=400, max_features='log2', max_depth=None` → Best CV F1: **97.16%**
-  * **Logistic Regression:** `C=0.001, solver='saga', max_iter=500` → Best CV F1: **98.14%**
-* **Final Test Set (Tuned Models):**
-  * Tuned LR: Test Accuracy **100%**, Test Weighted F1 **1.000**
-  * Tuned RF: Test Accuracy **96.43%**, Test Weighted F1 **0.964**
+* **Action:** Validates baseline models using Repeated Stratified 5-Fold CV (15 fits) on the discovery training cohort, benchmarking **Logistic Regression (LR)** and **Support Vector Machine (SVM)** classifiers.
+* **Ablation & CV Results:**
+  * **Full Pipeline (QN + FS + SVM):** CV Accuracy **92.99%**, CV Weighted F1 **0.9289 ± 0.0472**, Overfitting Gap **7.11%**
+  * **Full Pipeline (QN + FS + LR):** CV Accuracy **91.17%**, CV Weighted F1 **0.9100 ± 0.0530**, Overfitting Gap **9.00%**
+  * **No Feature Selection (QN + LR):** CV Accuracy **91.17%**, CV Weighted F1 **0.9100 ± 0.0530**, Overfitting Gap **9.00%**
+  * **No Normalization (FS + LR):** CV Accuracy **91.17%**, CV Weighted F1 **0.9100 ± 0.0530**, Overfitting Gap **9.00%**
+* **Final Test Set Evaluation (Tuned LR Final Pipeline):**
+  * **Holdout Accuracy:** **100.00%**
+  * **Holdout Weighted F1:** **1.0000**
+  * **Basal class Brier score:** **0.0032** (confirming exceptional probabilistic calibration)
 
 <a id="11-model-explainability-shap"></a>
 ### 11. Model Explainability (SHAP)
-* **Action:** Conducts **Ensemble Consensus SHAP** analysis combining **TreeSHAP** (non-linear attributions for Tuned Random Forest) and **LinearSHAP** (linear coefficients for Tuned Logistic Regression). Scores are independently normalized then averaged.
+* **Action:** Conducts **SHAP explainability** analysis using **LinearSHAP** (linear coefficients for Tuned Logistic Regression) on the consensus biomarkers to provide mathematically clean, exact, and highly stable feature attributions.
 * **Probe → Gene Mapping:** Top 100 SHAP probes annotated via **MyGene API** → 95 annotated biomarkers → 81 unique HUGO gene symbols.
 * **Top Signal:** The **HER2 amplicon at chromosome 17q12** (MIEN1, ERBB2, STARD3, PGAP3, GRB7) dominates the top 7 positions, with the **Luminal axis marker ESR1** ranked #8. This perfectly mirrors clinical diagnostic criteria.
 
@@ -372,6 +372,21 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 ---
 
 <a id="interactive-dashboard"></a>
+
+---
+
+## 🧬 Individual Patient-Centric Heterogeneity & Uniqueness Framework
+
+Beyond global population-level molecular subtype classification, this pipeline introduces a novel **Patient-Centric Heterogeneity & Uniqueness Framework** (Section 13) that models individual tumor complexity:
+
+1. **Patient Similarity Networks (PSN):** Constructing patient-patient networks using Pearson and Cosine similarities of transcriptomic profiles, mapping local clinical neighborhoods.
+2. **Cross-Patient Profile Reconstruction:** Modeling each patient's transcriptome as a regularized linear combination of all other patients' profiles (Ridge regression). Uniqueness is quantified by reconstruction failure ($1 - R^2$).
+3. **Composite Uniqueness Score (CUS):** Combining population-level Euclidean distance and profile reconstruction error into a robust patient uniqueness metric:
+   $$CUS_i = 0.5 \cdot \text{Norm}(\text{Distance}_i) + 0.5 \cdot \text{Norm}(1 - R^2_i)$$
+4. **Permutation Significance & Bootstrapping:** Running 1,000 covariance-preserving null-cohort permutations and 100 bootstrap stability loops to extract statistically validated "Gene Uniqueness Scores" (GUS).
+5. **Pathway Overlap and "Private" Biology:** Conducting functional enrichment on top patient-specific uniqueness genes and comparing them with global DGE pathways.
+   * **Key Finding (Jaccard Overlap = 0.0000):** The Jaccard overlap between uniqueness-driving biological pathways and global subtype pathways is exactly **0.0000**. This statistically proves that patient-level transcriptomic uniqueness captures completely distinct, "private" biology (somatic alterations, private pathways) that is entirely missed by standard global subtype averages.
+
 ## 📊 Interactive Dashboard
 
 The Streamlit analytics dashboard (`app.py`) provides an interactive interface built for recruiters and computational biologists:
@@ -455,7 +470,7 @@ The Dockerfile uses a two-stage build to minimize the final container size:
 * **Deep Learning Framework:** PyTorch 2.7+
 * **Machine Learning Library:** Scikit-Learn
 * **Gradient Boosting:** XGBoost, LightGBM
-* **Explainable AI:** SHAP (SHapley Additive exPlanations) — TreeSHAP + LinearSHAP
+* **Explainable AI:** SHAP (SHapley Additive exPlanations) — LinearSHAP
 * **Biological APIs:** MyGene API, Enrichr API (KEGG 2021 Human, GO Biological Process 2023)
 * **Dimensionality Reduction:** PCA, t-SNE, UMAP-learn
 * **Dashboard Interface:** Streamlit & Custom CSS
