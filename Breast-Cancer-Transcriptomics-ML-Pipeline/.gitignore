@@ -23,3 +23,6 @@ data/sample_datasets/
 Thumbs.db
 
 
+# Large raw and processed external cohort datasets
+data/external_cohort/Breast_GSE70947.csv
+data/external_cohort/Breast_GSE70947.parquet
