@@ -35,9 +35,14 @@ Thumbs.db
 # Logs
 *.log
 
-# Large raw and processed external cohort datasets
+# Large raw and processed external cohort datasets (too large for GitHub — download locally)
 data/external_cohort/Breast_GSE70947.csv
 data/external_cohort/Breast_GSE70947.parquet
+data/external_cohort/SCANB_GSE96058_expression_subset.csv
+data/external_cohort/SCANB_GSE96058_clinical.csv
+data/external_cohort/METABRIC_expression.csv
+data/external_cohort/METABRIC_clinical.csv
+data/data/external_cohort/
 
 # Large raw and processed datasets
 data/raw/
