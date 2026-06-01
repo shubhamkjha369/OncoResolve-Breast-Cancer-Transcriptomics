@@ -32,13 +32,12 @@ If you use this repository, code, methodology, or derived work in academic resea
   author       = {Shubham Jha},
   title        = {OncoResolve: Breast Cancer Transcriptomics and Explainable AI Pipeline},
   year         = {2026},
-  version      = {2.0.0},
+  version      = {2.0.1},
   publisher    = {Zenodo},
-  doi          = {10.5281/20497606},
-  url          = {https://doi.org/10.5281/zenodo.20497606}
+  doi          = {10.5281/zenodo.20497791},
+  url          = {https://doi.org/10.5281/zenodo.20497791}
 }
 ```
----
 ## Table of Contents
 
 - [Project Aim](#project-aim)
