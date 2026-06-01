@@ -1,5 +1,5 @@
 # ==============================================================================
-# OncoResolve v2.0.0 — Multi-stage Docker Build
+# OncoResolve v2.0.1 — Multi-stage Docker Build
 # Primary dataset: TCGA-BRCA Pan-Can Atlas 2018 (RNA-seq)
 # External cohorts: METABRIC, SCAN-B (mount at runtime — too large to bundle)
 # ==============================================================================
@@ -25,9 +25,9 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 FROM python:3.13-slim AS runner
 
 LABEL org.opencontainers.image.title="OncoResolve" \
-      org.opencontainers.image.description="Breast Cancer Transcriptomics ML Pipeline — TCGA-BRCA RNA-seq" \
-      org.opencontainers.image.version="2.0.0" \
-      org.opencontainers.image.source="https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics"
+    org.opencontainers.image.description="Breast Cancer Transcriptomics ML Pipeline — TCGA-BRCA RNA-seq" \
+    org.opencontainers.image.version="2.0.1" \
+    org.opencontainers.image.source="https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics"
 
 WORKDIR /app
 
