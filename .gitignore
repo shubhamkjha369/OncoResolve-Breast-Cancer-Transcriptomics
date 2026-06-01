@@ -60,3 +60,13 @@ dist/
 
 # Windows
 desktop.ini
+
+# Temporary scratch scripts and text dumps (generated during development, never ship)
+scratch_*.py
+*_section.txt
+*_loading.txt
+*_cv.txt
+cells_*.txt
+patch_*.py
+overhaul_*.py
+download_tcga_*.py
