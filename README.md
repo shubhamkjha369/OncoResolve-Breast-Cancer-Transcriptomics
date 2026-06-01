@@ -19,7 +19,23 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
+<a id="citation"></a>
+## Citation
 
+If you use this repository, code, methodology, or derived work in academic research, please cite:
+
+```bibtex
+@software{jha2026oncoresolve,
+  author       = {Shubham Jha},
+  title        = {OncoResolve: Breast Cancer Transcriptomics and Explainable AI Pipeline},
+  year         = {2026},
+  version      = {2.0.0},
+  publisher    = {Zenodo},
+  doi          = {10.5281/20497606},
+  url          = {https://doi.org/10.5281/zenodo.20497606}
+}
+```
+---
 ## Table of Contents
 
 - [Project Aim](#project-aim)
@@ -417,25 +433,6 @@ OncoResolve-Breast-Cancer-Transcriptomics/
 +-- Dockerfile
 +-- CITATION.cff
 +-- README.md
-```
-
----
-
-<a id="citation"></a>
-## Citation
-
-If you use this repository, code, methodology, or derived work in academic research, please cite:
-
-```bibtex
-@software{jha2026oncoresolve,
-  author       = {Shubham Jha},
-  title        = {OncoResolve: Breast Cancer Transcriptomics and Explainable AI Pipeline},
-  year         = {2026},
-  version      = {2.0.0},
-  publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.20491282},
-  url          = {https://doi.org/10.5281/zenodo.20491282}
-}
 ```
 
 **Primary datasets used:**
