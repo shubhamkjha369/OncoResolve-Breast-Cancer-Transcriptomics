@@ -70,3 +70,6 @@ cells_*.txt
 patch_*.py
 overhaul_*.py
 download_tcga_*.py
+
+# Sample / placeholder readme (do not commit)
+sample_README.md
