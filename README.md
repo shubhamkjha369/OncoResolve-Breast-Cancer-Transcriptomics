@@ -443,5 +443,3 @@ If you use this repository, code, methodology, or derived work in academic resea
 - METABRIC: Curtis C et al. The genomic and transcriptomic architecture of 2,000 breast tumours reveals novel subgroups. *Nature* 486, 346-352 (2012). doi:10.1038/nature10983
 - SCAN-B (GSE96058): Brueffer C et al. Clinical Value of RNA Sequencing-Based Classifiers for Prediction of the Five Conventional Breast Cancer Biomarkers. *NPJ Breast Cancer* 4, 22 (2018). doi:10.1038/s41523-018-0072-5
 - PAM50 classifier: Parker JS et al. Supervised Risk Predictor of Breast Cancer Based on Intrinsic Subtypes. *J Clin Oncol* 27, 1160-1167 (2009). doi:10.1200/JCO.2008.18.1370
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
