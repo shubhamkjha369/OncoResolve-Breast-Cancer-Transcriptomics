@@ -1,261 +1,270 @@
 """
-Download external breast cancer cohorts for cross-platform validation.
+Download ALL external cohorts for OncoResolve Breast Cancer project.
 
-Cohort 1: METABRIC (Molecular Taxonomy of Breast Cancer International Consortium)
-  - N=1,980 breast cancer patients
-  - Platform: Illumina HT-12 v3 microarray (gene-level, HUGO symbols)
-  - Has OS_MONTHS, OS_STATUS, DFS_MONTHS, DFS_STATUS survival metadata
-  - ER/PR/HER2 status, PAM50 subtype, tumour stage
-  - Source: cBioPortal public data hub (brca_metabric)
-  - Size: ~50 MB
+NEW MAIN DATASET (replaces GSE45827):
+  TCGA-BRCA Pan-Can Atlas 2018 (brca_tcga_pan_can_atlas_2018)
+  - N=1,084 breast cancer patients
+  - Platform: Illumina HiSeq RNA-seq V2 (RSEM)
+  - PAM50 subtypes: Basal, HER2, LumA, LumB, Normal
+  - Survival: OS, DFS
+  - Output: data/raw/Breast_TCGA_BRCA_RNAseq.csv
 
-Cohort 2: SCAN-B / GSE96058 (Sweden Cancerome Analysis Network - Breast)
-  - N=3,273 breast cancer patients, modern Illumina RNA-seq
-  - Has RFS (recurrence-free survival) metadata
-  - Source: GEO FTP (series matrix + supplementary)
-  - Size: ~200 MB (series matrix only; full count matrix is larger)
-  - NOTE: Only clinical metadata + gene-level FPKM subset downloaded here
+EXTERNAL VALIDATION COHORT 1 (METABRIC):
+  - N=1,980, Illumina microarray, OS/DFS/RFS survival
+  - Output: data/external_cohort/METABRIC_expression.csv + _clinical.csv
 
-All outputs saved to: data/external_cohort/
+EXTERNAL VALIDATION COHORT 2 (SCAN-B GSE96058):
+  - N=3,273, Illumina NextSeq RNA-seq, RFS survival
+  - Output: data/external_cohort/SCANB_GSE96058_expression_subset.csv + _clinical.csv
 """
 
-import os
-import sys
-import tarfile
-import gzip
-import shutil
-import urllib.request
+import os, sys, json, gzip, shutil, time, io
+import urllib.request, urllib.parse
 import pandas as pd
 import numpy as np
 from pathlib import Path
 
-# ── Paths ──────────────────────────────────────────────────────────────────────
-SCRIPT_DIR  = Path(__file__).resolve().parent
-OUT_DIR     = SCRIPT_DIR           # data/external_cohort/
-TMP_DIR     = OUT_DIR / "_tmp"
+REPO_ROOT   = Path(__file__).resolve().parent.parent
+RAW_DIR     = REPO_ROOT / "data" / "raw"
+EXT_DIR     = REPO_ROOT / "data" / "external_cohort"
+TMP_DIR     = EXT_DIR / "_tmp"
 TMP_DIR.mkdir(parents=True, exist_ok=True)
 
-def progress_hook(count, block_size, total_size):
-    pct = min(int(count * block_size * 100 / total_size), 100) if total_size > 0 else 0
-    if count % 200 == 0 or pct == 100:
-        print(f"\r  {pct:3d}% ({count * block_size // 1024 // 1024} MB)", end="", flush=True)
+CBIO_API = "https://www.cbioportal.org/api"
+HEADERS  = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
 
-# ==============================================================================
-# COHORT 1: METABRIC  (cBioPortal data hub)
-# ==============================================================================
-print("=" * 65)
-print("COHORT 1: METABRIC  (brca_metabric, cBioPortal)")
-print("=" * 65)
+def get_json(url, params=None):
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers=HEADERS)
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.loads(r.read())
 
-METABRIC_URL = "https://cbioportal-datahub.s3.amazonaws.com/brca_metabric.tar.gz"
-METABRIC_TAR = TMP_DIR / "brca_metabric.tar.gz"
-METABRIC_EXPR_OUT  = OUT_DIR / "METABRIC_expression.csv"
-METABRIC_CLIN_OUT  = OUT_DIR / "METABRIC_clinical.csv"
+def download_cbio_expression(study_id, profile_id, out_csv, label="dataset"):
+    """Download expression matrix from cBioPortal for a study, save as samples x genes CSV."""
+    if out_csv.exists():
+        print(f"  {label}: already present -- skipping.")
+        return
 
-if METABRIC_EXPR_OUT.exists() and METABRIC_CLIN_OUT.exists():
-    print("  METABRIC CSVs already present -- skipping download.")
+    print(f"  [{label}] Fetching sample list ...")
+    samples_raw = get_json(f"{CBIO_API}/studies/{study_id}/samples",
+                           {"pageSize": 50000, "pageNumber": 0})
+    sample_ids = [s["sampleId"] for s in samples_raw]
+    print(f"  [{label}] Samples: {len(sample_ids)}")
+
+    print(f"  [{label}] Fetching expression (may take 1-3 min) ...")
+    url = (f"{CBIO_API}/molecular-profiles/{profile_id}/molecular-data"
+           f"?sampleListId={study_id}_all&pageSize=100000000&pageNumber=0")
+    req = urllib.request.Request(url, headers=HEADERS)
+    with urllib.request.urlopen(req, timeout=300) as r:
+        records = json.loads(r.read())
+    print(f"  [{label}] Records: {len(records):,}")
+
+    df = pd.DataFrame(records)
+    if "gene" in df.columns:
+        df["hugoGeneSymbol"] = df["gene"].apply(
+            lambda g: g.get("hugoGeneSymbol", "") if isinstance(g, dict) else "")
+    elif "hugoGeneSymbol" not in df.columns:
+        df["hugoGeneSymbol"] = df.get("entrezGeneId", "").astype(str)
+
+    expr = df.pivot_table(index="sampleId", columns="hugoGeneSymbol",
+                          values="value", aggfunc="mean")
+    expr.index.name = "sample_id"
+    expr.columns.name = None
+    print(f"  [{label}] Matrix: {expr.shape[0]} samples x {expr.shape[1]} genes")
+    expr.to_csv(out_csv)
+    print(f"  [{label}] Saved -> {out_csv.name}")
+
+def download_cbio_clinical(study_id, out_csv, label="clinical"):
+    """Download merged patient+sample clinical data from cBioPortal."""
+    if out_csv.exists():
+        print(f"  [{label} clinical]: already present -- skipping.")
+        return
+
+    print(f"  [{label}] Fetching clinical data ...")
+    samples_raw = get_json(f"{CBIO_API}/studies/{study_id}/samples",
+                           {"pageSize": 50000, "pageNumber": 0})
+    pat_map = {s["sampleId"]: s["patientId"] for s in samples_raw}
+
+    pat_raw = get_json(f"{CBIO_API}/studies/{study_id}/clinical-data",
+                       {"clinicalDataType": "PATIENT", "pageSize": 200000})
+    pat_records = {}
+    for rec in pat_raw:
+        pat_records.setdefault(rec["patientId"], {})[rec["clinicalAttributeId"]] = rec["value"]
+    pat_df = pd.DataFrame.from_dict(pat_records, orient="index")
+    pat_df.index.name = "patient_id"
+
+    samp_raw = get_json(f"{CBIO_API}/studies/{study_id}/clinical-data",
+                        {"clinicalDataType": "SAMPLE", "pageSize": 200000})
+    samp_records = {}
+    for rec in samp_raw:
+        samp_records.setdefault(rec["sampleId"], {})[rec["clinicalAttributeId"]] = rec["value"]
+    samp_df = pd.DataFrame.from_dict(samp_records, orient="index")
+    samp_df.index.name = "sample_id"
+    samp_df["patient_id"] = samp_df.index.map(pat_map)
+
+    merged = samp_df.merge(pat_df, on="patient_id", how="left", suffixes=("_sample","_patient"))
+    surv = [c for c in merged.columns if any(k in c.upper() for k in
+            ["OS","DFS","RFS","SURVIVAL","STATUS","MONTHS","VITAL"])]
+    print(f"  [{label}] Survival cols: {surv[:10]}")
+    print(f"  [{label}] Shape: {merged.shape}")
+    merged.to_csv(out_csv)
+    print(f"  [{label}] Saved -> {out_csv.name}")
+
+def progress_hook(count, block, total):
+    if total > 0:
+        pct = min(int(count * block * 100 / total), 100)
+        mb  = count * block // 1048576
+        if count % 200 == 0 or pct == 100:
+            print(f"\r    {pct}%  ({mb} MB)", end="", flush=True)
+
+# =============================================================================
+# 1. NEW MAIN DATASET: TCGA-BRCA Pan-Can Atlas 2018 (RNA-seq)
+# =============================================================================
+print("\n" + "="*65)
+print("NEW MAIN DATASET: TCGA-BRCA Pan-Can Atlas 2018")
+print("Profile: brca_tcga_pan_can_atlas_2018_rna_seq_v2_mrna (RSEM)")
+print("="*65)
+
+TCGA_EXPR_OUT  = RAW_DIR / "Breast_TCGA_BRCA_RNAseq.csv"
+TCGA_CLIN_OUT  = RAW_DIR / "Breast_TCGA_BRCA_clinical.csv"
+
+try:
+    download_cbio_expression(
+        "brca_tcga_pan_can_atlas_2018",
+        "brca_tcga_pan_can_atlas_2018_rna_seq_v2_mrna",
+        TCGA_EXPR_OUT,
+        label="TCGA-BRCA RNA-seq"
+    )
+    download_cbio_clinical(
+        "brca_tcga_pan_can_atlas_2018",
+        TCGA_CLIN_OUT,
+        label="TCGA-BRCA clinical"
+    )
+except Exception as e:
+    print(f"  ERROR downloading TCGA-BRCA: {e}")
+    import traceback
+    traceback.print_exc()
+
+# =============================================================================
+# 2. EXTERNAL COHORT 1: METABRIC (microarray, N=1,980, OS/DFS/RFS)
+# =============================================================================
+print("\n" + "="*65)
+print("EXTERNAL COHORT 1: METABRIC  (Illumina HT-12 v3, N=1980)")
+print("="*65)
+
+METABRIC_EXPR_OUT = EXT_DIR / "METABRIC_expression.csv"
+METABRIC_CLIN_OUT = EXT_DIR / "METABRIC_clinical.csv"
+
+try:
+    download_cbio_expression(
+        "brca_metabric",
+        "brca_metabric_mrna",
+        METABRIC_EXPR_OUT,
+        label="METABRIC mRNA"
+    )
+    download_cbio_clinical(
+        "brca_metabric",
+        METABRIC_CLIN_OUT,
+        label="METABRIC clinical"
+    )
+except Exception as e:
+    print(f"  ERROR downloading METABRIC: {e}")
+    import traceback
+    traceback.print_exc()
+
+# =============================================================================
+# 3. EXTERNAL COHORT 2: SCAN-B GSE96058 (RNA-seq, N=3273, RFS)
+# =============================================================================
+print("\n" + "="*65)
+print("EXTERNAL COHORT 2: SCAN-B / GSE96058  (Illumina RNA-seq)")
+print("="*65)
+
+SCANB_CLIN_OUT = EXT_DIR / "SCANB_GSE96058_clinical.csv"
+SCANB_EXPR_OUT = EXT_DIR / "SCANB_GSE96058_expression_subset.csv"
+
+GEO_FTP   = "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE96nnn/GSE96058"
+MATRIX_URL = f"{GEO_FTP}/matrix/GSE96058-GPL18573_series_matrix.txt.gz"
+EXPR_URL   = (f"{GEO_FTP}/suppl/"
+              "GSE96058_gene_expression_3273_samples_and_136_replicates_transformed.csv.gz")
+MATRIX_GZ  = TMP_DIR / "GSE96058_matrix.txt.gz"
+EXPR_GZ    = TMP_DIR / "GSE96058_expr.csv.gz"
+
+# -- Clinical metadata from series matrix --
+if SCANB_CLIN_OUT.exists():
+    print("  SCAN-B clinical: already present -- skipping.")
 else:
-    if not METABRIC_TAR.exists():
-        print(f"  Downloading from cBioPortal data hub (~50 MB) ...")
-        urllib.request.urlretrieve(METABRIC_URL, METABRIC_TAR, reporthook=progress_hook)
-        print()
-
-    print("  Extracting tar.gz ...")
-    with tarfile.open(METABRIC_TAR, "r:gz") as tar:
-        tar.extractall(TMP_DIR)
-
-    # Locate extracted directory
-    extracted = [d for d in TMP_DIR.iterdir() if d.is_dir() and "metabric" in d.name.lower()]
-    if not extracted:
-        extracted = [TMP_DIR]
-    metabric_dir = extracted[0]
-
-    # ── Expression matrix ──
-    # cBioPortal METABRIC uses data_mrna_agilent_microarray.txt or
-    # data_mrna_agilent_microarray_zscores_ref_diploid_samples.txt
-    expr_candidates = [
-        "data_mrna_agilent_microarray.txt",
-        "data_expression_median.txt",
-        "data_mrna_agilent_microarray_zscores_ref_diploid_samples.txt",
-    ]
-    expr_file = None
-    for cand in expr_candidates:
-        p = metabric_dir / cand
-        if p.exists():
-            expr_file = p
-            break
-
-    if expr_file is None:
-        all_txt = list(metabric_dir.glob("*.txt"))
-        print(f"  Available files: {[f.name for f in all_txt]}")
-        # pick any mrna file
-        mrna_files = [f for f in all_txt if "mrna" in f.name.lower() or "expression" in f.name.lower()]
-        if mrna_files:
-            expr_file = mrna_files[0]
-        else:
-            raise FileNotFoundError("Could not find expression matrix in METABRIC tar.")
-
-    print(f"  Parsing expression file: {expr_file.name}")
-    expr_raw = pd.read_csv(expr_file, sep="\t", comment="#", low_memory=False)
-
-    # Structure: Hugo_Symbol | Entrez_Gene_Id | SAMPLE1 | SAMPLE2 ...
-    if "Hugo_Symbol" in expr_raw.columns:
-        expr_raw = expr_raw.drop(columns=["Entrez_Gene_Id"], errors="ignore")
-        expr_raw = expr_raw.dropna(subset=["Hugo_Symbol"])
-        expr_raw = expr_raw.set_index("Hugo_Symbol")
-    elif "Gene" in expr_raw.columns:
-        expr_raw = expr_raw.set_index("Gene")
-    else:
-        expr_raw = expr_raw.set_index(expr_raw.columns[0])
-
-    # Aggregate duplicate gene symbols by mean
-    expr_raw = expr_raw.apply(pd.to_numeric, errors="coerce")
-    expr_raw = expr_raw.groupby(level=0).mean()
-
-    # Transpose: rows=samples, cols=genes
-    expr_T = expr_raw.T
-    expr_T.index.name = "sample_id"
-
-    print(f"  Expression matrix: {expr_T.shape[0]} samples x {expr_T.shape[1]} genes")
-    expr_T.to_csv(METABRIC_EXPR_OUT)
-    print(f"  Saved -> {METABRIC_EXPR_OUT.name}")
-
-    # ── Clinical metadata ──
-    clin_candidates = [
-        "data_clinical_patient.txt",
-        "data_clinical.txt",
-        "data_bcr_clinical_data_patient.txt",
-    ]
-    clin_file = None
-    for cand in clin_candidates:
-        p = metabric_dir / cand
-        if p.exists():
-            clin_file = p
-            break
-
-    if clin_file is not None:
-        print(f"  Parsing clinical file: {clin_file.name}")
-        # cBioPortal clinical files have 4 comment/descriptor lines starting with '#'
-        clin_lines = clin_file.read_text(encoding="utf-8").splitlines()
-        data_lines = [l for l in clin_lines if not l.startswith("#")]
-        import io
-        clin_df = pd.read_csv(io.StringIO("\n".join(data_lines)), sep="\t", low_memory=False)
-        clin_df.to_csv(METABRIC_CLIN_OUT, index=False)
-        print(f"  Clinical data: {clin_df.shape[0]} patients")
-        # Report survival columns
-        surv_cols = [c for c in clin_df.columns if any(k in c.upper() for k in ["OS", "DFS", "RFS", "SURV", "VITAL", "STATUS", "MONTH"])]
-        print(f"  Survival columns found: {surv_cols}")
-        print(f"  Saved -> {METABRIC_CLIN_OUT.name}")
-    else:
-        print("  WARNING: No clinical patient file found in METABRIC tar.")
-
-print()
-
-# ==============================================================================
-# COHORT 2: SCAN-B GSE96058  (GEO, RNA-seq, N=3273, with RFS survival)
-# ==============================================================================
-print("=" * 65)
-print("COHORT 2: SCAN-B / GSE96058  (GEO RNA-seq, RFS survival)")
-print("=" * 65)
-
-GSE_ID       = "GSE96058"
-GEO_FTP_BASE = f"https://ftp.ncbi.nlm.nih.gov/geo/series/GSE96nnn/{GSE_ID}/matrix/"
-MATRIX_FILE  = f"{GSE_ID}_series_matrix.txt.gz"
-MATRIX_URL   = GEO_FTP_BASE + MATRIX_FILE
-MATRIX_GZ    = TMP_DIR / MATRIX_FILE
-
-SCANB_EXPR_OUT = OUT_DIR / "SCANB_GSE96058_expression.csv"
-SCANB_CLIN_OUT = OUT_DIR / "SCANB_GSE96058_clinical.csv"
-
-# GSE96058 supplementary - gene-level log2 FPKM already summarized
-# Available as GSE96058_SCAN_B_expr_genes_log2.csv.gz in supplementary
-SUPPL_URL    = f"https://ftp.ncbi.nlm.nih.gov/geo/series/GSE96nnn/{GSE_ID}/suppl/GSE96058_SCAN_B_expr_genes_log2.csv.gz"
-SUPPL_GZ     = TMP_DIR / "GSE96058_expr.csv.gz"
-
-if SCANB_EXPR_OUT.exists() and SCANB_CLIN_OUT.exists():
-    print("  SCAN-B CSVs already present -- skipping download.")
-else:
-    # ── Download series matrix for clinical/survival data ──
     if not MATRIX_GZ.exists():
-        print(f"  Downloading series matrix for clinical metadata (~30 MB) ...")
+        print(f"  Downloading series matrix (~30 MB) ...")
         urllib.request.urlretrieve(MATRIX_URL, MATRIX_GZ, reporthook=progress_hook)
         print()
 
-    print("  Parsing series matrix for survival metadata ...")
-    sample_ids, sample_chars = [], {}
-
+    print("  Parsing clinical/survival metadata ...")
+    sample_ids_geo = []
+    sample_chars   = {}
     with gzip.open(MATRIX_GZ, "rt", encoding="utf-8", errors="replace") as fh:
-        in_table = False
-        header   = None
         for line in fh:
             line = line.rstrip("\n")
             if line.startswith("!Sample_geo_accession"):
-                sample_ids = line.split("\t")[1:]
+                sample_ids_geo = [x.strip('"') for x in line.split("\t")[1:]]
             elif line.startswith("!Sample_characteristics_ch1"):
-                parts = line.split("\t")[1:]
+                parts = [x.strip('"') for x in line.split("\t")[1:]]
                 for idx, part in enumerate(parts):
                     if ": " in part:
                         key, val = part.split(": ", 1)
                         key = key.strip().replace(" ", "_").replace("/", "_")
-                        sid = sample_ids[idx] if idx < len(sample_ids) else f"S{idx}"
+                        sid = sample_ids_geo[idx] if idx < len(sample_ids_geo) else f"S{idx}"
                         sample_chars.setdefault(sid, {})[key] = val.strip()
-            elif line.strip() == "!series_matrix_table_begin":
-                in_table = True
-                continue
-            elif line.strip() == "!series_matrix_table_end":
-                in_table = False
+            elif line.strip().lower() in ("!series_matrix_table_end", "!series_matrix_table_begin"):
                 break
 
-    clin_df = pd.DataFrame.from_dict(sample_chars, orient="index")
-    clin_df.index.name = "sample_id"
-    # Report survival columns
-    surv_cols = [c for c in clin_df.columns if any(k in c.lower() for k in ["rfs", "os", "surv", "status", "months", "event"])]
-    print(f"  Survival/outcome columns: {surv_cols[:10]}")
-    print(f"  Clinical data: {clin_df.shape[0]} samples x {clin_df.shape[1]} characteristics")
-    clin_df.to_csv(SCANB_CLIN_OUT)
+    clin_scanb = pd.DataFrame.from_dict(sample_chars, orient="index")
+    clin_scanb.index.name = "sample_id"
+    surv = [c for c in clin_scanb.columns
+            if any(k in c.lower() for k in ["rfs","os","surv","event","months","time","recur"])]
+    print(f"  Survival cols: {surv}")
+    print(f"  Clinical: {clin_scanb.shape[0]} samples x {clin_scanb.shape[1]} features")
+    clin_scanb.to_csv(SCANB_CLIN_OUT)
     print(f"  Saved -> {SCANB_CLIN_OUT.name}")
 
-    # ── Download gene-level expression (log2 FPKM, RNA-seq) ──
-    if not SUPPL_GZ.exists():
-        print(f"  Downloading gene-level log2 FPKM expression matrix ...")
-        print(f"  NOTE: This file is ~200 MB. Please wait ...")
-        try:
-            urllib.request.urlretrieve(SUPPL_URL, SUPPL_GZ, reporthook=progress_hook)
-            print()
-        except Exception as e:
-            print(f"\n  WARNING: Could not download supplementary expression: {e}")
-            print("  Clinical metadata was saved. Expression download can be retried.")
-            SUPPL_GZ = None
+# -- Expression subset (top 5000 variable genes) --
+if SCANB_EXPR_OUT.exists():
+    print("  SCAN-B expression: already present -- skipping.")
+else:
+    if not EXPR_GZ.exists():
+        print(f"  Downloading RNA-seq expression (~564 MB, please wait) ...")
+        urllib.request.urlretrieve(EXPR_URL, EXPR_GZ, reporthook=progress_hook)
+        print()
 
-    if SUPPL_GZ and SUPPL_GZ.exists():
-        print("  Parsing gene-level expression matrix (log2 FPKM) ...")
-        expr_raw = pd.read_csv(SUPPL_GZ, index_col=0, compression="gzip")
-        # rows=genes, cols=samples -- transpose
-        if expr_raw.shape[0] > expr_raw.shape[1]:
-            expr_T = expr_raw.T
-        else:
-            expr_T = expr_raw
-        expr_T.index.name = "sample_id"
-        print(f"  Expression matrix: {expr_T.shape[0]} samples x {expr_T.shape[1]} genes")
-        expr_T.to_csv(SCANB_EXPR_OUT)
-        print(f"  Saved -> {SCANB_EXPR_OUT.name}")
+    print("  Parsing RNA-seq, selecting top 5000 variable genes ...")
+    expr_full = pd.read_csv(EXPR_GZ, index_col=0, compression="gzip")
+    # rows=genes, cols=samples
+    if expr_full.shape[0] > expr_full.shape[1]:
+        gene_var  = expr_full.var(axis=1)
+        top_genes = gene_var.nlargest(5000).index
+        expr_sub  = expr_full.loc[top_genes].T
     else:
-        print("  Expression file not available. Only clinical data saved.")
+        gene_var  = expr_full.var(axis=0)
+        top_genes = gene_var.nlargest(5000).index
+        expr_sub  = expr_full[top_genes]
+    expr_sub.index.name = "sample_id"
+    print(f"  Expression subset: {expr_sub.shape[0]} samples x {expr_sub.shape[1]} genes")
+    expr_sub.to_csv(SCANB_EXPR_OUT)
+    print(f"  Saved -> {SCANB_EXPR_OUT.name}")
 
-# ── Cleanup temp ──────────────────────────────────────────────────────────────
-print()
-print("Cleaning up temporary files ...")
+# -- Cleanup --
+print("\nCleaning temp files ...")
 try:
     shutil.rmtree(TMP_DIR)
-    print("  Temp dir removed.")
 except Exception:
     pass
 
-print()
-print("=" * 65)
-print("DOWNLOAD COMPLETE")
-print(f"  METABRIC expression : {METABRIC_EXPR_OUT.name}")
-print(f"  METABRIC clinical   : {METABRIC_CLIN_OUT.name}")
-print(f"  SCAN-B clinical     : {SCANB_CLIN_OUT.name}")
-print(f"  SCAN-B expression   : {SCANB_EXPR_OUT.name}")
-print("=" * 65)
+print("\n" + "="*65)
+print("ALL DOWNLOADS COMPLETE")
+print(f"  NEW MAIN  : {TCGA_EXPR_OUT.name}  (RNA-seq RSEM, N=1084)")
+print(f"  NEW MAIN  : {TCGA_CLIN_OUT.name}  (OS, DFS, PAM50)")
+print(f"  EXT COH 1 : {METABRIC_EXPR_OUT.name}  (microarray, N=1980)")
+print(f"  EXT COH 1 : {METABRIC_CLIN_OUT.name}  (OS, DFS, RFS)")
+print(f"  EXT COH 2 : {SCANB_EXPR_OUT.name}  (RNA-seq, N=3273 subset)")
+print(f"  EXT COH 2 : {SCANB_CLIN_OUT.name}  (RFS survival)")
+print("="*65)
