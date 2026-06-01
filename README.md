@@ -14,7 +14,7 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics/blob/main/notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Shubham Jha · Research Software Engineer & Computational Biology Researcher**
+**Shubham Jha · AI Data Scientist & Computational Biology Independent Researcher**
 
 [![GitHub](https://img.shields.io/badge/GitHub-shubhamkjha369-black?logo=github)](https://github.com/shubhamkjha369)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin)](https://www.linkedin.com/in/shubhamjha369/)
@@ -581,7 +581,7 @@ OncoResolve-Breast-Cancer-Transcriptomics/
 | Parker JS, et al. Supervised risk predictor of breast cancer based on intrinsic subtypes. (2009) | *Journal of Clinical Oncology* 27, 1160-1167 | [10.1200/JCO.2008.18.1370](https://doi.org/10.1200/JCO.2008.18.1370) |
 | Cancer Genome Atlas Network. Comprehensive molecular portraits of human breast tumours. (2012) | *Nature* 490, 61-70 | [10.1038/nature11412](https://doi.org/10.1038/nature11412) |
 | Curtis C, et al. The genomic and transcriptomic architecture of 2,000 breast tumours reveals novel subgroups. (2012) | *Nature* 486, 346-352 | [10.1038/nature10983](https://doi.org/10.1038/nature10983) |
-| Brueffer C, et al. Clinical value of RNA sequencing-based classifiers for prediction of the five conventional breast cancer biomarkers. (2018) | *NPJ Breast Cancer* 4, 22 | [10.1038/s41523-018-0072-5](https://doi.org/10.1038/s41523-018-0072-5) |
+| Brueffer C, et al. Clinical value of RNA sequencing-based classifiers for prediction of the five conventional breast cancer biomarkers. (2018) | *NPJ Breast Cancer* 4, 22 | [10.1200/PO.17.00135](https://doi.org/10.1200/po.17.00135) |
 | Hoadley KA, et al. Cell-of-origin patterns dominate the molecular classification of 10,000 tumors from 33 types of cancer. (2018) | *Cell* 173, 291-304.e6 | [10.1016/j.cell.2018.03.022](https://doi.org/10.1016/j.cell.2018.03.022) |
 | Lundberg SM, Lee SI. A unified approach to interpreting model predictions. (2017) | *Advances in Neural Information Processing Systems (NeurIPS)* 30 | [NeurIPS URL](https://papers.nips.cc/paper/7062-a-unified-approach-to-interpreting-model-predictions) |
 
@@ -591,7 +591,7 @@ OncoResolve-Breast-Cancer-Transcriptomics/
 ## Author
 
 **Shubham Jha**  
-Research Software Engineer & Computational Biology Researcher  
+AI Data Scientist & Computational Biology Independent Researcher  
 
 [![GitHub](https://img.shields.io/badge/GitHub-shubhamkjha369-black?logo=github)](https://github.com/shubhamkjha369)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin)](https://www.linkedin.com/in/shubhamjha369/)
