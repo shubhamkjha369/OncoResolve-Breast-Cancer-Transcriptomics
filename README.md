@@ -38,6 +38,7 @@ If you use this repository, code, methodology, or derived work in academic resea
   url          = {https://doi.org/10.5281/zenodo.20497791}
 }
 ```
+---
 ## Table of Contents
 
 - [Project Aim](#project-aim)
