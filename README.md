@@ -10,7 +10,7 @@
 # OncoResolve: A High-Hygiene Explainable AI & Patient-Centric Uniqueness Framework for Breast Cancer Subtyping and Cross-Platform Translation 
 ---
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20477715.svg)](https://doi.org/10.5281/zenodo.20477715)   
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20491282.svg)](https://doi.org/10.5281/zenodo.20491282)   
 
 [![Live App](https://img.shields.io/badge/Streamlit-Live_App-FF4B4B?logo=streamlit&logoColor=white)](https://oncoresolve.streamlit.app/)
 
@@ -25,7 +25,7 @@ If you use this repository, code, methodology, biomarker framework, patient-cent
 
 ### Recommended Citation
 
-Jha, S. (2026). *OncoResolve: Breast Cancer Transcriptomics and Explainable AI Pipeline* (Version 1.0.3) [Software]. Zenodo. https://doi.org/10.5281/zenodo.20477715
+Jha, S. (2026). *OncoResolve: Breast Cancer Transcriptomics and Explainable AI Pipeline* (Version 1.1.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.20491282
 
 ### BibTeX
 
@@ -34,10 +34,10 @@ Jha, S. (2026). *OncoResolve: Breast Cancer Transcriptomics and Explainable AI P
   author       = {Shubham Jha},
   title        = {OncoResolve: Breast Cancer Transcriptomics and Explainable AI Pipeline},
   year         = {2026},
-  version      = {1.0.3},
+  version      = {1.1.0},
   publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.20477715},
-  url          = {https://doi.org/10.5281/zenodo.20477715}
+  doi          = {10.5281/zenodo.20491282},
+  url          = {https://doi.org/10.5281/zenodo.20491282}
 }
 ```
 
