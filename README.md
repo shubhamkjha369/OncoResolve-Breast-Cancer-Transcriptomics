@@ -54,7 +54,7 @@ The DOI-linked Zenodo archive represents the immutable research record associate
 ## Executive Summary
 
 ### 1. What does this project prove?
-* **High-Separability Sparse Biomarkers:** It demonstrates that a highly sparse signature of exactly 257 genes contains sufficient biological information to achieve *100.00% holdout accuracy* for breast cancer molecular subtype classification (Basal, HER2, Luminal A, Luminal B, and Normal) on the held-out test set.
+* **High-Separability Sparse Biomarkers:** It demonstrates that a highly sparse signature of exactly 267 genes contains sufficient biological information to achieve *100.00% holdout accuracy* for breast cancer molecular subtype classification (Basal, HER2, Luminal A, Luminal B, and Normal) on the held-out test set.
 * **Cross-Platform Generalization:** The analysis suggests that this signature is highly robust, transcending microarray-to-beadchip platform differences to achieve an outstanding **82.70% binary accuracy** on a completely independent real cohort of **289 patients** (GSE70947, Illumina BeadChip) under a calibrated decision threshold ($0.02$) that corrects for the training class imbalance.
 * **Population vs. Private Biology:** By demonstrating that patient-centric uniqueness (CUS) has a **0.0000 Jaccard overlap** with cohort-wide subtype differential expression pathways, it mathematically proves that the biology driving individual tumor individuality is completely uncoupled from broad homeostatic subtypes.
 
@@ -64,7 +64,7 @@ The DOI-linked Zenodo archive represents the immutable research record associate
 
 ### 3. What are the major achievements?
 * **Strict Anti-Leakage Pipeline Architecture:** Applied standard variance filtering, scaling, and feature selection **strictly within the training fold only**, eliminating optimistic leakages that plague over 90% of published academic machine learning papers.
-* **Ensemble Consensus Biomarker Selection:** Extracted a highly stable 257-biomarker panel by combining selections across 4 distinct mathematical paradigms (ANOVA, Mutual Information, Random Forest splits, and sparse LASSO regularization).
+* **Ensemble Consensus Biomarker Selection:** Extracted a highly stable 267-biomarker panel by combining selections across 4 distinct mathematical paradigms (ANOVA, Mutual Information, Random Forest splits, and sparse LASSO regularization).
 * **Individuality Quantifier (CUS):** Formulated a robust Composite Uniqueness Score (CUS) by combining population-level Euclidean distance and regularized RidgeCV cross-patient profile reconstruction failure ($1-R^2$).
 * **Cross-Platform Clinical Stress-Test:** Successfully validated classifier stability and uniqueness projection on an independent, real-world cohort of $289$ patients from GSE70947.
 
@@ -85,21 +85,21 @@ The DOI-linked Zenodo archive represents the immutable research record associate
 - [Dataset, Features and Details](#dataset-features-and-details)
 - [Pipeline Architecture](#pipeline-architecture)
 - [Project Structure](#project-structure)
-- [Methodology and Pipeline Sections (Sequential Cell-Index Mapping)](#methodology-and-pipeline-sections)
-  - [1. Clinical Cohort Isolation, Data Loading, and Initial Quality Control (Cell 4)](#1-clinical-cohort-isolation-data-loading-and-initial-quality-control)
-  - [2. High-Hygiene Quantile Normalization and Quality Checks (Cells 12, 13, 15, 22, 56, 57)](#2-high-hygiene-quantile-normalization-and-quality-checks)
-  - [3. Dimensionality Reduction and Unsupervised Latent Space Exploration (PCA, t-SNE, UMAP) (Cells 29, 31, 33, 35)](#3-dimensionality-reduction-and-unsupervised-latent-space-exploration)
-  - [4. Subtype-Specific Differential Gene Expression (DGE) Profiling (Cell 37)](#4-subtype-specific-differential-gene-expression-dge-profiling)
-  - [5. Unsupervised Clustering and Subtype Partitioning Validation (Cells 40, 42)](#5-unsupervised-clustering-and-subtype-partitioning-validation)
-  - [6. Top-Variance Co-expression Network and Clustering Module Construction (Cells 47, 49, 51)](#6-top-variance-co-expression-network-and-clustering-module-construction)
-  - [7. Leakage-Free Ensemble Feature Selection and Consensus Biomarker Voting (Cells 53, 56, 57, 58, 59, 61, 62, 64)](#7-leakage-free-ensemble-feature-selection-and-consensus-biomarker-voting)
-  - [8. Baseline Multi-Classifier Machine Learning Performance Benchmarking (Cells 66, 67, 68)](#8-baseline-multi-classifier-machine-learning-performance-benchmarking)
+- [Methodology and Pipeline Sections](#methodology-and-pipeline-sections)
+  - [1. Clinical Cohort Isolation, Data Loading, and Initial Quality Control ](#1-clinical-cohort-isolation-data-loading-and-initial-quality-control)
+  - [2. High-Hygiene Quantile Normalization and Quality Checks ](#2-high-hygiene-quantile-normalization-and-quality-checks)
+  - [3. Dimensionality Reduction and Unsupervised Latent Space Exploration (PCA, t-SNE, UMAP) ](#3-dimensionality-reduction-and-unsupervised-latent-space-exploration)
+  - [4. Subtype-Specific Differential Gene Expression (DGE) Profiling ](#4-subtype-specific-differential-gene-expression-dge-profiling)
+  - [5. Unsupervised Clustering and Subtype Partitioning Validation ](#5-unsupervised-clustering-and-subtype-partitioning-validation)
+  - [6. Top-Variance Co-expression Network and Clustering Module Construction ](#6-top-variance-co-expression-network-and-clustering-module-construction)
+  - [7. Leakage-Free Ensemble Feature Selection and Consensus Biomarker Voting ](#7-leakage-free-ensemble-feature-selection-and-consensus-biomarker-voting)
+  - [8. Baseline Multi-Classifier Machine Learning Performance Benchmarking ](#8-baseline-multi-classifier-machine-learning-performance-benchmarking)
   - [9. Deep Learning Classifier Ingestion (Streamlit Inference and AutoML Tab)](#9-deep-learning-classifier-ingestion)
-  - [10. Hyperparameter Tuning, Repeated Stratified CV, and Decision Utility Calibration (Cells 71, 72, 73, 74, 75, 76, 77, 78, 79, 80)](#10-hyperparameter-tuning-repeated-stratified-cv-and-decision-utility-calibration)
-  - [11. LinearSHAP Model Explainability and Biomarker Attribution Mapping (Cells 81, 83, 84, 85, 87, 90, 91, 92, 93, 94)](#11-linearshap-model-explainability-and-biomarker-attribution-mapping)
-  - [12. Gene Ontology (GO) and KEGG Pathway Functional Enrichment Analysis (Cells 96, 97, 106)](#12-gene-ontology-go-and-kegg-pathway-functional-enrichment-analysis)
-- [13. Clinical Patient-Centric Heterogeneity & Precision Oncology (Novel Patient Similarity and Uniqueness Framework) (Cells 107, 108, 109, 111, 113, 115, 117, 119, 121, 123)](#13-clinical-patient-centric-heterogeneity-precision-oncology)
-- [14. Real-World Cross-Platform External Cohort Validation (GSE70947) (Cells 125, 126, 127)](#14-real-world-cross-platform-external-cohort-validation)
+  - [10. Hyperparameter Tuning, Repeated Stratified CV, and Decision Utility Calibration ](#10-hyperparameter-tuning-repeated-stratified-cv-and-decision-utility-calibration)
+  - [11. LinearSHAP Model Explainability and Biomarker Attribution Mapping ](#11-linearshap-model-explainability-and-biomarker-attribution-mapping)
+  - [12. Gene Ontology (GO) and KEGG Pathway Functional Enrichment Analysis ](#12-gene-ontology-go-and-kegg-pathway-functional-enrichment-analysis)
+- [13. Clinical Patient-Centric Heterogeneity & Precision Oncology (Novel Patient Similarity and Uniqueness Framework) ](#13-clinical-patient-centric-heterogeneity-precision-oncology)
+- [14. Real-World Cross-Platform External Cohort Validation (GSE70947) ](#14-real-world-cross-platform-external-cohort-validation)
 - [Interactive Dashboard](#interactive-dashboard)
 - [Getting Started](#getting-started)
 - [Docker Deployment](#docker-deployment)
@@ -115,7 +115,7 @@ The DOI-linked Zenodo archive represents the immutable research record associate
 Breast cancer is a highly complex disease with distinct **molecular subtypes** (Basal, HER2, Luminal A, Luminal B, and Normal) that behave differently, respond to different treatments, and have highly varying patient outcomes. Identifying these subtypes from transcriptomic (gene expression) profiles is a major pillar of precision medicine.
 
 This project delivers a **complete, end-to-end transcriptomic machine learning and deep learning pipeline** that:
-1. **Filters & Profiles** 54,675 gene expression probe features across patient samples.
+1. **Filters & Profiles** 54,613 gene expression probe features across patient samples.
 2. **Finds Co-expressed Networks** and clusters samples to uncover latent tumor heterogeneity.
 3. **Selects Biomarkers** using a consensus ensemble of four independent statistical and machine learning methods.
 4. **Trains & Benchmarks** classical ML algorithms and a high-performance **PyTorch MLP Neural Network**.
@@ -131,19 +131,19 @@ This project delivers a **complete, end-to-end transcriptomic machine learning a
 
 All results reported below are fully authentic, verified, and extracted directly from our end-to-end pipeline executions:
 
-### Model Performance Comparison (Cells 67, 73, 75, 77)
+### Model Performance Comparison 
 Due to the exceptional biological separability of the selected consensus biomarkers, multiple classifiers achieve **100.00% holdout accuracy** on the independent, strictly held-out test partition ($n=28$ samples). 
 
 To ensure complete statistical validity and eliminate random chance, we evaluate models using both the independent holdout partition and stratified cross-validation (CV) on the training set.
 
 | Model / Pipeline Configuration | Feature Space | Test Holdout Accuracy ($n=28$) | Test Holdout Weighted F1 | Mean 5-Fold Stratified CV F1 | Std CV F1 |
 |---|---|---|---|---|---|
-| **Logistic Regression (Baseline)** | Consensus Genes (257) | **100.00%** | **1.000** | **91.00%** | **± 5.30%** |
-| **Support Vector Machine (RBF)** | Consensus Genes (257) | **100.00%** | **1.000** | **92.89%** (Full QN+FS Pipeline) | **± 4.72%** |
-| **Random Forest (Baseline)** | Consensus Genes (257) | **100.00%** | **1.000** | — | — |
-| **XGBoost Classifier** | Consensus Genes (257) | **100.00%** | **1.000** | — | — |
-| **LightGBM Classifier** | Consensus Genes (257) | **100.00%** | **1.000** | — | — |
-| **Voting Ensemble (Soft)** | Consensus Genes (257) | **100.00%** | **1.000** | — | — |
+| **Logistic Regression (Baseline)** | Consensus Genes (267) | **100.00%** | **1.000** | **91.00%** | **± 5.30%** |
+| **Support Vector Machine (RBF)** | Consensus Genes (267) | **100.00%** | **1.000** | **92.89%** (Full QN+FS Pipeline) | **± 4.72%** |
+| **Random Forest (Baseline)** | Consensus Genes (267) | **100.00%** | **1.000** | — | — |
+| **XGBoost Classifier** | Consensus Genes (267) | **100.00%** | **1.000** | — | — |
+| **LightGBM Classifier** | Consensus Genes (267) | **100.00%** | **1.000** | — | — |
+| **Voting Ensemble (Soft)** | Consensus Genes (267) | **100.00%** | **1.000** | — | — |
 | **Random Forest (Baseline)** | PCA-50 Space | **89.28%** | **0.891** | — | — |
 | **XGBoost Classifier** | PCA-50 Space | **89.28%** | **0.862** | — | — |
 | **LightGBM Classifier** | PCA-50 Space | **96.43%** | **0.964** | — | — |
@@ -151,12 +151,12 @@ To ensure complete statistical validity and eliminate random chance, we evaluate
 
 > *Note on Cross-Validation, Neural Networks, & Preprocessing:*
 > 1. **Data Hygiene Protocol:** To prevent optimistic feature-selection leakage, all variance filtering, scaling, and consensus selectors are fit **strictly on the training split only**. The held-out test split remains completely isolated.
-> 2. **CV Stability (Cell 73):** In repeated stratified 5-fold cross-validation, the SVM-based pipeline achieved a highly stable **Mean CV Weighted F1 score of 92.89% ± 4.72%**, strongly validating the generalization capability of the consensus features.
+> 2. **CV Stability :** In repeated stratified 5-fold cross-validation, the SVM-based pipeline achieved a highly stable **Mean CV Weighted F1 score of 92.89% ± 4.72%**, strongly validating the generalization capability of the consensus features.
 > 3. **Deep Learning & Inference Engine:** A custom Multi-Layer Perceptron (MLP) neural network is dynamically trained in the Streamlit Dashboard's AutoML page, while `mlp_best.pt` in `data/artifacts/` represents a pre-trained PyTorch MLP model deployed for rapid clinical inference.
 
 ---
 
-### 🧬 Key Consensus Biomarkers Identified (Ensemble SHAP) (Cell 83)
+### 🧬 Key Consensus Biomarkers Identified (Ensemble SHAP) 
 Explainable AI (LinearSHAP attributions on the tuned Logistic Regression model) mapped our consensus transcriptomic features to HUGO gene symbols, ranked by normalized Ensemble SHAP Impact Score:
 
 | Rank | Gene Symbol | Probe ID | SHAP Score | Biological Role & Subtype Clinical Association |
@@ -172,7 +172,7 @@ Explainable AI (LinearSHAP attributions on the tuned Logistic Regression model) 
 | **#9** | **LOC285097** | 1556474_a_at | **0.486** | **Uncharacterized FLJ38379**: Long non-coding RNA showing significant expression divergence across subtype polarizations. |
 | **#10** | **PREX1** | 224909_s_at | **0.437** | **Phosphatidylinositol-3,4,5-Trisphosphate Dependent Rac Exchange Factor 1**: Key diagnostic mediator of ErbB/HER2 receptor signaling and cell motility, highly expressed in Luminal and HER2 breast cancers.
 
-> *Hormone Receptor Axis Note (Cell 83):* The primary nuclear receptor driver **ESR1 (Estrogen Receptor Alpha)** is highly active in the consensus space, ranked **#26** (probe `215552_s_at`, SHAP score: **0.373**) and **#32** (probe `205225_at`, SHAP score: **0.363**), serving as the primary diagnostic driver for Luminal A/B subtypes. |
+> *Hormone Receptor Axis Note :* The primary nuclear receptor driver **ESR1 (Estrogen Receptor Alpha)** is highly active in the consensus space, ranked **#26** (probe `215552_s_at`, SHAP score: **0.373**) and **#32** (probe `205225_at`, SHAP score: **0.363**), serving as the primary diagnostic driver for Luminal A/B subtypes. |
 
 ---
 
@@ -210,14 +210,14 @@ We utilize the **GSE45827** dataset, sourced from the extensively curated [CuMiD
 * **Microarray Platform:** Affymetrix Human Genome U133 Plus 2.0
 * **Initial Cohort Size:** 151 total samples (comprising clinical tumors, adjacent normal controls, and laboratory cell lines)
 * **Pre-processed Cohort Size:** 137 clinical samples (after dropping 14 cell-line confounding controls)
-* **Features:** 54,675 gene expression probes (Affymetrix reporter IDs)
+* **Features:** 54,613 gene expression probes (Affymetrix reporter IDs)
 * **Subtype Target:** 5 clinical categories (Basal-like, HER2-enriched, Luminal A, Luminal B, and Normal adjacents)
 
 ### 🧬 Understanding Features for Non-Coders
 If you are a biologist or non-programmer, here is how the data is structured:
 1. **What is a Probe?** A microarray features thousands of tiny DNA sequences called **probes**. When a patient's mRNA binds to a probe, it emits a fluorescent signal. The intensity of this signal represents how active (expressed) that gene is in the tumor.
-2. **Features vs. Probes:** Out of the 54,675 probes, many represent "noise" or housekeeping genes that behave identically in all tissues. Our pipeline uses a **Variance Threshold (0.1)** to filter out these non-informative probes, shrinking the feature space to **34,192 probes** before model training.
-3. **Consensus Selection:** Because different mathematical formulas find different kinds of patterns, we run **4 distinct feature selectors** (ANOVA, Mutual Information, Random Forests, and LASSO). Probes selected by **at least 2 methods** are placed in the **Consensus Feature Space** (a refined, robust set of 257 biomarkers).
+2. **Features vs. Probes:** Out of the 54,613 probes, many represent "noise" or housekeeping genes that behave identically in all tissues. Our pipeline uses a **Variance Threshold (0.1)** to filter out these non-informative probes, shrinking the feature space to **34,096 probes** before model training.
+3. **Consensus Selection:** Because different mathematical formulas find different kinds of patterns, we run **4 distinct feature selectors** (ANOVA, Mutual Information, Random Forests, and LASSO). Probes selected by **at least 2 methods** are placed in the **Consensus Feature Space** (a refined, robust set of 267 biomarkers).
 
 ### 🏷️ Subtype Class Distribution
 To focus exclusively on patient-derived tumor biology and clinically relevant tumor-microenvironment interactions, the **14 laboratory cell line samples** are removed during step 1.3 of the pipeline. This avoids potential genetic drift artifacts. The clinical subtype distribution analyzed in this study is as follows:
@@ -241,7 +241,7 @@ The pipeline executes a strict, leakage-free flow to guarantee that no test-set 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │                        RAW DATA (GSE45827)                          │
-│                   151 samples × 54,675 probes                      │
+│                   151 samples × 54,613 probes                      │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
@@ -265,7 +265,7 @@ The pipeline executes a strict, leakage-free flow to guarantee that no test-set 
                             ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │  04 ─ PREPROCESSING          Variance Filtering (Var > 0.1 on TRAIN)│
-│                              54,675 → 34,192 features               │
+│                              54,613 → 34,096 features               │
 │                              Fit & Apply StandardScaler on TRAIN    │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
@@ -281,7 +281,7 @@ The pipeline executes a strict, leakage-free flow to guarantee that no test-set 
 │  06 ─ FEATURE SELECTION      ANOVA F-test · Mutual Information ·    │
 │                              Random Forest Importance · LASSO (L1)  │
 │                              → Consensus Voting (≥2 of 4 methods)   │
-│                              → 257 Consensus Genes           │
+│                              → 267 Consensus Genes           │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
                             ▼
@@ -345,21 +345,21 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 ## Methodology and Pipeline Sections
 
 <a id="1-clinical-cohort-isolation-data-loading-and-initial-quality-control"></a>
-### 1. Clinical Cohort Isolation, Data Loading, and Initial Quality Control (Cell 4)
-* **Action:** Ingests the high-dimensional GSE45827 microarray dataset (151 samples × 54,677 features), profiles clinical class distributions, casts data types to memory-efficient `float32` (reducing memory footprint to ~30 MB), drops laboratory cell line samples (n=14), and keeps **137 clinical samples** for analysis.
+### 1. Clinical Cohort Isolation, Data Loading, and Initial Quality Control 
+* **Action:** Ingests the high-dimensional GSE45827 microarray dataset (151 samples × 54,613 features), profiles clinical class distributions, casts data types to memory-efficient `float32` (reducing memory footprint to ~30 MB), drops laboratory cell line samples (n=14), and keeps **137 clinical samples** for analysis.
 * **Key Output:** Raw shape confirmed — 5 clinical subtypes with distributions: Basal (41), HER2 (30), Luminal B (30), Luminal A (29), Normal (7).
 
 <a id="2-high-hygiene-quantile-normalization-and-quality-checks"></a>
-### 2. High-Hygiene Quantile Normalization and Quality Checks (Cells 12, 13, 15, 22, 56, 57)
+### 2. High-Hygiene Quantile Normalization and Quality Checks 
 * **Action:** Conducts **Quantile Normalization (QN)** on raw patient microarray intensities to standardize signal distributions across all 137 arrays and mitigate batch variation.
 * **Result:** QN reduced per-sample median variability by **99.998%** (Std: 0.0252 → 4.77 × 10⁻⁷). Mean sample Pearson correlation post-QN: **0.9274** with 8 detected outliers (3 Basal, 5 Normal) suggesting genuine biological heterogeneity.
 * **Data Hygiene (Anti-Leakage Protocol):**
   1. **Stratification Split:** Splitting into Train ($80\%$, $n=109$) and Test ($20\%$, $n=28$) occurs **first** before any feature-level transformations.
-  2. **Variance Filtering:** Probes with flat profiles (non-informative features) are filtered using a **Variance Threshold ($>0.1$)** fit exclusively on the training set, shrinking the feature space from **54,675 to 34,192 probes**.
+  2. **Variance Filtering:** Probes with flat profiles (non-informative features) are filtered using a **Variance Threshold ($>0.1$)** fit exclusively on the training set, shrinking the feature space from **54,613 to 34,096 probes**.
   3. **Standardization:** A `StandardScaler` is fit on the training partition only and applied to both splits, strictly preventing scaling leakages.
 
 <a id="3-dimensionality-reduction-and-unsupervised-latent-space-exploration"></a>
-### 3. Dimensionality Reduction and Unsupervised Latent Space Exploration (PCA, t-SNE, UMAP) (Cells 29, 31, 33, 35)
+### 3. Dimensionality Reduction and Unsupervised Latent Space Exploration (PCA, t-SNE, UMAP) 
 * **Action:** Projects the massive feature space onto 2D using **PCA**, **t-SNE**, and **UMAP** (pre-filtered on top 5,000 most variable genes, then 50 PCA components).
 * **Finding:**
   * PCA: PC1 (20.54%), PC2 (9.36%), top 50 PCs = **80.78%** cumulative variance.
@@ -368,18 +368,18 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
   * Hierarchical clustering (Ward, k=5): ARI=0.694, NMI=0.723. K-Means (k=5): ARI=0.691, NMI=0.710.
 
 <a id="4-subtype-specific-differential-gene-expression-dge-profiling"></a>
-### 4. Subtype-Specific Differential Gene Expression (DGE) Profiling (Cell 37)
-* **Action:** Applies one-vs-rest **Welch's t-test** for each of 54,675 probes across 5 subtypes with **Benjamini-Hochberg FDR correction** (thresholds: FDR < 0.05, |log₂FC| > 1.0).
+### 4. Subtype-Specific Differential Gene Expression (DGE) Profiling 
+* **Action:** Applies one-vs-rest **Welch's t-test** for each of 54,613 probes across 5 subtypes with **Benjamini-Hochberg FDR correction** (thresholds: FDR < 0.05, |log₂FC| > 1.0).
 * **Results:** Total DEGs per subtype: Normal (5,765) > Basal (2,178) > Luminal A (1,468) > Luminal B (533) > HER2 (410).
 * **Biologist Value:** Identifies probes that are statistically turned "on" or "off" in cancer tissue compared to normal controls.
 
 <a id="5-unsupervised-clustering-and-subtype-partitioning-validation"></a>
-### 5. Unsupervised Clustering and Subtype Partitioning Validation (Cells 40, 42)
+### 5. Unsupervised Clustering and Subtype Partitioning Validation 
 * **Action:** Runs K-Means (k=5) and Hierarchical Clustering (Ward linkage, Euclidean distance, top 2,000 variable genes) on the expression space.
 * **Finding:** Both clustering methods achieved ARI > 0.69 without using any label information, proving that transcriptomic profiles naturally group into clinical subtype classes.
 
 <a id="6-top-variance-co-expression-network-and-clustering-module-construction"></a>
-### 6. Top-Variance Co-expression Network and Clustering Module Construction (Cells 47, 49, 51)
+### 6. Top-Variance Co-expression Network and Clustering Module Construction 
 * **Action:** Computes Pearson correlation matrices for the top 500 high-variance probes (training split only) and extracts co-expression links with |r| > 0.85.
 * **Finding:** Network statistics — 500 nodes, 527 edges. Top hub genes (degree 27): `216207_x_at`, `211645_x_at`, `211798_x_at`. Module detection via hierarchical clustering identified **318 co-expression modules**.
 
@@ -391,17 +391,17 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 </p>
 
 <a id="7-leakage-free-ensemble-feature-selection-and-consensus-biomarker-voting"></a>
-### 7. Leakage-Free Ensemble Feature Selection and Consensus Biomarker Voting (Cells 53, 56, 57, 58, 59, 61, 62, 64)
+### 7. Leakage-Free Ensemble Feature Selection and Consensus Biomarker Voting 
 * **Action:** Combines four independent selection tools to rank and select features (all fit on training set only):
   1. **ANOVA F-Test:** Top 2,000 genes by linear class separation.
   2. **Mutual Information:** Top 2,000 genes by non-linear entropy dependency.
   3. **Random Forest Feature Importance:** Top 2,000 genes by Gini impurity reduction.
   4. **LASSO L1 Regularization:** 21 genes with non-zero coefficients (the most aggressive sparsifier).
-* **Ensemble Strategy:** Features selected by **at least 2 methods** are retained as the **Consensus Space** → **257 consensus genes**.
+* **Ensemble Strategy:** Features selected by **at least 2 methods** are retained as the **Consensus Space** → **267 consensus genes**.
 
 <a id="8-baseline-multi-classifier-machine-learning-performance-benchmarking"></a>
-### 8. Baseline Multi-Classifier Machine Learning Performance Benchmarking (Cells 66, 67, 68)
-* **Action:** Benchmarks 6 algorithms (Logistic Regression, SVM RBF, Random Forest, XGBoost, LightGBM, and a Soft Voting Ensemble) across two feature spaces: Consensus (257 genes) and PCA-50.
+### 8. Baseline Multi-Classifier Machine Learning Performance Benchmarking 
+* **Action:** Benchmarks 6 algorithms (Logistic Regression, SVM RBF, Random Forest, XGBoost, LightGBM, and a Soft Voting Ensemble) across two feature spaces: Consensus (267 genes) and PCA-50.
 * **Finding:**
   * Consensus space: LR, RF, and Voting Ensemble all achieved **100% accuracy**.
   * XGBoost underperformed in the high-dimensional consensus space (85.71%) but improved in PCA-50 (89.29%).
@@ -412,7 +412,7 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 * **Action:** Constructs a custom **PyTorch Multi-Layer Perceptron (MLP)**.
 * **Architecture:**
   ```
-  Input (257 consensus genes)
+  Input (267 consensus genes)
     → Linear(512) → BatchNorm1d → ReLU → Dropout(0.4)
     → Linear(256) → BatchNorm1d → ReLU → Dropout(0.3)
     → Linear(128) → ReLU → Dropout(0.2)
@@ -422,7 +422,7 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 * **Results:** Best validation accuracy **100.00%** achieved at epoch 4 (then sustained through epoch 100). Final training loss = 0.0047.
 
 <a id="10-hyperparameter-tuning-repeated-stratified-cv-and-decision-utility-calibration"></a>
-### 10. Hyperparameter Tuning, Repeated Stratified CV, and Decision Utility Calibration (Cells 71, 72, 73, 74, 75, 76, 77, 78, 79, 80)
+### 10. Hyperparameter Tuning, Repeated Stratified CV, and Decision Utility Calibration 
 * **Action:** Validates baseline models using Repeated Stratified 5-Fold CV (15 fits) on the discovery training cohort, benchmarking **Logistic Regression (LR)** and **Support Vector Machine (SVM)** classifiers.
 * **Ablation & CV Results:**
   * **Full Pipeline (QN + FS + SVM):** CV Accuracy **92.99%**, CV Weighted F1 **0.9289 ± 0.0472**, Overfitting Gap **7.11%**
@@ -435,7 +435,7 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
   * **Basal class Brier score:** **0.0032** (confirming exceptional probabilistic calibration)
 
 <a id="11-linearshap-model-explainability-and-biomarker-attribution-mapping"></a>
-### 11. LinearSHAP Model Explainability and Biomarker Attribution Mapping (Cells 81, 83, 84, 85, 87, 90, 91, 92, 93, 94)
+### 11. LinearSHAP Model Explainability and Biomarker Attribution Mapping 
 * **Action:** Conducts **SHAP explainability** analysis using **LinearSHAP** (linear coefficients for Tuned Logistic Regression) on the consensus biomarkers to provide mathematically clean, exact, and highly stable feature attributions.
 * **Probe → Gene Mapping:** Top 100 SHAP probes annotated via **MyGene API** → 95 annotated biomarkers → 81 unique HUGO gene symbols.
 * **Top Signal:** The **HER2 amplicon at chromosome 17q12** (MIEN1, ERBB2, STARD3, PGAP3, GRB7) dominates the top 7 positions, with the **Luminal axis marker ESR1** ranked #8. This perfectly mirrors clinical diagnostic criteria.
@@ -463,7 +463,7 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 </p>
 
 <a id="12-gene-ontology-go-and-kegg-pathway-functional-enrichment-analysis"></a>
-### 12. Gene Ontology (GO) and KEGG Pathway Functional Enrichment Analysis (Cells 96, 97, 106)
+### 12. Gene Ontology (GO) and KEGG Pathway Functional Enrichment Analysis 
 * **Action:** Queries the **Enrichr API** on the 81 unique annotated consensus biomarker genes to map them onto GO Biological Process 2023 and KEGG 2021 pathways.
 * **Results:**
   * **GO Biological Process:** 34 significant terms (FDR < 0.05), top terms include regulation of miRNA transcription, positive regulation of cell cycle, and response to estrogen.
@@ -484,7 +484,7 @@ Breast-Cancer-Transcriptomics-ML-Pipeline/
 ---
 
 <a id="13-clinical-patient-centric-heterogeneity-precision-oncology"></a>
-## 🧬 13. Clinical Patient-Centric Heterogeneity & Precision Oncology (Novel Patient Similarity and Uniqueness Framework) (Cells 107, 108, 109, 111, 113, 115, 117, 119, 121, 123)
+## 🧬 13. Clinical Patient-Centric Heterogeneity & Precision Oncology (Novel Patient Similarity and Uniqueness Framework) 
 
 Beyond global population-level molecular subtype classification, this pipeline introduces a novel **Patient-Centric Heterogeneity & Uniqueness Framework** (Section 13) that models individual tumor complexity:
 
@@ -530,11 +530,11 @@ Beyond global population-level molecular subtype classification, this pipeline i
 ---
 
 <a id="14-real-world-cross-platform-external-cohort-validation"></a>
-## 🧪 14. Real-World Cross-Platform External Cohort Validation (GSE70947) (Cells 125, 126, 127)
+## 🧪 14. Real-World Cross-Platform External Cohort Validation (GSE70947) 
 
 To rigorously confirm the biological stability of the consensus biomarkers and the individual uniqueness framework, the pipeline implements an independent external cohort validation (Section 13A) on a completely new breast cancer dataset: **GSE70947** ($N=289$ samples: 146 adjacent normal control tissues, 143 clinical breast adenocarcinomas) profiled on the completely different **Illumina BeadChip** platform.
 
-* **Cross-Platform Transcriptomics Mapping:** Utilizing the high-throughput **MyGene.info API**, we successfully mapped the 257 consensus microarray probe IDs to their HUGO symbols, establishing perfect cross-platform feature alignment for **198 consensus genes**, including all 9 elite signature biomarkers (`ESR1`, `ERBB2`, `MIEN1`, `PGAP3`, `MLPH`, `GRB7`, `HORMAD1`, `AGR3`, `UBE2T`).
+* **Cross-Platform Transcriptomics Mapping:** Utilizing the high-throughput **MyGene.info API**, we successfully mapped the 267 consensus microarray probe IDs to their HUGO symbols, establishing perfect cross-platform feature alignment for **198 consensus genes**, including all 9 elite signature biomarkers (`ESR1`, `ERBB2`, `MIEN1`, `PGAP3`, `MLPH`, `GRB7`, `HORMAD1`, `AGR3`, `UBE2T`).
 * **High Cross-Platform Classification Accuracy:** Evaluating the discovery-cohort-trained **Logistic Regression classifier** (`best_model.pkl`) using standard-scaled feature alignment and an optimized probability decision threshold of **0.02** (tailored to adjust for the training set's heavy baseline normal class imbalance) yielded a highly robust **82.70% binary classification accuracy** (Normal sensitivity: 90%, Cancer specificity: 75%). This represents an exceptional cross-platform generalization score without requiring complex batch effect adjustment tools like ComBat or Harmony.
 * **Consistent Composite Uniqueness Projection:** Projecting CUS via RidgeCV profile reconstruction on the 289 external patient samples demonstrated a highly stable, overlapping continuous uniqueness distribution compared to the discovery cohort. This confirms the mathematical and structural stability of CUS for personal oncology diagnostic profiling.
 

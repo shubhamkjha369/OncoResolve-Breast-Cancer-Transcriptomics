@@ -308,7 +308,7 @@ page = st.session_state.active_page
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**GSE45827 Microarray Data**")
 st.sidebar.caption("CuMiDa curated breast cancer gene expression.")
-st.sidebar.caption("Clinical Samples: 137 | Probes: 54,675 | Subtypes: 5")
+st.sidebar.caption("Clinical Samples: 137 | Probes: 54,613 | Subtypes: 5")
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.caption("Showcase built for tech recruiters and principal investigators.")
 
@@ -375,7 +375,7 @@ if page == "Project Overview":
     with cols[0]:
         st.markdown(card("137", "Clinical Patient Samples"), unsafe_allow_html=True)
     with cols[1]:
-        st.markdown(card("54,675", "Transcriptomic Probes"), unsafe_allow_html=True)
+        st.markdown(card("54,613", "Transcriptomic Probes"), unsafe_allow_html=True)
     with cols[2]:
         st.markdown(card("5", "Clinical Subtypes Classified"), unsafe_allow_html=True)
 
@@ -505,14 +505,14 @@ elif page == "Feature Selection":
         with col_fs1:
             st.markdown(r"""
             ###  High-Dimensional Feature Reduction Flow
-            To isolate highly generalizable, biologically validated biomarkers and resolve the "curse of dimensionality" ($p \gg n$; $p = 54,675$ gene probes and $n = 137$ samples), a rigorous two-stage data-hygiene-compliant pipeline was built:
+            To isolate highly generalizable, biologically validated biomarkers and resolve the "curse of dimensionality" ($p \gg n$; $p = 54,613$ gene probes and $n = 137$ samples), a rigorous two-stage data-hygiene-compliant pipeline was built:
             
-            1. **Variance Filtering:** We apply an initial **Variance Threshold of 0.1** to exclude flat-profile housekeeper features. This filters out 20,483 flat probes, retaining **34,192 informative probes**.
+            1. **Variance Filtering:** We apply an initial **Variance Threshold of 0.1** to exclude flat-profile housekeeper features. This filters out 20,517 flat probes, retaining **34,096 informative probes**.
             2. **ANOVA F-Test (2,000 genes):** Evaluates ratio of between-subtype variance to within-subtype variance (linear signal).
             3. **Mutual Information (2,000 genes):** Quantifies non-linear entropy-based correlation between genes and labels.
             4. **Random Forest (2,000 genes):** Selects genes based on Gini impurity reduction.
             5. **LASSO L1 Sparsifier (21 genes):** Retains variables with non-zero coefficients.
-            * **Consensus Voting:** Probes selected by **$\ge 2$ algorithms** are retained as consensus biomarkers (yielding **1,480 genes**).
+            * **Consensus Voting:** Probes selected by **$\ge 2$ algorithms** are retained as consensus biomarkers (yielding **267 genes**).
             """)
         with col_fs2:
             top = consensus_genes.head(25)
@@ -557,7 +557,7 @@ elif page == "Model Performance":
         <div class="success-box">
             <b>Benchmark Insights:</b>
             <ul style="margin: 8px 0 0 20px; padding: 0;">
-                <li style="margin-bottom: 6px;"><b>Linear Separability:</b> <b>Logistic Regression</b> achieved a perfect <b>100.00% accuracy and 1.0000 F1 score</b> on both the 1,480 Consensus Genes and the compressed 50 Principal Components. This demonstrates that breast cancer subtypes exhibit highly distinct transcriptomic ratios that can be cleanly separated by linear decision hyperplanes.</li>
+                <li style="margin-bottom: 6px;"><b>Linear Separability:</b> <b>Logistic Regression</b> achieved a perfect <b>100.00% accuracy and 1.0000 F1 score</b> on both the 267 Consensus Genes and the compressed 50 Principal Components. This demonstrates that breast cancer subtypes exhibit highly distinct transcriptomic ratios that can be cleanly separated by linear decision hyperplanes.</li>
                 <li><b>Non-Linear Dynamics:</b> <b>Random Forest</b> achieved <b>100.00% accuracy</b> in the Consensus feature space, but dropped to <b>96.43%</b> in the PCA space. Traditional SVM and LightGBM show stable boundary classification with <b>96.43% accuracy</b>.</li>
             </ul>
         </div>
@@ -571,7 +571,7 @@ elif page == "Model Performance":
             st.code("""
 BreastCancerMLP(
   (net): Sequential(
-    (0): Linear(in_features=1480, out_features=512)
+    (0): Linear(in_features=267, out_features=512)
     (1): BatchNorm1d(512)
     (2): ReLU()
     (3): Dropout(p=0.4)

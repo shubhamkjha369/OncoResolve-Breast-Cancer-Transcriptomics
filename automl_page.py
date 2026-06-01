@@ -970,7 +970,7 @@ def _execute_pretrained_prediction(data_source, uploaded_file, classifier_choice
                 def forward(self, x):
                     return self.net(x)
 
-            model = BreastCancerMLP(in_dim=1480, n_cls=5)
+            model = BreastCancerMLP(in_dim=267, n_cls=5)
             model.load_state_dict(torch.load(mlp_path, map_location="cpu"))
             model.eval()
         else:
