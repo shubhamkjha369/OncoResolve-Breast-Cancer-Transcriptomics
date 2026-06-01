@@ -11,8 +11,8 @@ authors:
 
 repository-code: "https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics"
 
-doi: 10.5281/20497606
+doi: 10.5281/zenodo.20497791
 
-version: v2.0.0
+version: v2.0.1
 
 license: MIT
