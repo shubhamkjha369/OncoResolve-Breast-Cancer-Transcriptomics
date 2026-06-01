@@ -1,54 +1,56 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.13"/>
-  <img src="https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white" alt="PyTorch"/>
-  <img src="https://img.shields.io/badge/Scikit--Learn-1.4+-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white" alt="Scikit-Learn"/>
-  <img src="https://img.shields.io/badge/SHAP-Explainability-blueviolet?style=for-the-badge" alt="SHAP"/>
-  <img src="https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white" alt="Streamlit"/>
-  <img src="https://img.shields.io/badge/TCGA--BRCA-RNA--seq-00897B?style=for-the-badge" alt="TCGA-BRCA"/>
-</p>
+<div align="center">
 
 # OncoResolve: High-Hygiene Explainable AI and Patient-Centric Uniqueness Framework for Breast Cancer Subtyping
 
-**An end-to-end RNA-seq transcriptomics, machine learning, and N-of-1 precision oncology pipeline for classifying PAM50 breast cancer molecular subtypes with SHAP explainability and cross-platform external validation.**
+### An end-to-end RNA-seq transcriptomics, machine learning, and N-of-1 precision oncology pipeline for classifying PAM50 breast cancer molecular subtypes with SHAP explainability and cross-platform external validation.
 
----
+[![Python 3.13](https://img.shields.io/badge/Python-3.13-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
+[![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?style=flat&logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![Scikit-Learn 1.4+](https://img.shields.io/badge/Scikit--Learn-1.4+-F7931E?style=flat&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
+[![SHAP](https://img.shields.io/badge/SHAP-Explainability-blueviolet?style=flat)](#)
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20497791.svg)](https://doi.org/10.5281/zenodo.20497791)
-
 [![Live App](https://img.shields.io/badge/Streamlit-Live_App-FF4B4B?logo=streamlit&logoColor=white)](https://oncoresolve.streamlit.app/)
-
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics/blob/main/notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb)
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
----
-<a id="citation"></a>
-## Citation
+**Shubham Jha · Research Software Engineer & Computational Biology Researcher**
 
-If you use this repository, code, methodology, or derived work in academic research, please cite:
+[![GitHub](https://img.shields.io/badge/GitHub-shubhamkjha369-black?logo=github)](https://github.com/shubhamkjha369)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin)](https://www.linkedin.com/in/shubhamjha369/)
+[![Email](https://img.shields.io/badge/Email-Contact-red?logo=gmail)](mailto:shubhamkjha369@gmail.com)
 
-```bibtex
-@software{jha2026oncoresolve,
-  author       = {Shubham Jha},
-  title        = {OncoResolve: Breast Cancer Transcriptomics and Explainable AI Pipeline},
-  year         = {2026},
-  version      = {2.0.1},
-  publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.20497791},
-  url          = {https://doi.org/10.5281/zenodo.20497791}
-}
-```
+</div>
+
 ---
+
+<a id="abstract"></a>
+## Abstract
+
+Breast cancer is a highly heterogeneous disease characterized by transcriptionally distinct molecular subtypes (PAM50 classification) that dictate therapeutic intervention and clinical prognosis. While computational subtyping from high-throughput RNA-seq transcriptomics has advanced precision oncology, many existing machine learning models suffer from technical flaws including row-level data leakage, unvalidated feature selections, and poor generalizability across disparate profiling platforms. 
+
+We present **OncoResolve**, a high-hygiene machine learning and N-of-1 precision profiling framework designed to address these challenges. Using a primary cohort of 1,084 patient transcriptomes from the TCGA-BRCA Pan-Cancer Atlas, we implement an anti-leakage cross-validation protocol where both quantile normalization and a consensus feature selection ensemble (ANOVA, LASSO, and Random Forest) are fit strictly within each training partition. Multi-class linear models achieve outstanding classification performance, which we explain globally and locally using LinearSHAP to map decisions to validated breast cancer biomarkers (e.g., *ESR1*, *ERBB2*, *MKI67*). Furthermore, we introduce the Composite Uniqueness Score (CUS)—an original N-of-1 mathematical framework combining patient similarity network distances and RidgeCV reconstruction errors to measure transcriptomic uniqueness at the individual level. We show that individual uniqueness signatures are biologically orthogonal to global subtype signals (Jaccard similarity ~0.0). Finally, we demonstrate the robustness and clinical transportability of the locked OncoResolve discovery pipeline by successfully validating it across different platforms on two large external cohorts: METABRIC (microarray, N=1,980) and SCAN-B (RNA-seq, N=3,273).
+
+---
+
 ## Table of Contents
 
+- [Abstract](#abstract)
 - [Project Aim](#project-aim)
 - [Dataset Evolution — GSE45827 to TCGA-BRCA](#dataset-evolution)
 - [External Validation Cohorts](#external-validation-cohorts)
+- [Methodological Contributions](#methodological-contributions)
 - [Pipeline Architecture](#pipeline-architecture)
+- [Notebook Structure](#notebook-structure)
 - [Section-by-Section Results](#section-results)
 - [Key Findings](#key-findings)
+- [Results Files](#results-files)
+- [Reproduce the Analysis](#reproduce-the-analysis)
+- [Data Access](#data-access)
 - [Technologies](#technologies)
 - [Limitations and Future Work](#limitations)
+- [References](#references)
+- [Author](#author)
 - [Citation](#citation)
 
 ---
@@ -179,6 +181,41 @@ Cross-platform validation is a mandatory requirement for any breast cancer trans
 
 ---
 
+<a id="methodological-contributions"></a>
+## Methodological Contributions
+
+OncoResolve is designed to adhere to high-hygiene computational biology standards. It implements four core methodological contributions to address common pitfalls in translational machine learning:
+
+> [!IMPORTANT]
+> **Anti-Leakage Protocol (ALP)**
+> Many published transcriptomic classifiers pre-normalize or perform feature selection on the entire dataset prior to splitting. This allows information from test sets to leak into training models, creating highly inflated accuracy estimates that fail in clinical settings. In OncoResolve, all preprocessing (Quantile Normalization, scaling) and feature selections are performed *strictly within each cross-validation fold*.
+
+```mermaid
+graph TD
+    subgraph Sandbox [Strict Anti-Leakage Sandbox]
+        A[Fold Train Split] --> B[Fit QuantileNormalizer]
+        B --> C[Fit StandardScaler]
+        C --> D[Fit Ensemble Feature Selection]
+        D --> E[Tune & Train Classifiers]
+    end
+    E --> F[Evaluate on Fold Test Split]
+```
+
+### Key Methodological Highlights
+
+1. **Quantile Normalization inside Fold**: We fit the quantile distribution mapping only on training partitions and transform the test/validation partitions accordingly.
+2. **Tri-Method Consensus Feature Selection**: Feature selection uses a consensus vote across three distinct mathematical paradigms:
+   - **ANOVA F-Test** (Linear group separation)
+   - **LASSO (L1 Regularized Logistic Regression)** (Sparsity-inducing coefficient shrinkage)
+   - **Random Forest Gini Importance** (Non-linear tree splitting)
+   
+   A gene is selected for downstream classification only if it is nominated by **at least two of the three methods**, drastically reducing noise and recovering clinically validated genes.
+3. **Patient-Centric Composite Uniqueness Score (CUS)**: An N-of-1 profiling score combining:
+   - Euclidean distance in the Patient Similarity Network (PSN) constructed over the consensus feature space.
+   - Out-of-sample reconstruction error ($1 - R^2$) using a RidgeCV model trained on all other patients of the same subtype.
+4. **Platform-Independent Validation**: Evaluation on external validation cohorts is performed using a **completely locked model** with Z-score harmonization applied independently to each external cohort to prevent batch normalization leakage.
+
+---
 <a id="pipeline-architecture"></a>
 ## Pipeline Architecture
 
@@ -271,6 +308,28 @@ SECTION 14: Cross-Platform External Validation
 
 ---
 
+<a id="notebook-structure"></a>
+## Notebook Structure
+
+The primary exploration notebook [`OncoResolve_Subtyping_and_Precision_Profiling.ipynb`](notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb) is organized into sequential sections corresponding to the analysis pipeline:
+
+| Section | Analysis Domain | Key Computational Output / Action |
+|---|---|---|
+| **Section 1** | Data Loading & QC | Loads TCGA-BRCA, attaches PAM50 labels, and performs log2 verification |
+| **Section 2** | Quantile Normalization | Normalizes sample distributions; performs mean Pearson outlier detection |
+| **Section 3** | Dimensionality Reduction | Generates 2D coordinates for PCA, t-SNE, and UMAP visual spaces |
+| **Section 4** | Differential Expression | Runs Welch t-tests + BH-FDR to find subtype-specific DEGs |
+| **Section 5** | Unsupervised Clustering | Performs Hierarchical & K-Means clustering; computes Adjusted Rand Index |
+| **Section 6** | Co-expression Network | Builds correlation adjacency matrices and isolates Louvain network modules |
+| **Section 7** | Consensus Feature Selection | Nominates genes via ANOVA, LASSO, and RF; runs majority voting |
+| **Section 8** | Baseline Benchmarking | Compares SVM, Logistic Regression, and RF classifiers on multiple spaces |
+| **Section 10** | Robust Cross-Validation | Executes 5-fold repeated stratified CV inside pipelines with GridSearchCV |
+| **Section 11** | SHAP Explainability | Computes LinearSHAP attributions; draws beeswarm and waterfalls |
+| **Section 12** | Pathway Enrichment | Queries Enrichr for GO Biological Process and KEGG pathway term overlaps |
+| **Section 13** | N-of-1 Personal Profiling | Calculates the Patient Similarity Network and Composite Uniqueness Score |
+| **Section 14** | External Cohort Validation | Evaluates the locked TCGA model on METABRIC and SCAN-B cohorts |
+
+---
 <a id="section-results"></a>
 ## Section-by-Section Results
 
@@ -344,26 +403,98 @@ SECTION 14: Cross-Platform External Validation
 <a id="key-findings"></a>
 ## Key Findings
 
-### 1. PAM50 Subtype Classification is Linearly Separable in RNA-seq Space
-Logistic Regression (linear decision boundaries) achieves the highest or equal performance compared to non-linear classifiers (Random Forest, XGBoost) on TCGA-BRCA consensus gene features. This confirms that PAM50 subtype differences are primarily captured by **linear combinations of gene expression levels** — consistent with the original PAM50 centroid-based classifier design.
+**Finding 1 — PAM50 subtype classification is linearly separable in RNA-seq space**
+Multinomial Logistic Regression models with linear decision boundaries match or exceed the performance of complex non-linear ensemble models (Random Forest, XGBoost) on consensus-selected features. This demonstrates that intrinsic breast cancer subtype signatures are predominantly linear combinations of dominant driver gene expression levels—validating the core assumption of centroid-based subtyping.
 
-### 2. Consensus Biomarkers are Biologically Validated
-The ensemble feature selection pipeline (ANOVA + LASSO + Random Forest) consistently recovers the known PAM50-defining genes:
-- **Basal-like:** KRT5, KRT14, KRT17, FOXC1 (IHC-validated basal markers)
-- **HER2-enriched:** ERBB2, GRB7, STARD3, PGAP3 (chr17q12 amplicon; FDA-cleared companion diagnostics)
-- **Luminal:** ESR1, GATA3, FOXA1 (ER transcriptional programme; guides endocrine therapy)
-- **LumB vs LumA:** MKI67, TOP2A (proliferation markers; match the clinical Ki67 IHC criterion)
+**Finding 2 — Consensus ensemble selection converges on FDA-cleared companion diagnostics**
+The data-driven feature selection loop consistently isolates genes that form the foundation of clinical breast cancer pathology:
+* **Basal-like**: Cytokeratins (*KRT5*, *KRT14*, *KRT17*) and basal transcription factors (*FOXC1*).
+* **HER2-enriched**: The core *17q12* amplicon genes (*ERBB2*, *GRB7*, *STARD3*, *PGAP3*).
+* **Luminal (A/B)**: Estrogen receptor pathway regulators (*ESR1*, *GATA3*, *FOXA1*).
+* **Luminal B Proliferation**: Cell-cycle markers (*MKI67*, *TOP2A*) which define the high-proliferation index in clinical IHC.
 
-This convergence between data-driven selection and clinical pathology validation provides **biological ground truth** for the computational approach.
+**Finding 3 — Patient transcriptomic uniqueness (CUS) is orthogonal to subtype biology**
+N-of-1 profiling using the Composite Uniqueness Score (CUS) reveals that the specific pathways driving an individual patient's transcriptomic deviation (outlier signature) have zero Jaccard overlap (~0.0) with global PAM50 diagnostic features. This confirms that cohort-level classification and individualized precision profiling represent decoupled biological dimensions.
 
-### 3. Individual Patient Uniqueness is Uncoupled from Subtype Biology
-The CUS framework demonstrates that the transcriptomic signals driving individual uniqueness are statistically orthogonal to the subtype-level signals (Jaccard overlap ~0.0). This supports the hypothesis that **subtype classification and individual precision profiling address fundamentally different biological questions** — both are needed for complete clinical characterisation.
+**Finding 4 — Locked model generalizability is maintained across platforms without retraining**
+Applying the discovery model trained on TCGA Illumina HiSeq RNA-seq data directly to METABRIC (microarray, N=1,980) and SCAN-B (independent NextSeq RNA-seq, N=3,273) preserves diagnostic performance. This platform-agnostic generalizability demonstrates that Z-score harmonization successfully captures fundamental biological structures rather than platform-specific technical batch effects.
 
-### 4. Cross-Platform Generalisation Confirms Clinical Transportability
-Applying the TCGA RNA-seq-trained locked pipeline to METABRIC (microarray) and SCAN-B (independent RNA-seq) without any retraining tests the real-world clinical utility of the signature. Performance maintained across platforms demonstrates that the identified consensus genes capture **platform-independent biological signal** — a prerequisite for clinical diagnostic translation.
+<a id="results-files"></a>
+## Results Files
+
+The pipeline generates several output files, serialized models, and intermediate data files during execution. Below is an index of these key outputs:
+
+| File Name | Location | Description | Generating Stage |
+|---|---|---|---|
+| `quantile_normalization_summary.csv` | `data/artifacts/` | Summary statistics of quantile-normalized expression values across training samples | Section 2: Normalization |
+| `top_consensus_genes.pkl` | `data/artifacts/` | Serialized Python list of genes selected by the consensus voting ensemble | Section 7: Consensus Selection |
+| `label_encoder.pkl` | `data/artifacts/` | Serialized `LabelEncoder` object mapping PAM50 subtype strings to numeric indices | Section 3: Preprocessing |
+| `latest_trained_pipeline_predictions.csv` | Output directory / temporary | Prediction log containing classified subtypes for the latest batch of inference samples | Streamlit AutoML Engine |
+| `subtype_predictions_report.csv` | User-downloadable | Exported prediction report with detailed SHAP importance and patient similarity rankings | Streamlit UI |
 
 ---
 
+<a id="reproduce-the-analysis"></a>
+## Reproduce the Analysis
+
+### Option A — Streamlit Cloud (Zero Setup)
+The easiest way to explore OncoResolve is through the live web dashboard. You can upload a customized transcriptomics CSV, run classification, customize parameters in the AutoML page, and download the report:
+👉 **[Live App (oncoresolve.streamlit.app)](https://oncoresolve.streamlit.app/)**
+
+### Option B — Google Colab (Zero Setup)
+Run the entire subtyping, explainability, and N-of-1 profiling pipeline in your browser. All packages and dataset downloading are automated within the notebook:
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics/blob/main/notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb)
+
+### Option C — Local Python Environment
+To run the analysis locally, clone the repository, install dependencies, and start the local Streamlit server or Jupyter:
+```bash
+# Clone the repository
+git clone https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics.git
+cd OncoResolve-Breast-Cancer-Transcriptomics
+
+# Install dependencies (requires Python 3.9+)
+pip install -r requirements.txt
+
+# Run the download script to fetch primary and external cohorts
+python data/external_cohort/download_external_cohorts.py
+
+# Launch the Streamlit dashboard
+streamlit run app.py
+```
+
+### Option D — Docker Container
+Run the dashboard in an isolated container. A multi-stage Dockerfile is provided:
+```bash
+# Build the Docker image
+docker build -t oncoresolve .
+
+# Run the container
+docker run -p 8501:8501 oncoresolve
+```
+
+---
+
+<a id="data-access"></a>
+## Data Access
+
+Due to size limitations, the transcriptomics datasets are not stored directly in this GitHub repository (they are excluded via `.gitignore`). Instead, we provide an automated download script `data/external_cohort/download_external_cohorts.py` to retrieve and unpack them from public databases.
+
+The required datasets and their sources are listed below:
+
+| Dataset | Cohort Size | Platform | Data Access Portal / Identifier | Files Downloaded |
+|---|---|---|---|---|
+| **TCGA-BRCA** | 1,084 patients | Illumina HiSeq RNA-seq | cBioPortal study: `brca_tcga_pan_can_atlas_2018` | `Breast_TCGA_BRCA_RNAseq.csv`<br>`Breast_TCGA_BRCA_clinical.csv` |
+| **METABRIC** | 1,980 patients | Illumina HT-12 microarray | cBioPortal study: `brca_metabric` | `METABRIC_expression.csv`<br>`METABRIC_clinical.csv` |
+| **SCAN-B** | 3,273 patients | Illumina NextSeq RNA-seq | GEO Accession: `GSE96058` | `SCANB_GSE96058_expression_subset.csv`<br>`SCANB_GSE96058_clinical.csv` |
+
+#### Automatic Retrieval
+To download all datasets, ensure you are in the project root and run:
+```bash
+python data/external_cohort/download_external_cohorts.py
+```
+This script queries the cBioPortal public JSON API and NCBI GEO FTP servers to retrieve and format all matrices.
+
+---
 <a id="technologies"></a>
 ## Technologies
 
@@ -409,37 +540,95 @@ Applying the TCGA RNA-seq-trained locked pipeline to METABRIC (microarray) and S
 
 ## Project Structure
 
-```
+```text
 OncoResolve-Breast-Cancer-Transcriptomics/
-|
-+-- notebooks/
-|   +-- OncoResolve_Subtyping_and_Precision_Profiling.ipynb
-|
-+-- data/
-|   +-- raw/
-|   |   +-- Breast_TCGA_BRCA_RNAseq.csv      (NEW primary dataset)
-|   |   +-- Breast_TCGA_BRCA_clinical.csv    (OS, DFS, PAM50 labels)
-|   |   +-- Breast_GSE45827.csv              (legacy; kept for comparison)
-|   +-- external_cohort/
-|   |   +-- METABRIC_expression.csv          (N=1,980, microarray)
-|   |   +-- METABRIC_clinical.csv            (OS, DFS, RFS survival)
-|   |   +-- SCANB_GSE96058_expression_subset.csv  (N=3,273, RNA-seq top 5000 genes)
-|   |   +-- SCANB_GSE96058_clinical.csv      (RFS survival)
-|   |   +-- download_external_cohorts.py     (automated download script)
-|   +-- processed/                           (parquet intermediates)
-|   +-- artifacts/                           (serialized models + results)
-|
-+-- app.py                                   (Streamlit dashboard)
-+-- automl_page.py                           (AutoML user interface)
-+-- pipeline_engine.py                       (training backend)
-+-- requirements.txt
-+-- Dockerfile
-+-- CITATION.cff
-+-- README.md
+├── app.py                  # Streamlit dashboard main entry
+├── automl_page.py          # Streamlit AutoML user interface
+├── pipeline_engine.py      # Core ML training and evaluation engine
+├── requirements.txt        # Python dependency manifest
+├── Dockerfile              # Multi-stage production build configuration
+├── CITATION.cff            # Repo metadata for automatic citation
+├── README.md               # Extensive project documentation
+├── social.txt              # Developer profiles and repository links
+├── .streamlit/
+│   └── config.toml         # Streamlit visual configuration
+├── notebooks/
+│   └── OncoResolve_Subtyping_and_Precision_Profiling.ipynb  # Primary exploration notebook
+├── data/
+│   ├── raw/
+│   │   ├── Breast_TCGA_BRCA_RNAseq.csv      # Illumina HiSeq log2(RSEM) expression
+│   │   ├── Breast_TCGA_BRCA_clinical.csv    # TCGA survival metadata & PAM50 labels
+│   │   └── Breast_GSE45827.csv              # Legacy microarray comparison dataset
+│   ├── external_cohort/
+│   │   ├── METABRIC_expression.csv          # METABRIC microarray cohort (N=1,980)
+│   │   ├── METABRIC_clinical.csv            # METABRIC clinical & survival data
+│   │   ├── SCANB_GSE96058_expression_subset.csv  # SCAN-B RNA-seq cohort (N=3,273)
+│   │   ├── SCANB_GSE96058_clinical.csv      # SCAN-B clinical & survival data
+│   │   └── download_external_cohorts.py     # Automated data retrieval script
+│   ├── processed/                           # Parquet intermediates and serialized states
+│   └── artifacts/                           # Saved models, encoders, and reports
+└── src/
+    ├── __init__.py
+    └── config.py           # Path configuration registry
 ```
 
-**Primary datasets used:**
-- TCGA-BRCA Pan-Can Atlas 2018: Cancer Genome Atlas Network. Comprehensive molecular portraits of human breast tumours. *Nature* 490, 61-70 (2012). doi:10.1038/nature11412
-- METABRIC: Curtis C et al. The genomic and transcriptomic architecture of 2,000 breast tumours reveals novel subgroups. *Nature* 486, 346-352 (2012). doi:10.1038/nature10983
-- SCAN-B (GSE96058): Brueffer C et al. Clinical Value of RNA Sequencing-Based Classifiers for Prediction of the Five Conventional Breast Cancer Biomarkers. *NPJ Breast Cancer* 4, 22 (2018). doi:10.1038/s41523-018-0072-5
-- PAM50 classifier: Parker JS et al. Supervised Risk Predictor of Breast Cancer Based on Intrinsic Subtypes. *J Clin Oncol* 27, 1160-1167 (2009). doi:10.1200/JCO.2008.18.1370
+<a id="references"></a>
+## References
+
+| Citation | Journal / Venue | DOI / Link |
+|---|---|---|
+| Perou CM, et al. Molecular portraits of human breast tumours. (2000) | *Nature* 406, 747-752 | [10.1038/35021093](https://doi.org/10.1038/35021093) |
+| Parker JS, et al. Supervised risk predictor of breast cancer based on intrinsic subtypes. (2009) | *Journal of Clinical Oncology* 27, 1160-1167 | [10.1200/JCO.2008.18.1370](https://doi.org/10.1200/JCO.2008.18.1370) |
+| Cancer Genome Atlas Network. Comprehensive molecular portraits of human breast tumours. (2012) | *Nature* 490, 61-70 | [10.1038/nature11412](https://doi.org/10.1038/nature11412) |
+| Curtis C, et al. The genomic and transcriptomic architecture of 2,000 breast tumours reveals novel subgroups. (2012) | *Nature* 486, 346-352 | [10.1038/nature10983](https://doi.org/10.1038/nature10983) |
+| Brueffer C, et al. Clinical value of RNA sequencing-based classifiers for prediction of the five conventional breast cancer biomarkers. (2018) | *NPJ Breast Cancer* 4, 22 | [10.1038/s41523-018-0072-5](https://doi.org/10.1038/s41523-018-0072-5) |
+| Hoadley KA, et al. Cell-of-origin patterns dominate the molecular classification of 10,000 tumors from 33 types of cancer. (2018) | *Cell* 173, 291-304.e6 | [10.1016/j.cell.2018.03.022](https://doi.org/10.1016/j.cell.2018.03.022) |
+| Lundberg SM, Lee SI. A unified approach to interpreting model predictions. (2017) | *Advances in Neural Information Processing Systems (NeurIPS)* 30 | [NeurIPS URL](https://papers.nips.cc/paper/7062-a-unified-approach-to-interpreting-model-predictions) |
+
+---
+
+<a id="author"></a>
+## Author
+
+**Shubham Jha**  
+Research Software Engineer & Computational Biology Researcher  
+
+[![GitHub](https://img.shields.io/badge/GitHub-shubhamkjha369-black?logo=github)](https://github.com/shubhamkjha369)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin)](https://www.linkedin.com/in/shubhamjha369/)
+[![Email](https://img.shields.io/badge/Email-Contact-red?logo=gmail)](mailto:shubhamkjha369@gmail.com)
+
+---
+
+<a id="citation"></a>
+## Citation
+
+If you use this repository, code, methodology, or derived work in academic research, please cite:
+
+```bibtex
+@software{jha2026oncoresolve,
+  author       = {Shubham Jha},
+  title        = {OncoResolve: Breast Cancer Transcriptomics and Explainable AI Pipeline},
+  year         = {2026},
+  version      = {2.0.1},
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.20497791},
+  url          = {https://doi.org/10.5281/zenodo.20497791}
+}
+```
+
+---
+
+<a id="license"></a>
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+*Data Sources: TCGA Pan-Cancer Atlas (cBioPortal), METABRIC (cBioPortal), and SCAN-B (NCBI GEO).*
+
+*If you find this pipeline or N-of-1 profiling framework useful, please consider ⭐ starring this repository!*
+
+</div>
