@@ -253,58 +253,61 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 # SIDEBAR
 # =============================================================================
 
-# ── Sidebar Header: DOI, Colab, Social ──────────────────────────────────────
-st.sidebar.markdown("""
+# ── inline SVG helpers ────────────────────────────────────────────────────────
+_GH  = "M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
+_LI  = "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"
+_GM  = "M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"
+
+def _icon(path, color, size=17):
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" '
+            f'viewBox="0 0 24 24" fill="{color}" style="vertical-align:middle;flex-shrink:0;">'
+            f'<path d="{path}"/></svg>')
+
+_LINK_STYLE = ("display:flex;align-items:center;justify-content:space-between;"
+               "text-decoration:none;color:#334155;font-size:12.5px;font-weight:500;"
+               "padding:5px 2px;border-bottom:1px solid #e9edf2;gap:6px;")
+
+st.sidebar.markdown(f"""
 <style>
-.social-link { opacity:0.72; transition:opacity 0.2s, transform 0.2s; display:inline-flex; }
-.social-link:hover { opacity:1; transform:scale(1.18); }
+a.soc {{ transition:color 0.15s,opacity 0.15s; opacity:0.82; }}
+a.soc:hover {{ color:#4f46e5 !important; opacity:1; }}
+a.soc:hover svg {{ opacity:1; }}
 </style>
 
-<!-- Row 1: DOI + Colab badges -->
-<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-
+<!-- DOI + Colab badges -->
+<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
   <a href="https://doi.org/10.5281/zenodo.20537449" target="_blank" title="Cite on Zenodo">
     <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.20537449.svg"
          alt="DOI" style="height:19px;vertical-align:middle;">
   </a>
-
   <a href="https://colab.research.google.com/github/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics/blob/main/notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb"
-     target="_blank" title="Open notebook in Google Colab">
+     target="_blank" title="Open in Colab">
     <img src="https://colab.research.google.com/assets/colab-badge.svg"
          alt="Open in Colab" style="height:19px;vertical-align:middle;">
   </a>
-
 </div>
 
-<!-- Row 2: Social icons (inline SVG — no CDN) -->
-<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+<!-- Vertical social list: Label · Icon -->
+<div style="display:flex;flex-direction:column;margin-bottom:10px;">
 
-  <!-- GitHub Profile -->
-  <a class="social-link" href="https://github.com/shubhamkjha369" target="_blank" title="GitHub Profile">
-    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="#1a1a1a">
-      <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
-    </svg>
+  <a class="soc" href="https://github.com/shubhamkjha369" target="_blank"
+     style="{_LINK_STYLE}">
+    <span>GitHub</span>{_icon(_GH, "#1a1a1a")}
   </a>
 
-  <!-- LinkedIn -->
-  <a class="social-link" href="https://www.linkedin.com/in/shubhamjha369/" target="_blank" title="LinkedIn">
-    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="#0a66c2">
-      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-    </svg>
+  <a class="soc" href="https://www.linkedin.com/in/shubhamjha369/" target="_blank"
+     style="{_LINK_STYLE}">
+    <span>LinkedIn</span>{_icon(_LI, "#0a66c2")}
   </a>
 
-  <!-- Gmail -->
-  <a class="social-link" href="mailto:shubhamkjha369@gmail.com" title="Send Email">
-    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="#ea4335">
-      <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/>
-    </svg>
+  <a class="soc" href="mailto:shubhamkjha369@gmail.com"
+     style="{_LINK_STYLE}">
+    <span>Email</span>{_icon(_GM, "#ea4335")}
   </a>
 
-  <!-- Project Repo -->
-  <a class="social-link" href="https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics" target="_blank" title="Project Repository">
-    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="#4f46e5">
-      <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
-    </svg>
+  <a class="soc" href="https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics"
+     target="_blank" style="{_LINK_STYLE.replace('border-bottom:1px solid #e9edf2;','')}">
+    <span>Project Repo</span>{_icon(_GH, "#4f46e5")}
   </a>
 
 </div>
