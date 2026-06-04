@@ -33,7 +33,7 @@
 > python data/external_cohort/download_external_cohorts.py
 > ```
 > **What it does:** Downloads the three required datasets via public APIs (cBioPortal + NCBI GEO FTP):
-> - **TCGA-BRCA Pan-Can Atlas 2018** → `data/raw/Breast_TCGA_BRCA_RNAseq.csv` + `Breast_TCGA_BRCA_clinical.csv`
+> - **TCGA-BRCA Pan-Can Atlas 2018** → [`Breast_TCGA_BRCA_RNAseq.csv`](https://cbioportal-datahub.s3.amazonaws.com/brca_tcga_pan_can_atlas_2018.tar.gz) + [`Breast_TCGA_BRCA_clinical.csv`](https://cbioportal-datahub.s3.amazonaws.com/brca_tcga_pan_can_atlas_2018.tar.gz) *(cBioPortal study: `brca_tcga_pan_can_atlas_2018` — or run the download script below)*
 > - **METABRIC** (N=1,980, microarray) → `data/external_cohort/METABRIC_expression.csv` + `METABRIC_clinical.csv`
 > - **SCAN-B / GSE96058** (N=3,273, RNA-seq) → `data/external_cohort/SCANB_GSE96058_expression_subset.csv` + `SCANB_GSE96058_clinical.csv`
 >
@@ -838,10 +838,18 @@ The required datasets and their sources are listed below:
 
 | Dataset | Cohort Size | Platform | Data Access Portal / Identifier | Files Downloaded |
 |---|---|---|---|---|
-| **TCGA-BRCA** | 1,084 patients | Illumina HiSeq RNA-seq | cBioPortal study: `brca_tcga_pan_can_atlas_2018` | `Breast_TCGA_BRCA_RNAseq.csv`<br>`Breast_TCGA_BRCA_clinical.csv` |
+| **TCGA-BRCA** | 1,084 patients | Illumina HiSeq RNA-seq | [cBioPortal: `brca_tcga_pan_can_atlas_2018`](https://www.cbioportal.org/study/summary?id=brca_tcga_pan_can_atlas_2018) · [📥 Direct Download (tar.gz)](https://cbioportal-datahub.s3.amazonaws.com/brca_tcga_pan_can_atlas_2018.tar.gz) | [`Breast_TCGA_BRCA_RNAseq.csv`](https://cbioportal-datahub.s3.amazonaws.com/brca_tcga_pan_can_atlas_2018.tar.gz)<br>[`Breast_TCGA_BRCA_clinical.csv`](https://cbioportal-datahub.s3.amazonaws.com/brca_tcga_pan_can_atlas_2018.tar.gz) |
 | **SMC 2018** | 166 patients (validated) | Illumina RNA-seq | cBioPortal study: `brca_smc_2018` | `SMC_expression_clean.parquet`<br>`SMC_clinical.csv` |
 | **SCAN-B** | 317 patients (validated) | Illumina NextSeq RNA-seq | GEO Accession: `GSE96058` | `SCANB_expression_clean.parquet`<br>`SCANB_GSE96058_clinical.csv` |
 | **METABRIC** | 1,608 patients (validated) | Illumina HT-12 v3 microarray | cBioPortal study: `brca_metabric` | `METABRIC_expression_clean.parquet`<br>`METABRIC_clinical.csv` |
+
+> [!NOTE]
+> **TCGA-BRCA Primary Dataset Files:**
+> The two primary dataset files are packaged inside the cBioPortal study archive. After downloading and extracting:
+> - [`data_mrna_seq_v2_rsem.txt`](https://cbioportal-datahub.s3.amazonaws.com/brca_tcga_pan_can_atlas_2018.tar.gz) → saved as `data/raw/Breast_TCGA_BRCA_RNAseq.csv`
+> - [`data_clinical_patient.txt`](https://cbioportal-datahub.s3.amazonaws.com/brca_tcga_pan_can_atlas_2018.tar.gz) → saved as `data/raw/Breast_TCGA_BRCA_clinical.csv`
+>
+> The automated script handles extraction and renaming automatically.
 
 #### Automatic Retrieval
 To download all datasets, ensure you are in the project root and run:
