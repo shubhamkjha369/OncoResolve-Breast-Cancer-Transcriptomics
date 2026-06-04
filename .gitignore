@@ -89,3 +89,9 @@ agent_*.txt
 agent_*.md
 run_notebook.py
 run_notebook*.py
+# Added by agent for scratchpad files
+notebooks/External_cohort_data_preparation_analysis.py
+notebooks/OncoResolve_Subtyping_and_Precision_Profiling.py
+openalex_results.json
+technical_audit_part1.md
+technical_audit_part2.md
