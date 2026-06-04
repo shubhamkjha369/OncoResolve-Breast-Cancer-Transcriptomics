@@ -8,7 +8,7 @@
 [![Scikit-Learn 1.4+](https://img.shields.io/badge/Scikit--Learn-1.4+-F7931E?style=flat&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 [![SHAP](https://img.shields.io/badge/SHAP-Explainability-blueviolet?style=flat)](#)
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20497791.svg)](https://doi.org/10.5281/zenodo.20497791)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20535052.svg)](https://doi.org/10.5281/zenodo.20535052)
 [![Live App](https://img.shields.io/badge/Streamlit-Live_App-FF4B4B?logo=streamlit&logoColor=white)](https://oncoresolve.streamlit.app/)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics/blob/main/notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -924,10 +924,10 @@ If you use this repository, code, methodology, or derived work in academic resea
   author       = {Shubham Jha},
   title        = {OncoResolve: Breast Cancer Transcriptomics and Explainable AI Pipeline},
   year         = {2026},
-  version      = {2.0.1},
+  version      = {3.0.0},
   publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.20497791},
-  url          = {https://doi.org/10.5281/zenodo.20497791}
+  doi          = {10.5281/zenodo.20535052},
+  url          = {https://doi.org/10.5281/zenodo.20535052}
 }
 ```
 
