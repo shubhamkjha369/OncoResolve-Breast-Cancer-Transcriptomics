@@ -82,10 +82,7 @@ go_processes = load_parquet(ARTIFACT_DIR, "enrichr_go_results.parquet")
 cluster_labels = load_parquet(ARTIFACT_DIR, "cluster_labels.parquet")
 coexpression_net = load_parquet(ARTIFACT_DIR, "coexpression_network.parquet")
 
-# Deep learning results loading
-mlp_history = load_parquet(ARTIFACT_DIR, "mlp_training_history.parquet")
-mlp_results = load_pickle(ARTIFACT_DIR, "mlp_results.pkl")
-best_model_info = load_pickle(ARTIFACT_DIR, "best_model_info.pkl")
+# Pre-trained model benchmarks
 benchmark_results = load_parquet(ARTIFACT_DIR, "benchmark_results.parquet")
 X_test_consensus = load_pickle(ARTIFACT_DIR, "X_test_consensus.pkl")
 y_test = load_pickle(ARTIFACT_DIR, "y_test.pkl")
@@ -287,8 +284,7 @@ with st.sidebar.expander("Research Findings & Insights", expanded=(st.session_st
         ("EDA Insights", "Exploratory Data Analysis"),
         ("Clustering & Networks", "Clustering and Networks"),
         ("Feature Selection", "Consensus Biomarkers"),
-        ("Model Performance", "ML Benchmarks"),
-        ("Cross Validation", "Cross Validation"),
+        ("Model Performance", "Model Performance & CV"),
         ("SHAP Explainability", "SHAP Interpretability"),
         ("Functional Genomics", "Functional Genomics"),
         ("External Validation", "External Cohort Validation"),
@@ -606,16 +602,16 @@ elif page == "Feature Selection":
 # =============================================================================
 
 elif page == "Model Performance":
-    st.markdown('<div class="main-title">Benchmark <span class="main-title-accent">and PyTorch Deep Learning</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">We benchmark classical classifiers against a custom PyTorch Deep Learning Multi-Layer Perceptron (MLP) trained with balanced class weights.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Classifier Benchmarks & <span class="main-title-accent">Dual-Architecture Performance</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">We evaluate classification models on the TCGA holdout split and via cross-validation, highlighting the finalized Logistic Regression (Linear) and Support Vector Machine (RBF) classifiers.</div>', unsafe_allow_html=True)
 
-    t1, t2 = st.tabs(["Classical ML Benchmarks", "PyTorch Deep Learning Model"])
+    t_perf, t_cv = st.tabs(["Holdout Performance Benchmarks", "Cross-Validation & Hyperparameters"])
 
-    with t1:
-        st.markdown('<div class="section-title">Classical Classifiers Benchmark</div>', unsafe_allow_html=True)
+    with t_perf:
+        st.markdown('<div class="section-title">Classifiers Holdout Performance</div>', unsafe_allow_html=True)
         if benchmark_results is not None:
             fig = px.bar(benchmark_results, x="model", y="accuracy", color="feature_space", barmode="group",
-                         title="Classification Test Accuracy Across Feature Spaces",
+                         title="Classification Holdout Accuracy Across Feature Spaces",
                          template="plotly_white", text=benchmark_results["accuracy"].apply(lambda x: f"{x:.2%}"))
             fig.update_traces(textposition="outside")
             fig.update_layout(**PLOTLY_LAYOUT)
@@ -623,96 +619,38 @@ elif page == "Model Performance":
             
             st.dataframe(benchmark_results.sort_values("weighted_f1", ascending=False), use_container_width=True, hide_index=True)
         else:
-            st.warning("Benchmark results parquet not found.")
+            st.warning("Benchmark results dataset not found in data/artifacts/.")
 
         st.markdown("""
         <div class="success-box">
-            <b>Benchmark Insights:</b>
+            <b>Classifier Evaluation Insights:</b>
             <ul style="margin: 8px 0 0 20px; padding: 0;">
-                <li style="margin-bottom: 6px;"><b>Linear Separability:</b> <b>Logistic Regression</b> achieved a perfect <b>100.00% accuracy and 1.0000 F1 score</b> on both the 267 Consensus Genes and the compressed 50 Principal Components. This demonstrates that breast cancer subtypes exhibit highly distinct transcriptomic ratios that can be cleanly separated by linear decision hyperplanes.</li>
-                <li><b>Non-Linear Dynamics:</b> <b>Random Forest</b> achieved <b>100.00% accuracy</b> in the Consensus feature space, but dropped to <b>96.43%</b> in the PCA space. Traditional SVM and LightGBM show stable boundary classification with <b>96.43% accuracy</b>.</li>
+                <li style="margin-bottom: 6px;"><b>Linear vs. Non-Linear Separability:</b> <b>Logistic Regression (Linear)</b> and <b>Support Vector Machine (RBF-SVM)</b> show outstanding performance. OncoResolve utilizes both architectures to capture linear and complex non-linear diagnostic boundaries.</li>
+                <li style="margin-bottom: 6px;"><b>Consensus Feature Space:</b> Training classifiers on the 152 consensus biomarker space achieves competitive or superior performance compared to the full 20,000 gene space, drastically reducing technical noise and ensuring computational tractability.</li>
+                <li><b>Platform Stability:</b> The dual-architecture locked model demonstrates high transferability to external cohorts, maintaining accuracy without any fine-tuning or retraining.</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
 
-    with t2:
-        st.markdown('<div class="section-title">Custom PyTorch MLP Architecture</div>', unsafe_allow_html=True)
-        
-        col_arch, col_stats = st.columns([2, 1])
-        with col_arch:
-            st.code("""
-BreastCancerMLP(
-  (net): Sequential(
-    (0): Linear(in_features=267, out_features=512)
-    (1): BatchNorm1d(512)
-    (2): ReLU()
-    (3): Dropout(p=0.4)
-    (4): Linear(in_features=512, out_features=256)
-    (5): BatchNorm1d(256)
-    (6): ReLU()
-    (7): Dropout(p=0.3)
-    (8): Linear(in_features=256, out_features=128)
-    (9): ReLU()
-    (10): Dropout(p=0.2)
-    (11): Linear(in_features=128, out_features=5)
-  )
-)
-            """, language="python")
-        with col_stats:
-            st.markdown("### MLP Performance")
-            if mlp_results is not None:
-                st.markdown(card(f'{mlp_results["test_acc"]:.2%}', "Final Test Accuracy", True), unsafe_allow_html=True)
-                st.markdown(f"**Best Training Epoch:** {mlp_results['best_epoch']}")
-            else:
-                st.markdown(card("100.00%", "Final Test Accuracy", True), unsafe_allow_html=True)
-                st.markdown("**Best Training Epoch:** 4")
-
-        st.markdown("""
-        ###  PyTorch MLP Optimization Trajectory
-        * **Convergence:** The MLP exhibited rapid convergence. Training cross-entropy loss decreased sharply from **1.3925** to **0.0047** by epoch 100.
-        * **Generalization Check (Early Stopping):** Validation accuracy peaked at **100.0%** extremely early at **Epoch 4**. Saving the model weights at Epoch 4 successfully captured the optimal representation, achieving a perfect 100.0% validation accuracy and generalizability without any overfitting.
-        """)
-
-        st.markdown('<div class="section-title">Deep Learning Training Optimization History</div>', unsafe_allow_html=True)
-        if mlp_history is not None:
-            fig_hist = go.Figure()
-            epochs = np.arange(1, len(mlp_history) + 1)
-            fig_hist.add_trace(go.Scatter(x=epochs, y=mlp_history["train_loss"], name="Training Loss", line=dict(color="#ef4444", width=2)))
-            fig_hist.add_trace(go.Scatter(x=epochs, y=mlp_history["train_acc"], name="Train Accuracy", line=dict(color="#10b981", width=2)))
-            fig_hist.add_trace(go.Scatter(x=epochs, y=mlp_history["val_acc"], name="Validation Accuracy", line=dict(color="#3b82f6", width=2, dash="dash")))
-            
-            fig_hist.update_layout(title="Loss & Accuracy Optimization Trajectory",
-                                   xaxis_title="Epochs", template="plotly_white", **PLOTLY_LAYOUT)
-            st.plotly_chart(fig_hist, use_container_width=True)
-        else:
-            st.warning("MLP history training logs not found.")
-
-# =============================================================================
-# PAGE: CROSS VALIDATION
-# =============================================================================
-
-elif page == "Cross Validation":
-    st.markdown('<div class="main-title">Cross Validation <span class="main-title-accent">and Hyperparameters</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">To guarantee generalizability, we run stratified 5-fold cross-validation and hyperparameter GridSearch with re-fitted scalers inside each fold.</div>', unsafe_allow_html=True)
-
-    if cv_results is not None:
+    with t_cv:
         st.markdown('<div class="section-title">Model Robustness F1 Distributions</div>', unsafe_allow_html=True)
-        fold_data = []
-        for _, row in cv_results.iterrows():
-            scores = row.get("fold_scores", [])
-            if isinstance(scores, str):
-                scores = ast.literal_eval(scores)
-            for j, s in enumerate(scores):
-                fold_data.append({"Model": row["model"], "Fold": j+1, "F1 Score": s})
-        
-        if fold_data:
-            fold_df = pd.DataFrame(fold_data)
-            fig = px.box(fold_df, x="Model", y="F1 Score", color="Model", points="all",
-                title="Stratified 5-Fold F1 Score Variances",
-                template="plotly_white", color_discrete_sequence=BAR_COLORS, height=480)
-            fig.update_layout(**PLOTLY_LAYOUT, showlegend=False,
-                yaxis=dict(range=[0.8, 1.05], gridcolor="#f1f5f9"))
-            st.plotly_chart(fig, use_container_width=True)
+        if cv_results is not None:
+            fold_data = []
+            for _, row in cv_results.iterrows():
+                scores = row.get("fold_scores", [])
+                if isinstance(scores, str):
+                    scores = ast.literal_eval(scores)
+                for j, s in enumerate(scores):
+                    fold_data.append({"Model": row["model"], "Fold": j+1, "F1 Score": s})
+            
+            if fold_data:
+                fold_df = pd.DataFrame(fold_data)
+                fig = px.box(fold_df, x="Model", y="F1 Score", color="Model", points="all",
+                    title="Stratified 5-Fold F1 Score Variances",
+                    template="plotly_white", color_discrete_sequence=BAR_COLORS, height=480)
+                fig.update_layout(**PLOTLY_LAYOUT, showlegend=False,
+                    yaxis=dict(range=[0.8, 1.05], gridcolor="#f1f5f9"))
+                st.plotly_chart(fig, use_container_width=True)
 
         st.markdown('<div class="section-title">Stratified Cross-Validation Performance Diagnostics</div>', unsafe_allow_html=True)
         st.markdown("""
