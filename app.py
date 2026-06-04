@@ -318,19 +318,37 @@ st.sidebar.markdown("""
 
 # Social links row
 st.sidebar.markdown("""
-<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:2px;">
-  <a href="https://github.com/shubhamkjha369" target="_blank"
-     title="GitHub"
-     style="text-decoration:none;font-size:18px;">🐙</a>
-  <a href="https://www.linkedin.com/in/shubhamjha369/" target="_blank"
-     title="LinkedIn"
-     style="text-decoration:none;font-size:18px;">🔗</a>
-  <a href="mailto:shubhamkjha369@gmail.com"
-     title="Email"
-     style="text-decoration:none;font-size:18px;">✉️</a>
-  <a href="https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics" target="_blank"
-     title="Project Repo"
-     style="text-decoration:none;font-size:18px;">📦</a>
+<style>
+.social-icon { opacity:0.75; transition:opacity 0.2s,transform 0.2s; }
+.social-icon:hover { opacity:1; transform:scale(1.15); }
+</style>
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:4px;margin-bottom:2px;">
+
+  <a href="https://github.com/shubhamkjha369" target="_blank" title="GitHub Profile">
+    <img class="social-icon"
+         src="https://cdn.simpleicons.org/github/1a1a1a"
+         width="22" height="22" alt="GitHub">
+  </a>
+
+  <a href="https://www.linkedin.com/in/shubhamjha369/" target="_blank" title="LinkedIn">
+    <img class="social-icon"
+         src="https://cdn.simpleicons.org/linkedin/0a66c2"
+         width="22" height="22" alt="LinkedIn">
+  </a>
+
+  <a href="mailto:shubhamkjha369@gmail.com" title="Email (Gmail)">
+    <img class="social-icon"
+         src="https://cdn.simpleicons.org/gmail/ea4335"
+         width="22" height="22" alt="Gmail">
+  </a>
+
+  <a href="https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics"
+     target="_blank" title="Project Repository">
+    <img class="social-icon"
+         src="https://cdn.simpleicons.org/github/4f46e5"
+         width="22" height="22" alt="Repo">
+  </a>
+
 </div>
 """, unsafe_allow_html=True)
 
