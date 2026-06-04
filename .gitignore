@@ -74,3 +74,18 @@ download_tcga_*.py
 # Sample / placeholder readme (do not commit)
 sample_README.md
 social.txt
+
+# ─── AI Agent & Assistant-generated files (stored externally, never commit) ──
+# These files are produced by the AI coding assistant during development sessions.
+# They live in C:\Users\SAM\.gemini\antigravity-ide\brain\...\scratch\repo_agent_files\
+AGENT_PROGRESS_LOG.md
+AGENT_PROGRESS_LOG*.md
+ml_cells_output.txt
+ml_cells_output*.txt
+*_cells_output.txt
+*_agent_*.txt
+*_agent_*.md
+agent_*.txt
+agent_*.md
+run_notebook.py
+run_notebook*.py
