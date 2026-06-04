@@ -41,6 +41,9 @@
 > ⏱ *Allow 5–30 minutes depending on your internet connection. The SCAN-B expression file alone is ~564 MB.*
 >
 > ### Step 2 — Prepare and Harmonize External Cohorts
+>
+> ⚠️ *Requires `data/artifacts/tcga_entrez_to_hugo.pkl` and `data/processed/breast_cancer.parquet` — these are generated in **Section 1** of the main notebook. If those don't exist yet, run **Sections 1–2** of the main notebook first, then come back and run this script.*
+>
 > ```bash
 > python data/external_cohort/prepare_external_cohorts.py
 > ```
@@ -50,8 +53,6 @@
 > - Audits gene identifier overlap between TCGA-BRCA training genes and both external cohorts
 > - Generates cross-cohort PCA compatibility plot → `data/artifacts/cross_cohort_pca_compatibility.png`
 > - Saves: `data/processed/METABRIC_expression_clean.parquet` + `SCANB_expression_clean.parquet`
->
-> ⚠️ *Requires `data/artifacts/tcga_entrez_to_hugo.pkl` and `data/processed/breast_cancer.parquet` — these are generated in **Section 1** of the main notebook. If those don't exist yet, run **Sections 1–2** of the main notebook first, then come back and run this script.*
 >
 > ### Step 3 — Run the External Cohort Preparation Notebook
 > Open and run **all cells** in:
@@ -117,24 +118,37 @@ We present **OncoResolve**, a high-hygiene machine learning and N-of-1 precision
 <a id="project-aim"></a>
 ## Project Aim
 
-Breast cancer is not a single disease. The **PAM50 molecular classification** (Perou et al., *Nature* 2000; Parker et al., *J Clin Oncol* 2009) identifies five transcriptionally distinct subtypes with profoundly different prognoses and therapeutic targets:
+Breast cancer is a highly heterogeneous disease. The **PAM50 molecular classification** (Perou et al., *Nature* 2000; Parker et al., *J Clin Oncol* 2009) defines five transcriptionally distinct subtypes with profoundly different prognoses, biomarker profiles, and therapeutic targets:
 
-| Subtype | ER | PR | HER2 | Key Biology | First-line Therapy |
+| Subtype | ER | PR | HER2 | Key Molecular Drivers | First-line Therapy |
 |---|---|---|---|---|---|
-| **Basal-like (TNBC)** | – | – | – | BRCA1/2, KRT5/14, FOXC1 | Chemotherapy, PARP inhibitors (if BRCA-mutant) |
-| **HER2-enriched** | – | – | + | Chr17q12 amplicon: ERBB2, GRB7, STARD3 | Trastuzumab (Herceptin), Pertuzumab |
-| **Luminal A** | + | + | – | ESR1, GATA3, FOXA1; low Ki67 | Tamoxifen / Aromatase inhibitors |
-| **Luminal B** | + | ±| ± | ESR1 + high MKI67, TOP2A | Endocrine therapy + Chemotherapy |
+| **Basal-like (TNBC)** | – | – | – | KRT5, KRT14, KRT17, FOXC1, CDH3 | Chemotherapy; PARP inhibitors (BRCA1/2-mutant) |
+| **HER2-enriched** | – | – | + | ERBB2, GRB7, STARD3, PGAP3, MIEN1 | Trastuzumab (Herceptin) + Pertuzumab |
+| **Luminal A** | + | + | – | ESR1, GATA3, FOXA1, PGR, TFF3; low Ki67 | Tamoxifen / Aromatase inhibitors |
+| **Luminal B** | + | ± | ± | ESR1 + high MKI67, TOP2A, CCNB1, BIRC5 | Endocrine therapy + Chemotherapy |
+| **Normal-like** | ± | ± | – | ADIPOQ, FABP4, CD36 (adipose-like signature) | Clinical monitoring |
 
-**OncoResolve** aims to:
-1. Build a **publication-grade, leakage-free** ML pipeline for PAM50 classification from bulk RNA-seq data
-2. Explain predictions using **SHAP (Shapley Additive Explanations)** to map model decisions to clinically validated biomarkers
-3. Quantify **individual patient transcriptomic uniqueness** within each subtype using an original N-of-1 framework (CUS), and rigorously validate that CUS is mathematically distinct from standard anomaly detection baselines (Euclidean distance, PCA reconstruction error, Isolation Forest)
-4. Validate the locked discovery pipeline on **three independent external breast cancer cohorts** — SMC 2018 (Samsung Medical Center, South Korea, N=166, RNA-seq), SCAN-B (Sweden, GSE96058, N=317, RNA-seq), and METABRIC (Canada/UK, N=1,608, Illumina HT-12 v3 microarray) — representing different clinical centres, geographic origins, RNA-seq chemistries, and profiling platforms
-5. Evaluate **consensus biomarker stability** (JSI bootstrapping + permutation tests) and **clinical probability calibration** (Brier Score + ECE) to meet the rigor requirements of peer-reviewed oncology journals
-6. Build and validate a **transferable prognostic Consensus Risk Score (CRS)** using L2-regularized Ridge Cox regression on all 152 consensus genes
+**OncoResolve v3.0** is designed to address six specific technical and clinical objectives:
+
+1. **Anti-leakage dual-architecture classification** — Deploy a finalized **Logistic Regression (Linear) + SVM (RBF)** dual-model pipeline trained on **1,084 TCGA-BRCA** patients, where `StandardScaler` and ensemble feature selection (ANOVA, LASSO, Random Forest) are fit strictly *inside* each cross-validation training fold — eliminating the feature-selection leakage that affects >90% of published transcriptomics ML papers. Holdout performance: LogReg ACC=**88.89%**, SVM ACC=**87.30%**.
+
+2. **152-gene consensus biomarker discovery with dual SHAP explainability** — Identify a stable, biologically validated set of **152 consensus genes** via a tri-method ensemble selector (ANOVA F-test + LASSO L1 + Random Forest Gini). Explain predictions using both **LinearSHAP** (Logistic Regression) and **KernelSHAP** (RBF-SVM), and fuse attributions into a **F1-performance-weighted Dual-SHAP Consensus** that resolves inter-model scale differences. Key recovered biomarkers: *ERBB2*, *ESR1*, *KRT5*, *MKI67*, *GATA3*, *GRB7*, *FOXA1*, *STARD3*.
+
+3. **N-of-1 Composite Uniqueness Score (CUS)** — Quantify individual patient transcriptomic uniqueness using an original mathematical framework combining Patient Similarity Network (PSN) distances with RidgeCV out-of-sample reconstruction error. Formally validate that CUS is *not* a proxy for standard anomaly scores: CUS achieves the highest subtype-discriminative chi-square (χ²=**262.03**, p=1.64×10⁻⁵⁶) and Cox C-index (**0.7635**) vs. Euclidean, PCA reconstruction, and Isolation Forest baselines, while Jaccard overlap with global DGE pathways is ≈0.0 (confirming private biological signal).
+
+4. **Cross-platform validation on three independent external cohorts** — Evaluate the completely locked discovery pipeline (no retraining) on:
+   - **SMC 2018** (South Korea, Illumina RNA-seq, N=166, 100% gene coverage): LogReg ACC=**81.93%**
+   - **SCAN-B / GSE96058** (Sweden, Illumina NextSeq, N=317, 96.7% gene coverage): SVM ACC=**86.12%**
+   - **METABRIC** (Canada/UK, Illumina HT-12 microarray, N=1,608, 48.0% gene coverage): SVM ACC=**72.70%**
+
+   Cross-platform transfer requires per-cohort independent Z-score harmonization and strict alphabetical feature alignment — bypassing these steps collapses SVM accuracy to 11–21%.
+
+5. **Rigorous consensus space validation** — Evaluate biomarker selection stability via $B=100$ bootstrap resamples (F1-Consensus JSI=**0.2035**) and $P=500$ empirical permutation tests. Confirm prediction probability calibration across all four cohorts (max ECE <**9.12%**; Brier Score <0.10) to meet peer-reviewed oncology journal standards.
+
+6. **Transferable prognostic Consensus Ridge Cox Risk Score (CRS)** — Build an L2-regularized Ridge Cox model on all 152 consensus genes, yielding a continuous CRS that transfers to independent validation cohorts: SCAN-B C-index=**0.6628**, METABRIC C-index=**0.5716**, with significant log-rank survival separation in both — extending OncoResolve from a diagnostic classifier to a prognostic tool.
 
 ---
+
 
 <a id="dataset-evolution"></a>
 ## Dataset Evolution — From GSE45827 to TCGA-BRCA Pan-Can Atlas 2018
