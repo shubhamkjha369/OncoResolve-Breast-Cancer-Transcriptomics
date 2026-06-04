@@ -626,7 +626,7 @@ elif page == "Model Performance":
             <b>Classifier Evaluation Insights:</b>
             <ul style="margin: 8px 0 0 20px; padding: 0;">
                 <li style="margin-bottom: 6px;"><b>Linear vs. Non-Linear Separability:</b> <b>Logistic Regression (Linear)</b> and <b>Support Vector Machine (RBF-SVM)</b> show outstanding performance. OncoResolve utilizes both architectures to capture linear and complex non-linear diagnostic boundaries.</li>
-                <li style="margin-bottom: 6px;"><b>Consensus Feature Space:</b> Training classifiers on the 152 consensus biomarker space achieves competitive or superior performance compared to the full 20,000 gene space, drastically reducing technical noise and ensuring computational tractability.</li>
+                <li style="margin-bottom: 6px;"><b>Consensus Feature Space:</b> Training classifiers on the 152 consensus biomarker space achieves competitive performance compared to the full 20,000 gene space, drastically reducing technical noise and ensuring computational tractability.</li>
                 <li><b>Platform Stability:</b> The dual-architecture locked model demonstrates high transferability to external cohorts, maintaining accuracy without any fine-tuning or retraining.</li>
             </ul>
         </div>
