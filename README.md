@@ -558,18 +558,21 @@ A rigorous formal comparison between CUS and three standard anomaly detection pa
 - **Generated Plot**: `fig31b_cus_vs_baselines.png`
 
 ### Section 11: Cross-Platform External Cohort Validation
-- **SMC 2018** (N=166, Illumina RNA-seq, South Korea): 152/152 consensus features mapped (100.0%)
-  - LogReg: ACC=**81.93%**, Weighted F1=**81.32%** (HER2 recall=100%, Basal recall=100%)
-  - SVM (RBF): ACC=**75.90%**, Weighted F1=**74.08%** (Basal recall=100%)
-- **SCAN-B** (N=317, Illumina NextSeq RNA-seq, Sweden/GSE96058): 147/152 features mapped (96.7%)
-  - SVM (RBF): ACC=**86.12%**, Weighted F1=**85.91%** (Basal recall=94.3%)
-  - LogReg: ACC=**85.80%**, Weighted F1=**85.94%** (LumB recall=80.6%, HER2 recall=82.9%)
-- **METABRIC** (N=1,608, Illumina microarray, Canada/UK): 73/152 features mapped (48.0%)
-  - SVM (RBF): ACC=**72.70%**, Weighted F1=**72.45%**, Macro F1=**72.12%** (Basal recall=82.8%, LumB recall=79.6%)
-  - LogReg: ACC=**72.01%**, Weighted F1=**70.98%**, Macro F1=**70.59%**
-  - *Academic Relevance*: Evaluating on METABRIC represents a mixed-platform transfer test (RNA-seq to microarray). Despite only 48% gene overlap and platform dynamics shifts, independent Z-score scaling and alphabetical sorting successfully salvaged accuracy at ~72.7% without model retraining.
-- **Key bug fix**: Feature alignment in alphabetical string sort order is mandatory — feature order mismatch causes the same catastrophic collapse as unscaled raw data.
-- **Scaling requirement confirmed**: Bypassing independent Z-score standardization collapses SVM performance to 21%/11% (SMC/SCAN-B). Independent Z-scaling is non-negotiable for cross-platform RNA-seq transfer.
+
+| Validation Cohort | Platform | N | Consensus Features Mapped | Classifier | Accuracy | Weighted F1 | Key Details / Recall |
+|---|---|---|---|---|---|---|---|
+| **SMC 2018** | Illumina RNA-seq | 166 | 152 / 152 (100.0%) | LogReg | **81.93%** | **81.32%** | HER2 recall = 100%, Basal recall = 100% |
+| | | | | SVM (RBF) | **75.90%** | **74.08%** | Basal recall = 100% |
+| **SCAN-B** | Illumina NextSeq | 317 | 147 / 152 (96.7%) | SVM (RBF) | **86.12%** | **85.91%** | Basal recall = 94.3% |
+| | | | | LogReg | **85.80%** | **85.94%** | LumB recall = 80.6%, HER2 recall = 82.9% |
+| **METABRIC** | Illumina Microarray | 1,608 | 73 / 152 (48.0%) | SVM (RBF) | **72.70%** | **72.45%** | Mixed-platform transfer; Basal recall = 82.8%, LumB recall = 79.6% |
+| | | | | LogReg | **72.01%** | **70.98%** | Macro F1 = 70.59% |
+
+> [!IMPORTANT]
+> **Technical Transfer Requirements**:
+> - **Alphabetical Feature Alignment**: Sorting features alphabetically is mandatory to match the expected order of the locked models. Mismatched order causes complete classification failure.
+> - **Independent Z-Standardization**: Feature scaling must be fit and applied *independently per external cohort*. Bypassing independent scaling collapses SVM accuracy to 11–21% (SMC/SCAN-B). Z-scaling is non-negotiable for cross-platform transfer.
+> - **METABRIC Transfer**: Evaluating on METABRIC represents a mixed-platform transfer test (RNA-seq to microarray). Despite only 48% gene overlap and platform dynamic range shifts, the independent normalization and feature alignment successfully salvages performance (~72.7%) without retraining.
 
 ### Section 11.6: Consensus Biomarker Space Validation (New)
 - **Fisher's Exact / Hypergeometric test**: The intersection between SVM and LR top-20 feature lists contains **12 consensus genes** (p = **6.60 × 10⁻³³** against a background universe of 17,994 genes), demonstrating highly significant algorithmic convergence between linear and non-linear classifiers.
@@ -696,7 +699,9 @@ To contextualize OncoResolve ML performance, we implement the **PAM50 Spearman C
 ## Key Findings
 
 **Finding 1 — PAM50 subtype classification is linearly separable in RNA-seq space**
-Multinomial Logistic Regression models with linear decision boundaries match or exceed the performance of complex non-linear ensemble models (Random Forest, XGBoost) on consensus-selected features. This demonstrates that intrinsic breast cancer subtype signatures are predominantly linear combinations of dominant driver gene expression levels—validating the core assumption of centroid-based subtyping.
+* **Linear Separability**: Multinomial Logistic Regression models with linear decision boundaries match or exceed the performance of complex non-linear ensemble models (Random Forest, XGBoost) on consensus-selected features.
+* **Transcriptomic Ratios**: This demonstrates that intrinsic breast cancer subtype signatures are predominantly linear combinations of dominant driver gene expression levels.
+* **Clinical Centroid Validation**: This validates the core biological assumption behind standard centroid-based clinical subtyping methods.
 
 **Finding 2 — Consensus ensemble selection converges on FDA-cleared companion diagnostics**
 The data-driven feature selection loop consistently isolates genes that form the foundation of clinical breast cancer pathology:
@@ -706,22 +711,36 @@ The data-driven feature selection loop consistently isolates genes that form the
 * **Luminal B Proliferation**: Cell-cycle markers (*MKI67*, *TOP2A*) which define the high-proliferation index in clinical IHC.
 
 **Finding 3 — Patient transcriptomic uniqueness (CUS) is orthogonal to subtype biology and is not a proxy for standard anomaly detection**
-N-of-1 profiling using the Composite Uniqueness Score (CUS) reveals that the specific pathways driving an individual patient's transcriptomic deviation (outlier signature) have zero Jaccard overlap (~0.0) with global PAM50 diagnostic features. This confirms that cohort-level classification and individualized precision profiling represent decoupled biological dimensions. Furthermore, a formal baseline comparison demonstrates that CUS is not a proxy for existing anomaly detection methods: while Spearman correlations between CUS and Euclidean distance, PCA reconstruction error, and Isolation Forest scores are moderate (r = 0.67, 0.65, 0.64), CUS achieves a significantly higher chi-square statistic against PAM50 subtype (χ² = 262.03) compared to all three baselines (χ² = 218.51, 216.52, 171.74 respectively), and provides the highest Cox model C-index (0.7635). This establishes CUS as a biologically structured, subtype-aware patient individuality metric rather than a generic statistical outlier score.
+* **Pathway Orthogonality**: N-of-1 profiling using the Composite Uniqueness Score (CUS) reveals that the specific pathways driving an individual patient's transcriptomic deviation (outlier signature) have zero Jaccard overlap (~0.0) with global PAM50 diagnostic features.
+* **Dimensional Decoupling**: This confirms that cohort-level classification and individualized precision profiling represent decoupled biological dimensions.
+* **Outlier Baselines Comparison**: Spearman correlations between CUS and Euclidean distance ($r = 0.67$), PCA reconstruction error ($r = 0.65$), and Isolation Forest ($r = 0.64$) show moderate overlap, confirming CUS is not a generic statistical outlier score.
+* **Subtype Sensitivity**: CUS achieves a significantly higher chi-square statistic against PAM50 subtype ($\chi^2 = 262.03$) compared to Euclidean ($\chi^2 = 218.51$), PCA ($\chi^2 = 216.52$), and Isolation Forest ($\chi^2 = 171.74$).
+* **Survival Prediction**: CUS provides the highest Cox model C-index (0.7635) among all outlier metrics, establishing it as a biologically structured, subtype-aware patient individuality metric.
 
 **Finding 4 — Locked model achieves high generalizability across independent RNA-seq cohorts without retraining**
-Applying the discovery model trained on TCGA Illumina HiSeq RNA-seq data directly to SMC 2018 (independent Illumina RNA-seq, South Korea, N=166), SCAN-B (independent NextSeq RNA-seq, Sweden, N=317), and METABRIC (Illumina microarray, N=1,608) preserves diagnostic performance: LogReg achieves 81.93% on SMC 2018, 85.80% on SCAN-B, and 72.01% on METABRIC; SVM achieves 75.90%, 86.12%, and 72.70% respectively. Two critical prerequisites for valid cross-platform transfer were identified: (1) independent per-cohort Z-score standardization to bridge the platform dynamic range shift, and (2) alphabetical feature alignment to match the locked classifier's expected feature order. Both conditions are mandatory — violating either causes severe model collapse. This generalizability demonstrates that the consensus biomarker signature captures fundamental PAM50 biological structures rather than TCGA-specific technical batch patterns.
+* **Cross-Cohort Generalization**: Directly applying the locked TCGA-trained model to external cohorts preserves diagnostic performance: LogReg achieves 81.93% (SMC 2018), 85.80% (SCAN-B), and 72.01% (METABRIC); SVM achieves 75.90%, 86.12%, and 72.70% respectively.
+* **Prerequisites for Transfer**: Identified two mandatory prerequisites for valid cross-platform transfer: (1) independent cohort-level Z-score standardization to bridge platform dynamic range shifts, and (2) alphabetical feature alignment to match the expected feature order of the locked classifier.
+* **Technical Batch Control**: Bypassing either prerequisite causes severe model collapse, proving that the consensus biomarker signature captures fundamental PAM50 biological structures rather than TCGA-specific technical batch patterns.
 
 **Finding 5 — Ridge-Regularized Prognostic Risk Score generalizes to external platforms**
-By fitting a regularized Ridge Cox model on the 152 consensus genes in TCGA, we developed a Consensus Risk Score (CRS). When applied to external cohorts, the CRS achieved high prognostic consistency, obtaining an out-of-sample C-index of 0.6628 in SCAN-B and 0.5716 in METABRIC, and successfully stratified high-risk vs. low-risk survival cohorts ($p < 0.005$). Regularized models perform significantly better than unregularized top-20 Cox models, proving the clinical value of retaining the full consensus feature space with L2 regularization.
+* **Prognostic Stability**: Consensus Risk Score (CRS) fit on the 152 consensus genes in TCGA achieves high prognostic consistency in external cohorts, obtaining an out-of-sample C-index of 0.6628 in SCAN-B and 0.5716 in METABRIC.
+* **Survival Stratification**: CRS successfully stratifies high-risk vs. low-risk survival cohorts ($p < 0.005$) across independent external platforms.
+* **L2 Regularization Value**: Regularized Ridge Cox models perform significantly better than unregularized top-20 Cox models, proving the clinical value of retaining the full consensus feature space with L2 regularization.
 
 **Finding 6 — Consensus biomarker space is algorithmically stable and empirically non-random**
-Across $B=100$ bootstrap resamples, the F1-Consensus feature selection ensemble achieves a stable Jaccard Stability Index (JSI = 0.2035). A hypergeometric overlap test confirms that 12 genes are shared between the SVM and LR top-20 feature lists (p = 6.60×10⁻³³ against 17,994-gene background), demonstrating deep algorithmic consensus. Permutation testing (P=500) confirms top-ranked biomarkers are statistically non-random, with *FUT3* achieving the highest consensus score (1.0000), followed by *S100A7*, *ANKRD30A*, *TFF3*, *IRX1*, *MAB21L4*, *GRPR*, *CEACAM5*, *CRISP3*, and *TPRG1*.
+* **Algorithmic Stability**: The F1-Consensus feature selection ensemble achieves a stable Jaccard Stability Index (JSI = 0.2035) across $B=100$ bootstrap resamples.
+* **Algorithmic Convergence**: A hypergeometric overlap test shows that 12 genes are shared between the SVM and LR top-20 feature lists ($p = 6.60 \times 10^{-33}$ against a 17,994-gene background), showing deep algorithmic consensus.
+* **Non-Random Biomarkers**: Permutation testing ($P=500$) confirms that top-ranked biomarkers are statistically non-random, with *FUT3* achieving the highest consensus score (1.0000), followed by *S100A7*, *ANKRD30A*, *TFF3*, *IRX1*, *MAB21L4*, *GRPR*, *CEACAM5*, *CRISP3*, and *TPRG1*.
 
 **Finding 7 — Model predicted probabilities are well-calibrated across all platforms**
-Expected Calibration Error (ECE) analysis across four independent cohorts confirms that model confidence scores map to empirical classification frequencies with high fidelity. SVM achieves best calibration on TCGA holdout (ECE=2.81%) and SCAN-B (ECE=4.22%), while Logistic Regression is best-calibrated on SMC 2018 (ECE=4.31%) and METABRIC (ECE=9.12%). All Brier Scores remain below 0.10 across all cohorts. The complementary calibration profiles of the two architectures justify the dual-architecture consensus strategy.
+* **Confidence Fidelity**: Expected Calibration Error (ECE) analysis across four independent cohorts confirms that model confidence scores map to empirical classification frequencies with high fidelity.
+* **Calibration Strengths**: SVM achieves best calibration on the TCGA holdout (ECE=2.81%) and SCAN-B (ECE=4.22%), while Logistic Regression is best-calibrated on SMC 2018 (ECE=4.31%) and METABRIC (ECE=9.12%).
+* **Low Brier Scores**: All Brier Scores remain below 0.10 across all cohorts, and the complementary calibration profiles justify the dual-architecture consensus strategy.
 
 **Finding 8 — OncoResolve ML is competitive with the clinical PAM50 Spearman Centroid standard**
-A head-to-head comparison against the PAM50 Spearman Centroid Classifier (the standard-of-care computational subtyping reference) shows that OncoResolve's Logistic Regression model surpasses the Centroid on the primary TCGA holdout (88.89% vs 85.71% accuracy) and remains within 2–4% on all external cohorts. On METABRIC (microarray transfer, 48% gene overlap), the Centroid retains a ~4% advantage — expected, as the original PAM50 centroid templates were designed for microarray normalization. OncoResolve's RNA-seq–trained 152-gene consensus achieves this near-parity while providing full SHAP explainability, CUS N-of-1 profiling, calibrated probabilities, and prognostic risk scoring — capabilities absent from the Centroid method.
+* **Clinical Centroid Benchmark**: Head-to-head comparison shows OncoResolve's Logistic Regression model surpasses the clinical standard-of-care PAM50 Spearman Centroid Classifier on the primary TCGA holdout (88.89% vs 85.71% accuracy) and remains within 2–4% on all external cohorts.
+* **Microarray Performance**: On METABRIC (microarray transfer, 48% gene overlap), the Centroid retains a ~4% advantage, which is expected since the original PAM50 centroid templates were designed for microarray normalization.
+* **Comprehensive Precision Capabilities**: OncoResolve's RNA-seq–trained 152-gene consensus achieves this near-parity while providing full SHAP explainability, CUS N-of-1 profiling, calibrated probabilities, and prognostic risk scoring — capabilities completely absent from the Centroid method.
 
 <a id="results-files"></a>
 ## Results Files
