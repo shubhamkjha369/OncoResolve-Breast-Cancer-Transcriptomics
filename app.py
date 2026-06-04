@@ -286,6 +286,8 @@ with st.sidebar.expander("AutoML Diagnostic Engine", expanded=(st.session_state.
         st.rerun()
 
 page = st.session_state.active_page
+
+# ── Sidebar Footer ──────────────────────────────────────────────────────────
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**TCGA-BRCA Pan-Can Atlas 2018**")
 st.sidebar.caption("Illumina HiSeq RNA-seq V2 (RSEM batch-normalized).")
@@ -294,7 +296,46 @@ st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**External Validation Cohorts**")
 st.sidebar.caption("SMC 2018: N=166 (RNA-seq) | SCAN-B: N=317 (RNA-seq) | METABRIC: N=1,608 (microarray)")
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
-st.sidebar.caption("OncoResolve v3.0 — TCGA-BRCA edition.")
+
+# DOI badge
+st.sidebar.markdown("""
+<a href="https://doi.org/10.5281/zenodo.20537449" target="_blank">
+  <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.20537449.svg"
+       alt="DOI" style="height:20px; margin-bottom:6px;">
+</a>
+""", unsafe_allow_html=True)
+
+# Open in Colab
+st.sidebar.markdown("""
+<a href="https://colab.research.google.com/github/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics/blob/main/notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb"
+   target="_blank"
+   style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;
+          background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;
+          padding:4px 10px;font-size:12px;color:#c2410c;font-weight:600;margin-bottom:8px;">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" style="height:16px;">
+</a>
+""", unsafe_allow_html=True)
+
+# Social links row
+st.sidebar.markdown("""
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:2px;">
+  <a href="https://github.com/shubhamkjha369" target="_blank"
+     title="GitHub"
+     style="text-decoration:none;font-size:18px;">🐙</a>
+  <a href="https://www.linkedin.com/in/shubhamjha369/" target="_blank"
+     title="LinkedIn"
+     style="text-decoration:none;font-size:18px;">🔗</a>
+  <a href="mailto:shubhamkjha369@gmail.com"
+     title="Email"
+     style="text-decoration:none;font-size:18px;">✉️</a>
+  <a href="https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics" target="_blank"
+     title="Project Repo"
+     style="text-decoration:none;font-size:18px;">📦</a>
+</div>
+""", unsafe_allow_html=True)
+
+st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
+st.sidebar.caption("OncoResolve v3.3.0 — TCGA-BRCA edition.")
 
 # =============================================================================
 # PLOTLY DEFAULTS (clinical light theme)
