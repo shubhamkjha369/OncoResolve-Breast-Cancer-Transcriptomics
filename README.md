@@ -500,6 +500,8 @@ The primary exploration notebook [`OncoResolve_Subtyping_and_Precision_Profiling
 - StandardScaler (Z-score) fit inside each CV fold (anti-leakage protocol verified)
 - Outlier detection: samples with mean Pearson r < mu - 2sigma flagged
 - Post-scaling inter-sample correlation: >0.85 for intra-subtype pairs
+- **Generated Plot**:
+  ![Raw Gene Expression Distribution](data/artifacts/raw_distributions.png)
 
 ### Section 3: Dimensionality Reduction
 - **PCA PC1** (~20% variance): captures ER-axis (ESR1/GATA3 high in Luminal; KRT5/KRT14 high in Basal)
@@ -522,20 +524,30 @@ The primary exploration notebook [`OncoResolve_Subtyping_and_Precision_Profiling
 - Training split only (~867 samples); top 500 most variable genes
 - Pearson |r| > 0.85 threshold; Louvain module detection
 - Expected modules: ESR1/Luminal, ERBB2/HER2 amplicon, KRT/Basal, MKI67/Proliferation, Immune
+- **Generated Plot**:
+  ![Consensus Biomarker Co-expression Network](data/artifacts/biomarker_cooccurrence_network.png)
 
 ### Section 7: Consensus Feature Selection
 - 3-method consensus (ANOVA, LASSO, Random Forest); fit inside each CV fold
 - Consensus biomarker set: **50–300 genes** depending on CV fold variance
 - Top consensus genes expected to include: ERBB2, ESR1, KRT5, KRT14, MKI67, GATA3, FOXA1, GRB7, STARD3
+- **Generated Plot**:
+  ![Elite Biomarker Correlation Heatmap](data/artifacts/fig18_elite_biomarker_correlation_heatmap.png)
 
 ### Section 8: SHAP Model Explainability
 - LinearSHAP on tuned Logistic Regression model.
 - Global beeswarm confirms: HER2 amplicon genes top for HER2-enriched; ESR1/GATA3 top for Luminal; KRT5/KRT14 top for Basal.
 - Local waterfall: per-patient causal explanation of each PAM50 classification.
+- **Generated Plots**:
+  ![Consensus SHAP Importance](data/artifacts/fig13_consensus_shap_importance.png)
+  ![Dual-Model Multiclass SHAP Summary](data/artifacts/fig15_dual_shap_multiclass_summary.png)
 
 ### Section 9: Functional Enrichment & Cancer Hallmark Analysis
 - GO Biological Process: significant terms for cell cycle regulation, oestrogen response, and immune activation.
 - MSigDB Hallmark: significant enrichment of canonical processes like E2F targets, G2M checkpoint, and Estrogen Response.
+- **Generated Plots**:
+  ![KEGG Pathway Enrichment Dotplot](data/artifacts/fig20_pathway_enrichment_kegg.png)
+  ![MSigDB Hallmark Pathway Enrichment Dotplot](data/artifacts/fig21_pathway_enrichment_msigdb.png)
 
 ### Section 10: N-of-1 Personal Profiling (CUS Framework)
 - CUS score range [0, 1] computed for all 1,084 patients.
@@ -543,6 +555,9 @@ The primary exploration notebook [`OncoResolve_Subtyping_and_Precision_Profiling
 - Basal-like shows highest CUS variance (consistent with TNBC subclass heterogeneity).
 - Jaccard overlap between uniqueness-driving pathways and global DGE pathways: ~0.0 (confirms CUS captures private biology).
 - Latent manifold recomputed on full consensus cohort: PCA, t-SNE, and UMAP coordinates saved to `full_cohort_latent_coordinates.parquet`.
+- **Generated Plots**:
+  ![Composite Uniqueness Score (CUS) Patient Landscape](data/artifacts/fig22_cus_landscape_scatter.png)
+  ![Patient Similarity Network](data/artifacts/fig24_patient_similarity_network.png)
 
 ### Section 10.11: CUS vs. Anomaly Detection Baselines (New)
 A rigorous formal comparison between CUS and three standard anomaly detection paradigms, confirming that CUS is not a trivial proxy for existing outlier scores:
@@ -555,7 +570,8 @@ A rigorous formal comparison between CUS and three standard anomaly detection pa
 | **Independent Cox HR p-value** | 0.127 (n.s.) | 0.268 (n.s.) | 0.125 (n.s.) | 0.419 (n.s.) |
 
 **Interpretation**: CUS has the *highest* subtype-discriminative chi-square among all four scores, and the highest Cox C-index. The partial Spearman overlap (r ≈ 0.65–0.67) confirms that while CUS is correlated with conventional anomaly scores, it captures biologically structured uniqueness that is more subtype-aware. The non-significant independent Cox HR across all scores confirms that patient uniqueness is complementary to — not a replacement for — clinical survival predictors.
-- **Generated Plot**: `fig31b_cus_vs_baselines.png`
+- **Generated Plot**:
+  ![CUS vs Anomaly Detection Baselines Comparison](data/artifacts/fig31b_cus_vs_baselines.png)
 
 ### Section 11: Cross-Platform External Cohort Validation
 
@@ -567,6 +583,9 @@ A rigorous formal comparison between CUS and three standard anomaly detection pa
 | | | | | LogReg | **85.80%** | **85.94%** | LumB recall = 80.6%, HER2 recall = 82.9% |
 | **METABRIC** | Illumina Microarray | 1,608 | 73 / 152 (48.0%) | SVM (RBF) | **72.70%** | **72.45%** | Mixed-platform transfer; Basal recall = 82.8%, LumB recall = 79.6% |
 | | | | | LogReg | **72.01%** | **70.98%** | Macro F1 = 70.59% |
+
+- **Generated Plot**:
+  ![Cross-Platform Cohort Validation Performance](data/artifacts/fig32_external_cohort_validation.png)
 
 > [!IMPORTANT]
 > **Technical Transfer Requirements**:
@@ -593,7 +612,8 @@ A rigorous formal comparison between CUS and three standard anomaly detection pa
   | 10 | **TPRG1** | 0.4527 | Basal-associated |
 
 - **Plot Output**:
-  - `fig32c_jsi_stability.png` (Jaccard Stability Boxplot across B=100 bootstrap resamples)
+  ![Jaccard Stability Index (JSI) across B=100 Bootstraps](data/artifacts/fig32c_jsi_stability.png)
+  ![Permutation Test Null Distribution](data/artifacts/fig29_permutation_test_distribution.png)
 
 ### Section 11.7: Clinical Probability Calibration (New)
 - **Expected Calibration Error (ECE)** & Brier Score evaluated across all four cohorts, confirming that predicted class probabilities are well-calibrated:
@@ -611,7 +631,7 @@ A rigorous formal comparison between CUS and three standard anomaly detection pa
 
   *Note*: SMC SVM ECE of 10.31% reflects the tighter confidence margin of the RBF-SVM on a small RNA-seq cohort (N=166); Logistic Regression ECE of 4.31% remains well-calibrated on the same cohort.
 - **Plot Output**:
-  - `fig32b_calibration_reliability.png` (Reliability Diagrams across all 4 cohorts)
+  ![Clinical Probability Calibration Reliability Diagrams](data/artifacts/fig32b_calibration_reliability.png)
 
 ### Section 11.8: PAM50 Spearman Centroid Benchmark (New)
 To contextualize OncoResolve ML performance, we implement the **PAM50 Spearman Centroid Classifier** — the standard clinical reference method. Each patient is assigned the subtype of the nearest centroid by Spearman correlation across the 50 PAM50 genes. Results compared across all four cohorts:
@@ -624,7 +644,8 @@ To contextualize OncoResolve ML performance, we implement the **PAM50 Spearman C
 | **METABRIC** | **76.87%** | **76.82%** | 72.01% | 70.59% | 72.70% | 72.12% |
 
 **Interpretation**: The PAM50 Centroid classifier is a strong, well-established clinical baseline. OncoResolve's ML models achieve competitive or superior performance, particularly on the primary TCGA holdout. On METABRIC (the hardest platform-transfer case, 48% gene overlap), the Centroid classifier retains a ~4% accuracy advantage — expected, since the 50 PAM50 gene centroids were originally designed for microarray normalization. OncoResolve's 152-gene consensus models achieve within-4% performance on microarray platforms despite being trained exclusively on RNA-seq, demonstrating strong generalisation.
-- **Generated Plot**: `fig32d_centroid_benchmark.png`
+- **Generated Plot**:
+  ![OncoResolve ML vs. PAM50 Spearman Centroid Benchmark](data/artifacts/fig32d_centroid_benchmark.png)
 
 ### Section 12: Prognostic Survival Modelling
 - **Kaplan-Meier Survival**:
@@ -641,8 +662,8 @@ To contextualize OncoResolve ML performance, we implement the **PAM50 Spearman C
   - Out-of-sample C-indices: **TCGA: 0.7484**, **SCAN-B: 0.6628**, **METABRIC: 0.5716**.
   - High-CRS vs. Low-CRS survival split is highly significant in validation cohorts (log-rank $p < 0.005$). Regularized models generalise significantly better than unpenalized Cox models.
 - **Plot Output**:
-  - `fig33_prognostic_km_cox.png` (PAM50 Survival Curves + Cox Forest Plot)
-  - `fig33b_crs_prognostic_km.png` (Ridge Cox CRS Validation KM Curves in METABRIC & SCAN-B)
+  ![Kaplan-Meier Survival Curves and Multivariate Cox Forest Plot](data/artifacts/fig33_prognostic_km_cox.png)
+  ![Ridge Cox Consensus Risk Score (CRS) KM Validation Curves](data/artifacts/fig33b_crs_prognostic_km.png)
 
 ### Section 13: Tumour Microenvironment (TME) Deconvolution
 - **ssGSEA deconvolution** of 10 immune/stromal populations via `decoupler` on **756 patient transcriptomes** (56 gene-signature pairs mapped). Exact mean ssGSEA scores per PAM50 subtype:
