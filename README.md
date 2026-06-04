@@ -554,7 +554,7 @@ A rigorous formal comparison between CUS and three standard anomaly detection pa
 
 | Metric | CUS | Euclidean | PCA Recon | Isolation Forest |
 |---|---|---|---|---|
-| **Spearman r vs. CUS** | — | 0.6695 (p=1.90e-99) | 0.6537 (p=2.41e-93) | 0.6373 (p=2.13e-87) |
+| **Spearman r vs. CUS** | 1.0000 | 0.6695 (p=1.90e-99) | 0.6537 (p=2.41e-93) | 0.6373 (p=2.13e-87) |
 | **Chi² vs. PAM50 subtype** | **262.03** (p=1.64e-56) | 218.51 (p=4.22e-47) | 216.52 (p=1.14e-46) | 171.74 (p=5.35e-37) |
 | **Cox Model C-index** | **0.7635** | 0.7630 | 0.7623 | 0.7611 |
 | **Independent Cox HR p-value** | 0.127 (n.s.) | 0.268 (n.s.) | 0.125 (n.s.) | 0.419 (n.s.) |
