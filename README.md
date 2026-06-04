@@ -457,10 +457,6 @@ SECTION 13: Tumour Microenvironment (TME) Deconvolution
 SECTION 14: Computational Biomarker Validation
   - Broad Institute DepMap API integration for CRISPR-Cas9 CERES essentiality scores
   - iLINCS/Connectivity Map perturbation signatures identify drug reversal candidates
-              |
-              v
-SECTION 15: Extended Validation Cohort Roadmap
-  - Future roadmap for scaling to ISPY2 (GSE194040, N~987) and SCAN-B full cohort (N~17,000+)
 ```
 
 ---
@@ -486,10 +482,9 @@ The primary exploration notebook [`OncoResolve_Subtyping_and_Precision_Profiling
 | **Section 12** | Prognostic Modelling | Kaplan-Meier survival curves and multivariate Cox Proportional Hazards regression |
 | **Section 13** | TME Deconvolution | ssGSEA deconvolution via decoupler to estimate 9 immune/stromal cell fractions |
 | **Section 14** | Computational Validation | DepMap CRISPR essentiality heatmap and LINCS drug reversal candidates |
-| **Section 15** | Extended Future Roadmap | Roadmap for neoadjuvant cohort validation (ISPY2) and SCAN-B full cohort |
-| **Section 16** | Project Summary | Main diagnostic conclusions and translational precision medicine findings |
-| **Section 17** | Limitations & Future Work | Technical limitations, platform biases, and experimental next steps |
-| **Section 18** | Academic Bibliography | Full list of peer-reviewed references and data source citations |
+| **Section 15** | Project Summary | Main diagnostic conclusions and translational precision medicine findings |
+| **Section 16** | Limitations & Future Work | Technical limitations, platform biases, and experimental next steps |
+| **Section 17** | Academic Bibliography | Full list of peer-reviewed references and data source citations |
 
 ---
 <a id="section-results"></a>
@@ -696,12 +691,7 @@ To contextualize OncoResolve ML performance, we implement the **PAM50 Spearman C
 - **Plot Output**:
   ![Computational Biomarker Validation](data/artifacts/fig35_depmap_lincs_validation.png)
 
-### Section 15: Extended Validation Cohort Roadmap
-- **ISPY2 Trial (GSE194040, N~987)**: Recommended neoadjuvant cohort with treatment response labels (pCR) to validate clinical predictive value.
-- **SCAN-B Full Cohort (GSE96058, N~17,000+)**: The ultimate validation dataset to confirm global generalizability across the largest breast cancer cohort in existence.
-
 ---
-
 <a id="key-findings"></a>
 ## Key Findings
 
