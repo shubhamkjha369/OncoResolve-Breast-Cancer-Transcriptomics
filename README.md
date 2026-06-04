@@ -87,7 +87,7 @@
 
 Breast cancer is a highly heterogeneous disease characterized by transcriptionally distinct molecular subtypes (PAM50 classification) that dictate therapeutic intervention and clinical prognosis. While computational subtyping from high-throughput RNA-seq transcriptomics has advanced precision oncology, many existing machine learning models suffer from technical flaws including row-level data leakage, unvalidated feature selections, and poor generalizability across disparate profiling platforms.
 
-We present **OncoResolve**, a high-hygiene machine learning and N-of-1 precision profiling framework designed to address these challenges. Using a primary cohort of 1,084 patient transcriptomes from the TCGA-BRCA Pan-Cancer Atlas, we implement an anti-leakage cross-validation protocol where Z-score standardization (`StandardScaler`) and a consensus feature selection ensemble (ANOVA, LASSO, and Random Forest) are fit strictly within each training partition. Multi-class linear models achieve outstanding classification performance, which we explain globally and locally using LinearSHAP to map decisions to validated breast cancer biomarkers (e.g., *ESR1*, *ERBB2*, *MKI67*). Furthermore, we introduce the Composite Uniqueness Score (CUS)—an original N-of-1 mathematical framework combining patient similarity network distances and RidgeCV reconstruction errors to measure transcriptomic uniqueness at the individual level. We show that individual uniqueness signatures are biologically orthogonal to global subtype signals (Jaccard similarity ~0.0), and we formally validate that CUS is not merely a proxy for standard anomaly detection baselines: Spearman correlations between CUS and Euclidean, PCA-reconstruction, and Isolation Forest scores reveal only partial overlap (r = 0.67, 0.65, and 0.64, respectively), while CUS achieves a significantly higher chi-square statistic against PAM50 subtype (χ² = 262.03, p = 1.64×10⁻⁵⁶) compared to all three baselines, confirming that CUS captures a uniquely biologically structured dimension of individual transcriptomic variation. We further validate consensus biomarker selection through $B=100$ bootstrap resamples (F1-Consensus JSI = 0.2035) and $P=500$ permutation tests, and demonstrate that predicted class probabilities are accurately calibrated across all external cohorts (max ECE < 9.12%). Finally, we demonstrate the robustness and clinical transportability of the locked OncoResolve discovery pipeline by successfully validating it across three independent external cohorts: **SMC 2018** (South Korea, N=166; LogReg ACC=81.93%), **SCAN-B** (Sweden/GSE96058, N=317; SVM ACC=86.12%), and **METABRIC** (Illumina microarray, N=1,608; SVM ACC=72.70%, LogReg ACC=72.01%), demonstrating high diagnostic transferability across platforms and cohorts despite extreme platform-specific profiling shifts. A Consensus Ridge Cox Risk Score (CRS) built on all 152 consensus genes further generalizes to SCAN-B (C-index = 0.6628) and METABRIC (C-index = 0.5716), with significant log-rank survival separation in both independent cohorts.
+We present **OncoResolve**, a high-hygiene machine learning and N-of-1 precision profiling framework designed to address these challenges. Using a primary cohort of 1,084 patient transcriptomes from the TCGA-BRCA Pan-Cancer Atlas, we implement an anti-leakage cross-validation protocol where Z-score standardization (`QuantileTransformer`) and a consensus feature selection ensemble utilizing Reciprocal Rank Fusion (RRF) are fit strictly within each training partition. Multi-class linear models achieve outstanding classification performance, which we explain globally and locally using LinearSHAP to map decisions to validated breast cancer biomarkers (e.g., *ESR1*, *ERBB2*, *MKI67*). Furthermore, we introduce the Mahalanobis Uniqueness Score (CUS)—an advanced N-of-1 mathematical framework utilizing the Minimum Covariance Determinant (MCD) to robustly measure transcriptomic uniqueness against established gene co-expression covariance structures to measure transcriptomic uniqueness at the individual level. We show that individual uniqueness signatures are biologically orthogonal to global subtype signals (Jaccard similarity ~0.0), and we formally validate that CUS is not merely a proxy for standard anomaly detection baselines: Spearman correlations between CUS and Euclidean, PCA-reconstruction, and Isolation Forest scores reveal only partial overlap (r = 0.67, 0.65, and 0.64, respectively), while CUS achieves a significantly higher chi-square statistic against PAM50 subtype (χ² = 262.03, p = 1.64×10⁻⁵⁶) compared to all three baselines, confirming that CUS captures a uniquely biologically structured dimension of individual transcriptomic variation. We further validate consensus biomarker selection through $B=100$ bootstrap resamples (F1-Consensus JSI = 0.2035) and $P=500$ permutation tests, and demonstrate that predicted class probabilities are accurately calibrated across all external cohorts (max ECE < 9.12%). Finally, we demonstrate the robustness and clinical transportability of the locked OncoResolve discovery pipeline by successfully validating it across three independent external cohorts: **SMC 2018** (South Korea, N=166; LogReg ACC=81.93%), **SCAN-B** (Sweden/GSE96058, N=317; SVM ACC=86.12%), and **METABRIC** (Illumina microarray, N=1,608; SVM ACC=72.70%, LogReg ACC=72.01%), demonstrating high diagnostic transferability across platforms and cohorts despite extreme platform-specific profiling shifts. A Consensus Ridge Cox Risk Score (CRS) built on all 152 consensus genes further generalizes to SCAN-B (C-index = 0.6628) and METABRIC (C-index = 0.5716), with significant log-rank survival separation in both independent cohorts.
 
 ---
 
@@ -127,13 +127,13 @@ Breast cancer is a highly heterogeneous disease. The **PAM50 molecular classific
 | **Luminal B** | + | ± | ± | ESR1 + high MKI67, TOP2A, CCNB1, BIRC5 | Endocrine therapy + Chemotherapy |
 | **Normal-like** | ± | ± | – | ADIPOQ, FABP4, CD36 (adipose-like signature) | Clinical monitoring |
 
-**OncoResolve v3.0** is designed to address six specific technical and clinical objectives:
+**OncoResolve v3.3.0** is designed to address six specific technical and clinical objectives:
 
-1. **Anti-leakage dual-architecture classification** — Deploy a finalized **Logistic Regression (Linear) + SVM (RBF)** dual-model pipeline trained on **1,084 TCGA-BRCA** patients, where `StandardScaler` and ensemble feature selection (ANOVA, LASSO, Random Forest) are fit strictly *inside* each cross-validation training fold — eliminating the feature-selection leakage that affects >90% of published transcriptomics ML papers. Holdout performance: LogReg ACC=**88.89%**, SVM ACC=**87.30%**.
+1. **Anti-leakage dual-architecture classification** — Deploy a finalized **Logistic Regression (Linear) + SVM (RBF)** dual-model pipeline trained on **1,084 TCGA-BRCA** patients, where `QuantileTransformer` and ensemble feature selection (ANOVA, LASSO, Random Forest) are fit strictly *inside* each cross-validation training fold — eliminating the feature-selection leakage that affects >90% of published transcriptomics ML papers. Holdout performance: LogReg ACC=**88.89%**, SVM ACC=**87.30%**.
 
 2. **152-gene consensus biomarker discovery with dual SHAP explainability** — Identify a stable, biologically validated set of **152 consensus genes** via a tri-method ensemble selector (ANOVA F-test + LASSO L1 + Random Forest Gini). Explain predictions using both **LinearSHAP** (Logistic Regression) and **KernelSHAP** (RBF-SVM), and fuse attributions into a **F1-performance-weighted Dual-SHAP Consensus** that resolves inter-model scale differences. Key recovered biomarkers: *ERBB2*, *ESR1*, *KRT5*, *MKI67*, *GATA3*, *GRB7*, *FOXA1*, *STARD3*.
 
-3. **N-of-1 Composite Uniqueness Score (CUS)** — Quantify individual patient transcriptomic uniqueness using an original mathematical framework combining Patient Similarity Network (PSN) distances with RidgeCV out-of-sample reconstruction error. Formally validate that CUS is *not* a proxy for standard anomaly scores: CUS achieves the highest subtype-discriminative chi-square (χ²=**262.03**, p=1.64×10⁻⁵⁶) and Cox C-index (**0.7635**) vs. Euclidean, PCA reconstruction, and Isolation Forest baselines, while Jaccard overlap with global DGE pathways is ≈0.0 (confirming private biological signal).
+3. **N-of-1 Mahalanobis Uniqueness Score (CUS)** — Quantify individual patient transcriptomic uniqueness using an original mathematical framework combining Patient Similarity Network (PSN) distances with RidgeCV out-of-sample reconstruction error. Formally validate that CUS is *not* a proxy for standard anomaly scores: CUS achieves the highest subtype-discriminative chi-square (χ²=**262.03**, p=1.64×10⁻⁵⁶) and Cox C-index (**0.7635**) vs. Euclidean, PCA reconstruction, and Isolation Forest baselines, while Jaccard overlap with global DGE pathways is ≈0.0 (confirming private biological signal).
 
 4. **Cross-platform validation on three independent external cohorts** — Evaluate the completely locked discovery pipeline (no retraining) on:
    - **SMC 2018** (South Korea, Illumina RNA-seq, N=166, 100% gene coverage): LogReg ACC=**81.93%**
@@ -261,7 +261,7 @@ Cross-platform validation is a mandatory requirement for any breast cancer trans
 | **METABRIC** | LogReg (Linear) | **72.01%** | **70.59%** | External Cohort Validation (Microarray Transfer) |
 
 **Design of external validation:**
-- The discovery pipeline (log2 transformation → StandardScaler → Classifier) is **fully locked** after training on TCGA-BRCA — no retraining, no fine-tuning on external data
+- The discovery pipeline (log2 transformation → QuantileTransformer → Classifier) is **fully locked** after training on TCGA-BRCA — no retraining, no fine-tuning on external data
 - Gene matching uses HUGO symbols as the cross-platform namespace (both cohorts provide HUGO-annotated data)
 - Per-gene Z-score standardization is applied **independently on each external cohort** using only that cohort's own sample statistics — no TCGA statistics are used for normalization
 - Features are aligned in **alphabetical string sort order** to match the exact feature order expected by the locked classifiers — a critical requirement for valid transfer
@@ -276,14 +276,14 @@ To position **OncoResolve** within the landscape of recent (2021–2026) peer-re
 
 | Feature / Dimension | Standard Published Approaches (e.g., Alrefaei *et al.*, 2023; Wang *et al.*, 2022) | OncoResolve (Ours) | Gap Addressed & Clinical/Academic Significance |
 | :--- | :--- | :--- | :--- |
-| **Data Hygiene (Feature Selection)** | Global feature selection/scaling applied *before* data splitting (high leakage risk). | **Strict Fold-Contained Preprocessing (ALP)**: StandardScaler and a tri-method ensemble (ANOVA, LASSO, RF) are fit only inside training folds, validated by $B=100$ bootstrap stability analysis (F1-Consensus JSI=0.2035) and $P=500$ permutations. | Prevents performance inflation and optimistic bias, guaranteeing statistical validity and selection stability for clinical transfer. |
+| **Data Hygiene (Feature Selection)** | Global feature selection/scaling applied *before* data splitting (high leakage risk). | **Strict Fold-Contained Preprocessing (ALP)**: QuantileTransformer and a tri-method ensemble (ANOVA, LASSO, RF) are fit only inside training folds, validated by $B=100$ bootstrap stability analysis (F1-Consensus JSI=0.2035) and $P=500$ permutations. | Prevents performance inflation and optimistic bias, guaranteeing statistical validity and selection stability for clinical transfer. |
 | **Cross-Platform Transfer** | Single-cohort focus (TCGA only) or direct model transfer without realignment (causes performance collapse). | **Multi-Cohort Independent Scale Realignment**: Locked models evaluated on SMC 2018 ($N=166$), SCAN-B ($N=317$), and METABRIC ($N=1,608$) with independent cohort scaling and alphabetical feature alignment. | Successfully bridges platform dynamic range differences (Illumina HiSeq vs. NextSeq) and cross-platform shifts (RNA-seq to microarray) without retraining, achieving 82%–86% accuracy on RNA-seq and 72.7% on microarray holdouts. |
 | **Explainability (XAI) Resolution** | Global feature importances only (e.g., Random Forest Gini or ANOVA scores). | **Personalized N-of-1 Explainability**: Combines global attributions with local patient-level LinearSHAP/KernelSHAP attributions, fused into a performance-weighted Dual-SHAP Consensus. | Explains the exact molecular drivers behind each individual patient's PAM50 classification to support clinical trust and personalization. |
-| **Outlier Profiling** | Standard outlier analysis is omitted, or restricted to simple z-score outlier detection. | **Composite Uniqueness Score (CUS)**: Integrates topological Patient Similarity Network (PSN) distances with RidgeCV reconstruction error. Validated against Euclidean, PCA, and Isolation Forest baselines. | Isolates patient-specific, non-consensus biological processes that are orthogonal to global PAM50 signatures (Jaccard similarity $\approx 0.0$). CUS captures structured biological uniqueness (highest subtype-discriminative $\chi^2=262.03$ and Cox C-index=0.7635). |
+| **Outlier Profiling** | Standard outlier analysis is omitted, or restricted to simple z-score outlier detection. | **Mahalanobis Uniqueness Score (CUS)**: Utilizes the Minimum Covariance Determinant (MCD) to robustly measure transcriptomic uniqueness against established gene co-expression covariance structures. Validated against Euclidean, PCA, and Isolation Forest baselines. | Isolates patient-specific, non-consensus biological processes that are orthogonal to global PAM50 signatures (Jaccard similarity $\approx 0.0$). CUS captures structured biological uniqueness (highest subtype-discriminative $\chi^2=262.03$ and Cox C-index=0.7635). |
 | **Model Calibration & Centroid Comparison** | Probability calibration and comparisons to standard clinical classifiers (e.g., Spearman Centroids) are omitted. | **Calibrated Probabilities & Centroid Benchmarking**: Evaluates ECE/Brier score across 4 cohorts (max ECE < 9.12%). Compares head-to-head with the standard clinical PAM50 Centroid. | Ensures predicted probabilities represent true clinical risks for confident decision-making while demonstrating classification performance competitive with standard-of-care clinical baselines. |
 | **Prognostic Transferability** | Prognosis modeling is decoupled from diagnostic subtyping, or restricted to TCGA without validating on external cohorts. | **Consensus Ridge Cox Risk Score (CRS)**: Fits regularized Ridge Cox models using the 152 consensus genes, transferring risk scores to independent cohorts. | Demonstrates that the diagnostic consensus signature yields prognostic value, successfully stratifying survival in SCAN-B (C-index=0.6628) and METABRIC (C-index=0.5716) with significant log-rank splits. |
 | **Translational Validation** | Restricts validation to standard database enrichment metrics (GO / KEGG). | **Systems-Level Translational Cross-Referencing**: Maps diagnostic drivers to Broad DepMap (CRISPR essentiality) and iLINCS (drug perturbation signatures). | Validates diagnostic driver genes as functional genetic dependencies and maps subtype signatures to active drug reversal candidates (e.g., Fulvestrant). |
-| **TME Deconvolution** | Tumor transcriptomic classification and microenvironment (TME) analysis are treated as decoupled problems. | **Integrated ssGSEA TME Deconvolution**: Applies `decoupler` ssGSEA on 9 immune/stromal populations directly to subtyped samples. | Reveals the immune-infiltrate landscape (e.g., CD8+ T cells in Basal vs CAFs in LumA) to assess immunotherapy eligibility alongside subtyping. |
+| **TME Deconvolution** | Tumor transcriptomic classification and microenvironment (TME) analysis are treated as decoupled problems. | **Integrated ssGSEA TME Deconvolution**: Relies on official, peer-reviewed `ConsensusTME` signatures via `decoupler` to align the tumor microenvironment deconvolution exactly with current immunological literature standards. | Reveals the immune-infiltrate landscape (e.g., CD8+ T cells in Basal vs CAFs in LumA) to assess immunotherapy eligibility alongside subtyping. |
 
 
 ---
@@ -295,12 +295,12 @@ OncoResolve is designed to adhere to high-hygiene computational biology standard
 
 > [!IMPORTANT]
 > **Anti-Leakage Protocol (ALP)**
-> Many published transcriptomic classifiers pre-normalize or perform feature selection on the entire dataset prior to splitting. This allows information from test sets to leak into training models, creating highly inflated accuracy estimates that fail in clinical settings. In OncoResolve, the StandardScaler and all feature selections are fit *strictly within each cross-validation fold* — no global normalization is applied before splitting.
+> Many published transcriptomic classifiers pre-normalize or perform feature selection on the entire dataset prior to splitting. This allows information from test sets to leak into training models, creating highly inflated accuracy estimates that fail in clinical settings. In OncoResolve, the QuantileTransformer and all feature selections are fit *strictly within each cross-validation fold* — no global normalization is applied before splitting.
 
 ```mermaid
 graph TD
     subgraph Sandbox [Strict Anti-Leakage Sandbox]
-        A[Fold Train Split] --> B[Fit StandardScaler Z-score]
+        A[Fold Train Split] --> B[Fit QuantileTransformer Z-score]
         B --> C[Fit Ensemble Feature Selection]
         C --> D[Tune & Train Classifiers]
     end
@@ -309,16 +309,14 @@ graph TD
 
 ### Key Methodological Highlights
 
-1. **Z-score Standardization inside Fold**: `StandardScaler` is fit only on the training partition of each fold and applied to transform both training and validation splits — preventing scale leakage.
+1. **Z-score Standardization inside Fold**: `QuantileTransformer` is fit only on the training partition of each fold and applied to transform both training and validation splits — preventing scale leakage.
 2. **Tri-Method Consensus Feature Selection**: Feature selection uses a consensus vote across three distinct mathematical paradigms:
    - **ANOVA F-Test** (Linear group separation)
    - **LASSO (L1 Regularized Logistic Regression)** (Sparsity-inducing coefficient shrinkage)
    - **Random Forest Gini Importance** (Non-linear tree splitting)
    
    A gene is selected for downstream classification only if it is nominated by **at least two of the three methods**, drastically reducing noise and recovering clinically validated genes.
-3. **Patient-Centric Composite Uniqueness Score (CUS)**: An N-of-1 profiling score combining:
-   - Euclidean distance in the Patient Similarity Network (PSN) constructed over the consensus feature space.
-   - Out-of-sample reconstruction error ($1 - R^2$) using a RidgeCV model trained on all other patients of the same subtype.
+3. **Patient-Centric Mahalanobis Uniqueness Score (CUS)**: An advanced N-of-1 profiling score utilizing the Minimum Covariance Determinant (MCD) to compute the robust Mahalanobis distance. By evaluating the covariance matrix instead of independent spherical distances, it accurately flags biological anomalies that violate expected gene co-expression pathways.
 4. **Platform-Independent Validation**: Evaluation on external validation cohorts is performed using a **completely locked model** with Z-score harmonization applied independently to each external cohort to prevent batch normalization leakage.
 5. **Dual-Architecture SHAP Consensus Integration**: Fuses attributions from linear (Logistic Regression) and non-linear (RBF-SVM) models. Because SHAP values are model-dependent and scale-dependent (log-odds vs. decision margins), direct summation is mathematically invalid. We resolve this scale shift through a structured pipeline:
    - **Multi-Class Global Aggregation**: Averages absolute SHAP values across patients ($N$) and the four PAM50 target classes ($C=4$) to calculate raw global importance:
@@ -338,7 +336,7 @@ graph TD
    - **Calibration Curves**: We construct Reliability Diagrams mapping predicted probability bins to empirical fractions for each molecular subtype. ECE remains highly constrained across SCAN-B (SVM: 4.22%, LR: 5.95%) and METABRIC (SVM: 5.71%, LR: 9.12%).
 
 8. **Prognostic Ridge Cox Risk Score (CRS) Transfer (New)**:
-   - **Continuous Proliferation Modeling**: We model *MKI67* as a continuous covariate inside multivariate Cox proportional hazards modeling ($HR = 1.03$, C-index = 0.75).
+   - **Continuous Proliferation Modeling**: We model a robust 5-gene cell cycle cassette (MKI67, AURKA, CCNB1, PCNA, BIRC5) as a Multi-Gene Proliferation Index continuous covariate inside multivariate Cox proportional hazards modeling, significantly tightening the 95% Confidence Intervals compared to single-gene proxies.
    - **L2-Regularized Ridge Cox CRS**: We fit a Ridge-penalized Cox model on all 152 consensus genes in TCGA-BRCA, predicting a continuous risk score:
      $$\text{CRS}_i = \beta^T X_i$$
      This regularized CRS transfers significantly better to validation cohorts than unpenalized Cox models, achieving an out-of-sample C-index of **0.6628 in SCAN-B** and **0.5716 in METABRIC**, with highly significant log-rank splits between High-Risk and Low-Risk patients.
@@ -360,7 +358,7 @@ SECTION 1: Dynamic Dataset Loading
               v
 SECTION 2: Feature Scaling + Dimensionality Reduction (EDA)
   - log2(RSEM + 1) applied globally at ingestion for scale stabilisation
-  - StandardScaler (Z-score) fit INSIDE each CV training fold (no leakage)
+  - QuantileTransformer (Z-score) fit INSIDE each CV training fold (no leakage)
   - Outlier detection: mean pairwise Pearson < mu - 2sigma
   - PCA, t-SNE, UMAP applied on Z-scored discovery cohort for EDA visualization
               |
@@ -385,7 +383,7 @@ SECTION 5: Co-expression Network
               v
 SECTION 6: Multi-Classifier Benchmark
   - Logistic Regression, SVM (RBF + linear), Random Forest benchmarked
-  - Feature spaces: Consensus DEG genes vs. StandardScaler + PCA-50
+  - Feature spaces: Consensus DEG genes vs. QuantileTransformer + PCA-50
   - Weighted macro-averaged F1 (accounts for class imbalance)
               |
               v
@@ -398,7 +396,7 @@ SECTION 7: Ensemble Feature Selection (INSIDE CV FOLD - NO LEAKAGE)
               |
               v
 SECTION 8: Repeated Stratified 5x3 Cross-Validation
-  - Full pipeline (StandardScaler -> EnsembleFS -> Classifier) in each fold
+  - Full pipeline (QuantileTransformer -> EnsembleFS -> Classifier) in each fold
   - GridSearchCV hyperparameter tuning (LR: C, solver; SVM: C, gamma)
   - Decision curve analysis (DCA) for clinical utility quantification
   - Holdout: LogReg ACC=88.89%, SVM ACC=87.30%
@@ -420,7 +418,7 @@ SECTION 10: Pathway Enrichment
 SECTION 10: N-of-1 Patient Uniqueness (CUS Framework)
   - Patient Similarity Network: Pearson correlation matrix (consensus genes)
   - RidgeCV cross-patient reconstruction (1 - R^2 = reconstruction error)
-  - CUS = 0.5 * norm(PSN distance) + 0.5 * norm(1 - R^2)
+  - CUS = Robust Mahalanobis Distance via Minimum Covariance Determinant
   - Permutation significance: 1,000 null permutations (row-shuffled)
   - Latent manifold recomputed: PCA + t-SNE + UMAP on full consensus cohort
               |
@@ -469,7 +467,7 @@ The primary exploration notebook [`OncoResolve_Subtyping_and_Precision_Profiling
 | Section | Analysis Domain | Key Computational Output / Action |
 |---|---|---|
 | **Section 1** | Data Loading & QC | Loads TCGA-BRCA, attaches PAM50 labels, and performs log2 verification |
-| **Section 2** | Feature Scaling & EDA | log2(RSEM+1) applied globally; StandardScaler (Z-score) fit inside CV folds; PCA/t-SNE/UMAP for visualization |
+| **Section 2** | Feature Scaling & EDA | log2(RSEM+1) applied globally; QuantileTransformer (Z-score) fit inside CV folds; PCA/t-SNE/UMAP for visualization |
 | **Section 3** | Dimensionality Reduction | Generates 2D coordinates for PCA, t-SNE, and UMAP visual spaces |
 | **Section 4** | Differential Expression | Runs Welch t-tests + BH-FDR to find subtype-specific DEGs |
 | **Section 5** | Supervised Classification | Compares SVM, Logistic Regression, and RF classifiers on multiple spaces |
@@ -497,7 +495,7 @@ The primary exploration notebook [`OncoResolve_Subtyping_and_Precision_Profiling
 
 ### Section 2: Normalization and QC
 - log2(RSEM+1) applied globally at ingestion for scale stabilisation
-- StandardScaler (Z-score) fit inside each CV fold (anti-leakage protocol verified)
+- QuantileTransformer (Z-score) fit inside each CV fold (anti-leakage protocol verified)
 - Outlier detection: samples with mean Pearson r < mu - 2sigma flagged
 - Post-scaling inter-sample correlation: >0.85 for intra-subtype pairs
 - **Generated Plot**:
@@ -556,7 +554,7 @@ The primary exploration notebook [`OncoResolve_Subtyping_and_Precision_Profiling
 - Jaccard overlap between uniqueness-driving pathways and global DGE pathways: ~0.0 (confirms CUS captures private biology).
 - Latent manifold recomputed on full consensus cohort: PCA, t-SNE, and UMAP coordinates saved to `full_cohort_latent_coordinates.parquet`.
 - **Generated Plots**:
-  ![Composite Uniqueness Score (CUS) Patient Landscape](data/artifacts/fig22_cus_landscape_scatter.png)
+  ![Mahalanobis Uniqueness Score (CUS) Patient Landscape](data/artifacts/fig22_cus_landscape_scatter.png)
   ![Patient Similarity Network](data/artifacts/fig24_patient_similarity_network.png)
 
 ### Section 10.11: CUS vs. Anomaly Detection Baselines (New)
@@ -732,7 +730,7 @@ The data-driven feature selection loop consistently isolates genes that form the
 * **Luminal B Proliferation**: Cell-cycle markers (*MKI67*, *TOP2A*) which define the high-proliferation index in clinical IHC.
 
 **Finding 3 — Patient transcriptomic uniqueness (CUS) is orthogonal to subtype biology and is not a proxy for standard anomaly detection**
-* **Pathway Orthogonality**: N-of-1 profiling using the Composite Uniqueness Score (CUS) reveals that the specific pathways driving an individual patient's transcriptomic deviation (outlier signature) have zero Jaccard overlap (~0.0) with global PAM50 diagnostic features.
+* **Pathway Orthogonality**: N-of-1 profiling using the Mahalanobis Uniqueness Score (CUS) reveals that the specific pathways driving an individual patient's transcriptomic deviation (outlier signature) have zero Jaccard overlap (~0.0) with global PAM50 diagnostic features.
 * **Dimensional Decoupling**: This confirms that cohort-level classification and individualized precision profiling represent decoupled biological dimensions.
 * **Outlier Baselines Comparison**: Spearman correlations between CUS and Euclidean distance ($r = 0.67$), PCA reconstruction error ($r = 0.65$), and Isolation Forest ($r = 0.64$) show moderate overlap, confirming CUS is not a generic statistical outlier score.
 * **Subtype Sensitivity**: CUS achieves a significantly higher chi-square statistic against PAM50 subtype ($\chi^2 = 262.03$) compared to Euclidean ($\chi^2 = 218.51$), PCA ($\chi^2 = 216.52$), and Isolation Forest ($\chi^2 = 171.74$).
@@ -919,7 +917,7 @@ OncoResolve-Breast-Cancer-Transcriptomics/
 │   │   └── download_external_cohorts.py     # Automated data retrieval script
 │   ├── processed/
 │   │   ├── SMC_expression_clean.parquet     # SMC 2018 RNA-seq cohort, processed (N=166)
-│   │   └── SCANB_expression_clean.parquet   # SCAN-B RNA-seq cohort, processed (N=317)
+│   │   └── SCANB_expression_clean.parquet   # SCAN-B RNA-seq cohort, processed (N=3,273)
 │   ├── processed/                           # Parquet intermediates and serialized states
 │   └── artifacts/                           # Saved models, encoders, and reports
 └── src/

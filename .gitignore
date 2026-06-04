@@ -95,3 +95,14 @@ notebooks/OncoResolve_Subtyping_and_Precision_Profiling.py
 openalex_results.json
 technical_audit_part1.md
 technical_audit_part2.md
+apply_upgrades.py
+deep_clean_readme.py
+fix_markdown.py
+fix_readme_table.py
+markdown_check.txt
+research_output.txt
+run_output.txt
+update_abstract.py
+update_docs.py
+update_notebook_markdown.py
+fix_notebook_cwd.py

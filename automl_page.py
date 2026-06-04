@@ -1,7 +1,7 @@
 """
 automl_page.py - Premium Clinical Subtype Predictor & Benchmarking Interface
 =============================================================================
-Deploys locked v3.0 pre-trained models (Logistic Regression + Support Vector Machine)
+Deploys locked v3.3 pre-trained models (Logistic Regression + Support Vector Machine)
 on user-uploaded transcriptomics datasets.
 """
 import time
@@ -213,7 +213,7 @@ div[data-testid="stFileUploader"] {
 
     st.markdown('<div class="main-title">Clinical Subtype Predictor & <span class="main-title-accent">Benchmark Tool</span></div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="sub-title">Evaluate locked v3.0 pre-trained breast cancer transcriptomic classifiers on custom cohort datasets.</div>',
+        '<div class="sub-title">Evaluate locked v3.3 pre-trained breast cancer transcriptomic classifiers on custom cohort datasets.</div>',
         unsafe_allow_html=True,
     )
 
@@ -225,7 +225,7 @@ div[data-testid="stFileUploader"] {
         entrez_to_hugo = joblib.load(ARTIFACT_DIR / "tcga_entrez_to_hugo.pkl")
         label_encoder = joblib.load(ARTIFACT_DIR / "label_encoder_cohort.pkl")
     except Exception as exc:
-        st.error(f"Critical Error: Failed to load pre-trained OncoResolve v3.0 model artifacts: {exc}")
+        st.error(f"Critical Error: Failed to load pre-trained OncoResolve v3.3 model artifacts: {exc}")
         return
 
     # Render Prediction Setup Form
@@ -385,7 +385,7 @@ div[data-testid="stFileUploader"] {
                         st.markdown(custom_card(f"{weighted_f1:.2%}", "Weighted F1-Score", True), unsafe_allow_html=True)
                 else:
                     with c_stats[2]:
-                        st.markdown(custom_card("Locked v3.0", "Model Version", True), unsafe_allow_html=True)
+                        st.markdown(custom_card("Locked v3.3", "Model Version", True), unsafe_allow_html=True)
 
                 col_chart, col_stats = st.columns([3, 2] if not bench_eval else [1, 1])
                 dist = results_df["Predicted Subtype"].value_counts().reset_index()
