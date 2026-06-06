@@ -27,7 +27,7 @@
 > [!IMPORTANT]
 > ## ▶ Reproducibility — Run These Steps First, In Order
 >
-> To reproduce the results, you **must** execute the following steps in sequence. We prioritize running the **Model Training & Validation Notebook** (which focuses on results and model validation) first, followed by the **Main Analysis Notebook** (which focuses on intense research, explainable AI, and N-of-1 uniqueness).
+> To reproduce the results, you **must** execute the following steps in sequence. The execution weaves between data preparation, model training, and systems biology research, beginning with data extraction in the **Main Analysis Notebook**, followed by the **Model Training & Validation Notebook**, and concluding with the remainder of the **Main Analysis Notebook**.
 >
 > ### Step 1 — Download All Raw Datasets
 > ```bash
@@ -93,11 +93,11 @@
 > | # | File / Steps | Type | Purpose |
 > |---|---|---|---|
 > | 1 | [`data/external_cohort/download_external_cohorts.py`](data/external_cohort/download_external_cohorts.py) | Python script | Downloads all raw datasets from cBioPortal + GEO |
-> | 2 | `OncoResolve_Subtyping_and_Precision_Profiling.ipynb` (Sections 1-7) | Jupyter notebook | Generates discovery partition and locked consensus gene set |
+> | 2 | [`notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb`](notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb) (Sections 1-7) | Jupyter notebook | Generates discovery partition and locked consensus gene set |
 > | 3 | [`data/external_cohort/prepare_external_cohorts.py`](data/external_cohort/prepare_external_cohorts.py) | Python script | Cleans, filters, and harmonizes external cohorts |
 > | 4 | [`notebooks/External_cohort_data_preparation_analysis.ipynb`](notebooks/External_cohort_data_preparation_analysis.ipynb) | Jupyter notebook | Final cross-platform gene alignment and validation |
 > | 5 | [`notebooks/OncoResolve_Model_Training_Validation.ipynb`](notebooks/OncoResolve_Model_Training_Validation.ipynb) | Jupyter notebook | Dedicated model training, hyperparameter optimization, and external cohort validation |
-> | 6 | `OncoResolve_Subtyping_and_Precision_Profiling.ipynb` (Sections 8-17) | Jupyter notebook | Main research analysis, explainability, networks, and uniqueness profiling |
+> | 6 | [`notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb`](notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb) (Sections 8-17) | Jupyter notebook | Main research analysis, explainability, networks, and uniqueness profiling |
 
 
 ---
