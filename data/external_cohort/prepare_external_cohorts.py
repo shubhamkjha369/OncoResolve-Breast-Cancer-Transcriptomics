@@ -2,16 +2,18 @@ import pandas as pd
 import numpy as np
 import os
 import joblib
+from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-data_dir = r"c:\Users\SAM\OneDrive\Documents\GitHub\OncoResolve-Breast-Cancer-Transcriptomics\data"
-raw_dir = os.path.join(data_dir, "raw")
-ext_dir = os.path.join(data_dir, "external_cohort")
-processed_dir = os.path.join(data_dir, "processed")
-art_dir = os.path.join(data_dir, "artifacts")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+data_dir = REPO_ROOT / "data"
+raw_dir = data_dir / "raw"
+ext_dir = data_dir / "external_cohort"
+processed_dir = data_dir / "processed"
+art_dir = data_dir / "artifacts"
 
 # Create output directories if not exist
 os.makedirs(processed_dir, exist_ok=True)

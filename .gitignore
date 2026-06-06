@@ -75,34 +75,7 @@ download_tcga_*.py
 sample_README.md
 social.txt
 
-# ─── AI Agent & Assistant-generated files (stored externally, never commit) ──
-# These files are produced by the AI coding assistant during development sessions.
-# They live in C:\Users\SAM\.gemini\antigravity-ide\brain\...\scratch\repo_agent_files\
-AGENT_PROGRESS_LOG.md
-AGENT_PROGRESS_LOG*.md
-ml_cells_output.txt
-ml_cells_output*.txt
-*_cells_output.txt
-*_agent_*.txt
-*_agent_*.md
-agent_*.txt
-agent_*.md
-run_notebook.py
-run_notebook*.py
-# Added by agent for scratchpad files
-notebooks/External_cohort_data_preparation_analysis.py
-notebooks/OncoResolve_Subtyping_and_Precision_Profiling.py
-openalex_results.json
-technical_audit_part1.md
-technical_audit_part2.md
-apply_upgrades.py
-deep_clean_readme.py
-fix_markdown.py
-fix_readme_table.py
-markdown_check.txt
-research_output.txt
-run_output.txt
-update_abstract.py
-update_docs.py
-update_notebook_markdown.py
-fix_notebook_cwd.py
+# notebook raw py files
+OncoResolve_Subtyping_and_Precision_Profiling.py
+OncoResolve_Model_Training_Validation.py
+External_cohort_data_preparation_analysis.py

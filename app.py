@@ -1180,7 +1180,7 @@ st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.markdown("""
 <div style="text-align:center; padding:10px 0;">
     <span style="color:#64748b; font-size:13.5px;">
-       <b>OncoResolve v3.0 — Breast Cancer Transcriptomics Pipeline</b>
+       <b>OncoResolve v3.3.0 — Breast Cancer Transcriptomics Pipeline</b>
     </span><br>
     <span style="color:#94a3b8; font-size:11.5px;">
         TCGA-BRCA RNA-seq (N=1,084) &nbsp;|&nbsp; SMC 2018 (N=166) &nbsp;|&nbsp; SCAN-B (N=317) &nbsp;|&nbsp; METABRIC (N=1,608) &nbsp;|&nbsp; PAM50 Subtyping &nbsp;|&nbsp; explainable AI

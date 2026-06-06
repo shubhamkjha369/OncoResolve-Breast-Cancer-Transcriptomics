@@ -189,6 +189,7 @@ div[data-testid="stFileUploader"] {
 .diag-card-her { border-left: 6px solid #f59e0b; }
 .diag-card-luma { border-left: 6px solid #10b981; }
 .diag-card-lumb { border-left: 6px solid #3b82f6; }
+.diag-card-norm { border-left: 6px solid #ec4899; }
 
 .diag-title {
     font-family: 'Outfit', sans-serif;
@@ -200,6 +201,7 @@ div[data-testid="stFileUploader"] {
 .diag-title-her { color: #d97706; }
 .diag-title-luma { color: #059669; }
 .diag-title-lumb { color: #2563eb; }
+.diag-title-norm { color: #db2777; }
 
 .diag-desc {
     color: #475569;
@@ -520,6 +522,10 @@ def _render_clinical_interpretations():
         <div class="diag-card diag-card-lumb">
             <div class="diag-title diag-title-lumb">Luminal B (luminal_B)</div>
             <div class="diag-desc">Hormone-receptor positive but exhibits higher proliferation markers (e.g., MKI67, TOP2A) and faster growth. More aggressive than Luminal A, often managed with combined endocrine therapy and chemotherapy.</div>
+        </div>
+        <div class="diag-card diag-card-norm">
+            <div class="diag-title diag-title-norm">Normal-like (normal)</div>
+            <div class="diag-desc">Transcriptomic profile closely resembling normal breast tissue. Often associated with high stromal or adipose tissue content in the bulk tumor sample. Generally carries a favorable prognosis compared to more aggressive subtypes.</div>
         </div>
         """,
         unsafe_allow_html=True,

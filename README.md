@@ -23,10 +23,11 @@
 
 ---
 
+
 > [!IMPORTANT]
 > ## ▶ Reproducibility — Run These Steps First, In Order
 >
-> Before running the main analysis notebook, you **must** execute the following three steps in strict sequence. Skipping or reordering them will cause missing-file errors in the main notebook.
+> To reproduce the results, you **must** execute the following steps in sequence. We prioritize running the **Model Training & Validation Notebook** (which focuses on results and model validation) first, followed by the **Main Analysis Notebook** (which focuses on intense research, explainable AI, and N-of-1 uniqueness).
 >
 > ### Step 1 — Download All Raw Datasets
 > ```bash
@@ -39,10 +40,14 @@
 >
 > ⏱ *Allow 5–30 minutes depending on your internet connection. The SCAN-B expression file alone is ~564 MB.*
 >
-> ### Step 2 — Prepare and Harmonize External Cohorts
+> ### Step 2 — Run Discovery Preprocessing & Feature Selection
+> Open and run **Sections 1 to 7** of the main analysis notebook:
+> ```
+> notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb
+> ```
+> **What it does:** Preprocesses raw TCGA-BRCA data, splits it into Discovery and Holdout partitions, and discovers the **152 consensus biomarker signature** via a tri-method ensemble. This creates the foundational artifacts (`top_deg_genes.pkl`, `label_encoder_cohort.pkl`, and `df_discover.parquet`) required by the external validation scripts and notebooks.
 >
-> ⚠️ *Requires `data/artifacts/tcga_entrez_to_hugo.pkl` and `data/processed/breast_cancer.parquet` — these are generated in **Section 1** of the main notebook. If those don't exist yet, run **Sections 1–2** of the main notebook first, then come back and run this script.*
->
+> ### Step 3 — Prepare and Harmonize External Cohorts
 > ```bash
 > python data/external_cohort/prepare_external_cohorts.py
 > ```
@@ -53,32 +58,47 @@
 > - Generates cross-cohort PCA compatibility plot → `data/artifacts/cross_cohort_pca_compatibility.png`
 > - Saves: `data/processed/METABRIC_expression_clean.parquet` + `SCANB_expression_clean.parquet`
 >
-> ### Step 3 — Run the External Cohort Preparation Notebook
+> ### Step 4 — Run the External Cohort Preparation Notebook
 > Open and run **all cells** in:
 > ```
 > notebooks/External_cohort_data_preparation_analysis.ipynb
 > ```
-> **What it does:** Performs the full cross-platform harmonization, gene-symbol alignment, and format validation needed before the main notebook's Section 11 (External Validation):
+> **What it does:** Performs the final cross-platform harmonization, gene-symbol alignment, and format validation needed before external validation:
 > - Aligns METABRIC and SCAN-B expression matrices to the TCGA-BRCA consensus gene namespace
 > - Validates SMC 2018 cohort data (`data/external_cohort/SMC_2018_expression.csv`)
-> - Saves the final validated external cohort parquets consumed by the main notebook
+> - Saves the final validated external cohort parquets consumed by validation and training pipelines
 >
-> ### Step 4 — Run the Main Analysis Notebook
-> Now open and run the primary notebook from the beginning:
+> ### Step 5 — Run the Model Training & Validation Notebook (Results Focus)
+> Open and run the dedicated model training and validation notebook:
+> ```
+> notebooks/OncoResolve_Model_Training_Validation.ipynb
+> ```
+> **What it does:** Performs nested cross-validation and hyperparameter search across 10 classifiers (4 linear, 6 non-linear) on the 152 consensus genes, and evaluates performance on all external cohorts. This notebook focuses strictly on performance results, generalizability gaps, and validation statistics.
+>
+> ### Step 6 — Run the Main Analysis Notebook (Research & Testing Focus)
+> Now run the remaining sections (Sections 8 to 17) of the primary notebook:
 > ```
 > notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb
 > ```
+> **What it does:** Performs intense exploratory and systems-biology research, including:
+> - Global and local model explainability using LinearSHAP / KernelSHAP
+> - Interactive Gene Co-expression Network (GCN) topological modeling
+> - Patient similarity networks and N-of-1 Mahalanobis Uniqueness Score (CUS) profiling
+> - Prognostic risk modeling using L2-regularized Ridge Cox Risk Scores (CRS)
 >
 > ---
 >
 > **Full Execution Order Summary:**
 >
-> | # | File | Type | Purpose |
-> |---|------|------|---------|
+> | # | File / Steps | Type | Purpose |
+> |---|---|---|---|
 > | 1 | [`data/external_cohort/download_external_cohorts.py`](data/external_cohort/download_external_cohorts.py) | Python script | Downloads all raw datasets from cBioPortal + GEO |
-> | 2 | [`data/external_cohort/prepare_external_cohorts.py`](data/external_cohort/prepare_external_cohorts.py) | Python script | Cleans, filters, and harmonizes external cohorts |
-> | 3 | [`notebooks/External_cohort_data_preparation_analysis.ipynb`](notebooks/External_cohort_data_preparation_analysis.ipynb) | Jupyter notebook | Final cross-platform gene alignment and validation |
-> | 4 | [`notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb`](notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb) | Jupyter notebook | **Main analysis pipeline** — run last |
+> | 2 | `OncoResolve_Subtyping_and_Precision_Profiling.ipynb` (Sections 1-7) | Jupyter notebook | Generates discovery partition and locked consensus gene set |
+> | 3 | [`data/external_cohort/prepare_external_cohorts.py`](data/external_cohort/prepare_external_cohorts.py) | Python script | Cleans, filters, and harmonizes external cohorts |
+> | 4 | [`notebooks/External_cohort_data_preparation_analysis.ipynb`](notebooks/External_cohort_data_preparation_analysis.ipynb) | Jupyter notebook | Final cross-platform gene alignment and validation |
+> | 5 | [`notebooks/OncoResolve_Model_Training_Validation.ipynb`](notebooks/OncoResolve_Model_Training_Validation.ipynb) | Jupyter notebook | Dedicated model training, hyperparameter optimization, and external cohort validation |
+> | 6 | `OncoResolve_Subtyping_and_Precision_Profiling.ipynb` (Sections 8-17) | Jupyter notebook | Main research analysis, explainability, networks, and uniqueness profiling |
+
 
 ---
 
@@ -87,7 +107,7 @@
 
 Breast cancer is a highly heterogeneous disease characterized by transcriptionally distinct molecular subtypes (PAM50 classification) that dictate therapeutic intervention and clinical prognosis. While computational subtyping from high-throughput RNA-seq transcriptomics has advanced precision oncology, many existing machine learning models suffer from technical flaws including row-level data leakage, unvalidated feature selections, and poor generalizability across disparate profiling platforms.
 
-We present **OncoResolve**, a high-hygiene machine learning and N-of-1 precision profiling framework designed to address these challenges. Using a primary cohort of 1,084 patient transcriptomes from the TCGA-BRCA Pan-Cancer Atlas, we implement an anti-leakage cross-validation protocol where Z-score standardization (`QuantileTransformer`) and a consensus feature selection ensemble utilizing Reciprocal Rank Fusion (RRF) are fit strictly within each training partition. Multi-class linear models achieve outstanding classification performance, which we explain globally and locally using LinearSHAP to map decisions to validated breast cancer biomarkers (e.g., *ESR1*, *ERBB2*, *MKI67*). Furthermore, we introduce the Mahalanobis Uniqueness Score (CUS)—an advanced N-of-1 mathematical framework utilizing the Minimum Covariance Determinant (MCD) to robustly measure transcriptomic uniqueness against established gene co-expression covariance structures to measure transcriptomic uniqueness at the individual level. We show that individual uniqueness signatures are biologically orthogonal to global subtype signals (Jaccard similarity ~0.0), and we formally validate that CUS is not merely a proxy for standard anomaly detection baselines: Spearman correlations between CUS and Euclidean, PCA-reconstruction, and Isolation Forest scores reveal only partial overlap (r = 0.67, 0.65, and 0.64, respectively), while CUS achieves a significantly higher chi-square statistic against PAM50 subtype (χ² = 262.03, p = 1.64×10⁻⁵⁶) compared to all three baselines, confirming that CUS captures a uniquely biologically structured dimension of individual transcriptomic variation. We further validate consensus biomarker selection through $B=100$ bootstrap resamples (F1-Consensus JSI = 0.2035) and $P=500$ permutation tests, and demonstrate that predicted class probabilities are accurately calibrated across all external cohorts (max ECE < 9.12%). Finally, we demonstrate the robustness and clinical transportability of the locked OncoResolve discovery pipeline by successfully validating it across three independent external cohorts: **SMC 2018** (South Korea, N=166; LogReg ACC=81.93%), **SCAN-B** (Sweden/GSE96058, N=317; SVM ACC=86.12%), and **METABRIC** (Illumina microarray, N=1,608; SVM ACC=72.70%, LogReg ACC=72.01%), demonstrating high diagnostic transferability across platforms and cohorts despite extreme platform-specific profiling shifts. A Consensus Ridge Cox Risk Score (CRS) built on all 152 consensus genes further generalizes to SCAN-B (C-index = 0.6628) and METABRIC (C-index = 0.5716), with significant log-rank survival separation in both independent cohorts.
+We present **OncoResolve**, a high-hygiene machine learning and N-of-1 precision profiling framework designed to address these challenges. Using a primary cohort of 1,084 patient transcriptomes from the TCGA-BRCA Pan-Cancer Atlas, we implement an anti-leakage cross-validation protocol where Z-score standardization (`QuantileTransformer`) and a consensus feature selection ensemble utilizing majority voting (ANOVA, LASSO, Random Forest Gini) are fit strictly within each training partition. Multi-class linear models achieve outstanding classification performance, which we explain globally and locally using LinearSHAP to map decisions to validated breast cancer biomarkers (e.g., *ESR1*, *ERBB2*, *MKI67*). Furthermore, we introduce the Mahalanobis Uniqueness Score (CUS)—an advanced N-of-1 mathematical framework utilizing the Minimum Covariance Determinant (MCD) to robustly measure transcriptomic uniqueness against established gene co-expression covariance structures to measure transcriptomic uniqueness at the individual level. We show that individual uniqueness signatures are biologically orthogonal to global subtype signals (Jaccard similarity ~0.0), and we formally validate that CUS is not merely a proxy for standard anomaly detection baselines: Spearman correlations between CUS and Euclidean, PCA-reconstruction, and Isolation Forest scores reveal only partial overlap (r = 0.67, 0.65, and 0.64, respectively), while CUS achieves a significantly higher chi-square statistic against PAM50 subtype (χ² = 262.03, p = 1.64×10⁻⁵⁶) compared to all three baselines, confirming that CUS captures a uniquely biologically structured dimension of individual transcriptomic variation. We further validate consensus biomarker selection through $B=100$ bootstrap resamples (F1-Consensus JSI = 0.2035) and $P=500$ permutation tests, and demonstrate that predicted class probabilities are accurately calibrated across all external cohorts (max ECE < 9.12%). Finally, we demonstrate the robustness and clinical transportability of the locked OncoResolve discovery pipeline by successfully validating it across three independent external cohorts: **SMC 2018** (South Korea, N=166; LogReg ACC=81.93%), **SCAN-B** (Sweden/GSE96058, N=317; SVM ACC=86.12%), and **METABRIC** (Illumina microarray, N=1,608; SVM ACC=72.70%, LogReg ACC=72.01%), demonstrating high diagnostic transferability across platforms and cohorts despite extreme platform-specific profiling shifts. A Consensus Ridge Cox Risk Score (CRS) built on all 152 consensus genes further generalizes to SCAN-B (C-index = 0.6628) and METABRIC (C-index = 0.5716), with significant log-rank survival separation in both independent cohorts.
 
 ---
 
@@ -101,6 +121,7 @@ We present **OncoResolve**, a high-hygiene machine learning and N-of-1 precision
 - [Methodological Contributions](#methodological-contributions)
 - [Pipeline Architecture](#pipeline-architecture)
 - [Notebook Structure](#notebook-structure)
+- [Model Training & Validation Notebook Structure](#model-training-validation-notebook-structure)
 - [Section-by-Section Results](#section-results)
 - [Key Findings](#key-findings)
 - [Results Files](#results-files)
@@ -226,7 +247,7 @@ The project now uses **TCGA-BRCA Pan-Can Atlas 2018** (`brca_tcga_pan_can_atlas_
 The transition from GSE45827 to TCGA-BRCA is not merely a dataset swap; it is an upgrade from a **proof-of-concept microarray study** to a **publication-standard RNA-seq analysis** aligned with 2026 clinical genomics practices.
 
 **Evidence:**
-1. **Statistical reliability:** With N=1,084, the 5-fold repeated CV generates 15 evaluation splits of ~867/217 samples each — compared to 109/28 in GSE45827. The resulting confidence intervals are 4–5x narrower.
+1. **Statistical reliability:** With N=1,084, the 5-fold repeated CV generates 15 evaluation splits of ~756/189 samples each — compared to 109/28 in GSE45827. The resulting confidence intervals are 4–5x narrower.
 2. **Biological accuracy:** RNA-seq measures actual transcript abundance (reads per gene), while microarray measures relative fluorescence intensity (probe hybridisation). RNA-seq is more sensitive, more specific, and has a wider dynamic range. It detects lowly expressed genes and avoids cross-hybridisation artefacts.
 3. **Clinical relevance:** TCGA-BRCA is the canonical reference dataset cited in all major breast cancer ML publications post-2015. Results computed on TCGA-BRCA are directly comparable to the published literature, enabling head-to-head benchmarking.
 4. **Survival integration:** TCGA-BRCA includes OS and DFS data for 94% of samples. This enables downstream Kaplan-Meier analysis to confirm that predicted subtype separation is clinically meaningful — something impossible with GSE45827.
@@ -239,7 +260,7 @@ The transition from GSE45827 to TCGA-BRCA is not merely a dataset swap; it is an
 <a id="external-validation-cohorts"></a>
 ## External Validation Cohorts
 
-Cross-platform validation is a mandatory requirement for any breast cancer transcriptomics study targeting clinical translation. Two fully independent RNA-seq cohorts were acquired for external validation of the locked TCGA-BRCA-trained pipeline:
+Cross-platform validation is a mandatory requirement for any breast cancer transcriptomics study targeting clinical translation. Three fully independent cohorts were acquired for external validation of the locked TCGA-BRCA-trained pipeline:
 
 | Cohort | Platform | N (validated) | Gene Coverage | Survival | Source | Location |
 |---|---|---|---|---|---|---|
@@ -274,16 +295,15 @@ Cross-platform validation is a mandatory requirement for any breast cancer trans
 
 To position **OncoResolve** within the landscape of recent (2021–2026) peer-reviewed computational oncology and transcriptomics literature, we explicitly benchmark our pipeline against standard published frameworks. Below is a rigorous audit of the technical, validation, and explainability gaps that OncoResolve addresses and fills:
 
-| Feature / Dimension | Standard Published Approaches (e.g., Alrefaei *et al.*, 2023; Wang *et al.*, 2022) | OncoResolve (Ours) | Gap Addressed & Clinical/Academic Significance |
+| Feature / Dimension | Current Literature Landscape (2021–2026) | OncoResolve Contribution | Gap Addressed & Significance |
 | :--- | :--- | :--- | :--- |
-| **Data Hygiene (Feature Selection)** | Global feature selection/scaling applied *before* data splitting (high leakage risk). | **Strict Fold-Contained Preprocessing (ALP)**: QuantileTransformer and a tri-method ensemble (ANOVA, LASSO, RF) are fit only inside training folds, validated by $B=100$ bootstrap stability analysis (F1-Consensus JSI=0.2035) and $P=500$ permutations. | Prevents performance inflation and optimistic bias, guaranteeing statistical validity and selection stability for clinical transfer. |
-| **Cross-Platform Transfer** | Single-cohort focus (TCGA only) or direct model transfer without realignment (causes performance collapse). | **Multi-Cohort Independent Scale Realignment**: Locked models evaluated on SMC 2018 ($N=166$), SCAN-B ($N=317$), and METABRIC ($N=1,608$) with independent cohort scaling and alphabetical feature alignment. | Successfully bridges platform dynamic range differences (Illumina HiSeq vs. NextSeq) and cross-platform shifts (RNA-seq to microarray) without retraining, achieving 82%–86% accuracy on RNA-seq and 72.7% on microarray holdouts. |
-| **Explainability (XAI) Resolution** | Global feature importances only (e.g., Random Forest Gini or ANOVA scores). | **Personalized N-of-1 Explainability**: Combines global attributions with local patient-level LinearSHAP/KernelSHAP attributions, fused into a performance-weighted Dual-SHAP Consensus. | Explains the exact molecular drivers behind each individual patient's PAM50 classification to support clinical trust and personalization. |
-| **Outlier Profiling** | Standard outlier analysis is omitted, or restricted to simple z-score outlier detection. | **Mahalanobis Uniqueness Score (CUS)**: Utilizes the Minimum Covariance Determinant (MCD) to robustly measure transcriptomic uniqueness against established gene co-expression covariance structures. Validated against Euclidean, PCA, and Isolation Forest baselines. | Isolates patient-specific, non-consensus biological processes that are orthogonal to global PAM50 signatures (Jaccard similarity $\approx 0.0$). CUS captures structured biological uniqueness (highest subtype-discriminative $\chi^2=262.03$ and Cox C-index=0.7635). |
-| **Model Calibration & Centroid Comparison** | Probability calibration and comparisons to standard clinical classifiers (e.g., Spearman Centroids) are omitted. | **Calibrated Probabilities & Centroid Benchmarking**: Evaluates ECE/Brier score across 4 cohorts (max ECE < 9.12%). Compares head-to-head with the standard clinical PAM50 Centroid. | Ensures predicted probabilities represent true clinical risks for confident decision-making while demonstrating classification performance competitive with standard-of-care clinical baselines. |
-| **Prognostic Transferability** | Prognosis modeling is decoupled from diagnostic subtyping, or restricted to TCGA without validating on external cohorts. | **Consensus Ridge Cox Risk Score (CRS)**: Fits regularized Ridge Cox models using the 152 consensus genes, transferring risk scores to independent cohorts. | Demonstrates that the diagnostic consensus signature yields prognostic value, successfully stratifying survival in SCAN-B (C-index=0.6628) and METABRIC (C-index=0.5716) with significant log-rank splits. |
-| **Translational Validation** | Restricts validation to standard database enrichment metrics (GO / KEGG). | **Systems-Level Translational Cross-Referencing**: Maps diagnostic drivers to Broad DepMap (CRISPR essentiality) and iLINCS (drug perturbation signatures). | Validates diagnostic driver genes as functional genetic dependencies and maps subtype signatures to active drug reversal candidates (e.g., Fulvestrant). |
-| **TME Deconvolution** | Tumor transcriptomic classification and microenvironment (TME) analysis are treated as decoupled problems. | **Integrated ssGSEA TME Deconvolution**: Relies on official, peer-reviewed `ConsensusTME` signatures via `decoupler` to align the tumor microenvironment deconvolution exactly with current immunological literature standards. | Reveals the immune-infiltrate landscape (e.g., CD8+ T cells in Basal vs CAFs in LumA) to assess immunotherapy eligibility alongside subtyping. |
+| **Data Hygiene (Feature Selection)** | While the TRIPOD+AI guidelines mandate strict separation of train/test data, many applied computational oncology studies still perform global feature selection or variance filtering *prior* to cross-validation, risking data leakage (Waring *et al.*, 2020). | **Strict Fold-Contained Preprocessing (ALP)**: Implements an Anti-Leakage Protocol where `QuantileTransformer` and a tri-method ensemble (ANOVA, LASSO, RF) are fit exclusively inside training folds. | Prevents performance inflation and optimistic bias. Validated via $B=100$ bootstrap stability analysis (JSI=0.2035) and $P=500$ permutations. |
+| **Cross-Platform Validation** | While external validation is increasingly common, it is frequently restricted to within-platform datasets (e.g., RNA-seq to RNA-seq) or uses datasets without independent scale realignment. | **Multi-Platform Independent Scale Realignment**: Validates locked models on SMC 2018 ($N=166$, RNA-seq), SCAN-B ($N=317$, NextSeq), and importantly, METABRIC ($N=1,608$, microarray). | Demonstrates the diagnostic signature's resilience to extreme platform shift (RNA-seq to microarray) by using strictly independent per-cohort Z-score scaling. |
+| **Explainability (XAI)** | SHAP and LIME are now standard for interpreting global feature importance in clinical ML (e.g., Lundberg *et al.*, 2020), but models rarely fuse attributions across linear and non-linear architectures. | **Dual-SHAP Consensus Approach**: Extends standard global SHAP by combining local patient-level LinearSHAP and KernelSHAP attributions into a performance-weighted consensus. | Provides a unified, scale-independent view of molecular drivers for each individual patient, improving trust beyond single-model global attributions. |
+| **N-of-1 Profiling** | Standard subtyping assigns patients to discrete clusters. Anomaly detection is sometimes used, but rarely combined with robust covariance metrics (like MCD) for individual transcriptomic uniqueness. | **Mahalanobis Uniqueness Score (CUS)**: Formally adapts the Minimum Covariance Determinant (MCD) to measure patient transcriptomic uniqueness against established gene co-expression structures. | Confirms that CUS captures biologically structured variation orthogonal to global PAM50 signatures, rather than acting as a generic anomaly proxy (vs. Isolation Forest/PCA). |
+| **Clinical Probability Calibration** | Many studies report ROC-AUC but omit probability calibration metrics (Expected Calibration Error, Brier Score), which are essential for clinical risk assessment (Van Calster *et al.*, 2019). | **Calibrated Probabilities & Centroid Benchmarking**: Explicitly evaluates ECE across four independent cohorts (max ECE < 9.12%) and compares performance head-to-head with the standard clinical PAM50 Centroid. | Ensures that predicted probabilities reliably reflect true clinical confidence, satisfying rigorous statistical requirements for medical ML algorithms. |
+| **Prognostic Transferability** | Prognostic survival modeling is often the primary focus of independent studies, or decoupled from diagnostic subtyping classifiers. | **Consensus Ridge Cox Risk Score (CRS)**: Fits regularized Ridge Cox models using the exact 152 diagnostic consensus genes, transferring these continuous risk scores to external cohorts. | Validates that the features driving diagnostic subtyping inherently encode significant prognostic survival value (SCAN-B C-index=0.6628, METABRIC C-index=0.5716). |
+| **Translational Validation** | Often restricted to standard over-representation analysis (GO, KEGG, Reactome) without functional genetic validation. | **Systems-Level Functional Cross-Referencing**: Maps diagnostic drivers to empirical Broad DepMap CRISPR essentiality data and iLINCS perturbation signatures. | Links predictive algorithms to experimental biological dependencies and candidate drug reversal screens. |
 
 
 ---
@@ -415,7 +435,7 @@ SECTION 10: Pathway Enrichment
   - BH-FDR correction on pathway p-values
               |
               v
-SECTION 10: N-of-1 Patient Uniqueness (CUS Framework)
+SECTION 11: N-of-1 Patient Uniqueness (CUS Framework)
   - Patient Similarity Network: Pearson correlation matrix (consensus genes)
   - RidgeCV cross-patient reconstruction (1 - R^2 = reconstruction error)
   - CUS = Robust Mahalanobis Distance via Minimum Covariance Determinant
@@ -423,7 +443,7 @@ SECTION 10: N-of-1 Patient Uniqueness (CUS Framework)
   - Latent manifold recomputed: PCA + t-SNE + UMAP on full consensus cohort
               |
               v
-SECTION 10.11: CUS vs. Anomaly Detection Baselines
+SECTION 11.1: CUS vs. Anomaly Detection Baselines
   - CUS compared to Euclidean PSN distance, PCA reconstruction error, and Isolation Forest
   - Spearman correlations: CUS vs Euclidean r=0.6695, vs PCA_Recon r=0.6537, vs IsoForest r=0.6373
   - Chi-Square vs PAM50 subtype: CUS χ²=262.03 (best), Euclidean χ²=218.51, PCA χ²=216.52, IsoForest χ²=171.74
@@ -431,7 +451,7 @@ SECTION 10.11: CUS vs. Anomaly Detection Baselines
   - All anomaly scores have non-significant independent Cox HR (p > 0.05), confirming CUS is biologically complementary
               |
               v
-SECTION 11: Cross-Platform External Validation
+SECTION 12: Cross-Platform External Validation
   - Locked pipeline evaluated on SMC 2018 (RNA-seq, N=166, 100% gene coverage)
   - Locked pipeline evaluated on SCAN-B (RNA-seq, N=317, 96.7% gene coverage)
   - Locked pipeline evaluated on METABRIC (microarray, N=1,608, 48.0% gene coverage)
@@ -440,19 +460,19 @@ SECTION 11: Cross-Platform External Validation
   - Results: SMC 2018 LogReg ACC=81.93%, SCAN-B SVM ACC=86.12%, METABRIC SVM ACC=72.70%
               |
               v
-SECTION 12: Prognostic Survival Modelling
+SECTION 13: Prognostic Survival Modelling
   - Kaplan-Meier OS/DFS stratification by subtype (OS log-rank p = 0.014)
   - Multivariate Cox Proportional Hazards regression (C-index = 0.75, N=740)
   - Integration of MKI67 continuous expression as a proliferation covariate
               |
               v
-SECTION 13: Tumour Microenvironment (TME) Deconvolution
+SECTION 14: Tumour Microenvironment (TME) Deconvolution
   - ssGSEA enrichment via decoupler on 9 immune/stromal signatures
   - Maps CD8+ T cells, NK cells, B cells, macrophages, CAFs, and endothelial populations
   - Identifies immune-rich TNBC vs. immune-desert Luminal A microenvironments
               |
               v
-SECTION 14: Computational Biomarker Validation
+SECTION 15: Computational Biomarker Validation
   - Broad Institute DepMap API integration for CRISPR-Cas9 CERES essentiality scores
   - iLINCS/Connectivity Map perturbation signatures identify drug reversal candidates
 ```
@@ -471,7 +491,7 @@ The primary exploration notebook [`OncoResolve_Subtyping_and_Precision_Profiling
 | **Section 3** | Dimensionality Reduction | Generates 2D coordinates for PCA, t-SNE, and UMAP visual spaces |
 | **Section 4** | Differential Expression | Runs Welch t-tests + BH-FDR to find subtype-specific DEGs |
 | **Section 5** | Supervised Classification | Compares SVM, Logistic Regression, and RF classifiers on multiple spaces |
-| **Section 6** | Holdout Validation | Evaluates locked classifiers on the 197-patient unseen holdout cohort |
+| **Section 6** | Holdout Validation | Evaluates locked classifiers on the 189-patient unseen holdout cohort |
 | **Section 7** | Systems Biology Networks | Louvain community detection on co-expression networks to find gene modules |
 | **Section 8** | SHAP Model Explainability | Computes attributions via LinearSHAP; draws beeswarm and waterfalls |
 | **Section 9** | Functional Enrichment | Pathway enrichment on GO Biological Process & MSigDB Hallmark databases |
@@ -483,6 +503,26 @@ The primary exploration notebook [`OncoResolve_Subtyping_and_Precision_Profiling
 | **Section 15** | Project Summary | Main diagnostic conclusions and translational precision medicine findings |
 | **Section 16** | Limitations & Future Work | Technical limitations, platform biases, and experimental next steps |
 | **Section 17** | Academic Bibliography | Full list of peer-reviewed references and data source citations |
+
+---
+
+<a id="model-training-validation-notebook-structure"></a>
+### Model Training & Validation Notebook Structure
+
+The dedicated model validation notebook [`OncoResolve_Model_Training_Validation.ipynb`](notebooks/OncoResolve_Model_Training_Validation.ipynb) focuses on classifier benchmarking, hyperparameter search, and independent cross-platform validation:
+
+| Section | Analysis Domain | Key Computational Output / Action |
+|---|---|---|
+| **Section 1** | Overview | Project introduction, dataset details, and consensus gene feature space setup |
+| **Section 2** | Mathematical Foundations | LaTeX formulations for Accuracy, Balanced Accuracy, Precision, Recall, Macro F1, MCC, Cohen's Kappa, and Log Loss |
+| **Section 3** | Environment Setup | Library imports, deterministic seed anchoring, and data ingestion of aligned 152 consensus genes |
+| **Section 4** | Hyperparameter Search Specifications | `GridSearchCV` configurations and pipeline parameters for 10 classifiers (4 linear, 6 non-linear) |
+| **Section 5** | Stratified Nested Cross-Validation | 5-fold outer / 3-fold inner cross-validation loop evaluating all 10 models with out-of-fold generalization checks |
+| **Section 6** | Nested CV Performance Visualizations | Multi-algorithm performance boxplots, metric heatmaps, and training vs. test generalization gap audits |
+| **Section 7** | Champion Model Selection | Best Linear and Non-Linear model selection, consensus hyperparameter extraction, and full training on the Discovery Cohort |
+| **Section 8** | Programmatic Mapping & Cohort Validation | Programmatic Entrez-to-HUGO identifier mapping and locked-model predictions on TCGA Holdout, SMC 2018, SCAN-B, and METABRIC |
+| **Section 9** | Comparative Performance Analysis | Metric tables evaluating champion models across accuracy, F1-score, ROC-AUC, and MCC on all validation cohorts |
+| **Section 10** | External Validation Visualizations | Dual-model confusion matrices, ROC/PR curves, reliability calibration diagrams, and feature importances/coefficient weights |
 
 ---
 <a id="section-results"></a>
@@ -518,8 +558,8 @@ The primary exploration notebook [`OncoResolve_Subtyping_and_Precision_Profiling
 - Hierarchical (Ward, k=5): ARI > 0.65, NMI > 0.70 — confirms natural subtype structure in TCGA-BRCA
 - K-Means (k=5): comparable ARI; Basal cluster most coherent, LumA/LumB most overlapping
 
-### Section 6: Co-expression Network
-- Training split only (~867 samples); top 500 most variable genes
+#### Section 5: Co-expression Network (GCN) Topology
+- Training split only (~756 samples); top 500 most variable genes
 - Pearson |r| > 0.85 threshold; Louvain module detection
 - Expected modules: ESR1/Luminal, ERBB2/HER2 amplicon, KRT/Basal, MKI67/Proliferation, Immune
 - **Generated Plot**:
@@ -570,6 +610,44 @@ A rigorous formal comparison between CUS and three standard anomaly detection pa
 **Interpretation**: CUS has the *highest* subtype-discriminative chi-square among all four scores, and the highest Cox C-index. The partial Spearman overlap (r ≈ 0.65–0.67) confirms that while CUS is correlated with conventional anomaly scores, it captures biologically structured uniqueness that is more subtype-aware. The non-significant independent Cox HR across all scores confirms that patient uniqueness is complementary to — not a replacement for — clinical survival predictors.
 - **Generated Plot**:
   ![CUS vs Anomaly Detection Baselines Comparison](data/artifacts/fig31b_cus_vs_baselines.png)
+
+### Section 10.12: CUS Biomarker Recovery and Stability Analysis
+We formally validated that CUS (robust Mahalanobis distance via MCD) recovers key clinically validated breast cancer biomarkers that are missed or deprioritized by standard feature selection methods (SHAP, ANOVA, Mutual Information, Random Forest, LASSO, and DGE). 
+
+#### 1. Empirical Biomarker Rank Comparison (Stability > 0)
+The table below shows the ranks of the 19 stable uniqueness-driving genes (CUS Stability Score > 0) within the 152 consensus gene space across standard methods:
+
+| Gene Symbol | CUS Stability | SHAP Rank | ANOVA Rank | MI Rank | RF Rank | LASSO Rank | Best DGE Rank |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **TFAP2B** | **1.00** | 136.0 | 121.0 | 106.0 | 78.0 | 107.0 | 38.0 |
+| **PIP** | **1.00** | 11.0 | 78.0 | 79.0 | 102.0 | 140.5 | 16.0 |
+| **TFF1** | **1.00** | 29.0 | 18.0 | 23.0 | 37.0 | 103.0 | 2.0 |
+| **PRAME** | **1.00** | 34.0 | 107.0 | 128.0 | 86.0 | 125.0 | 19.0 |
+| **ANKRD30A** | **1.00** | 86.0 | 35.0 | 58.0 | 41.0 | 59.0 | 2.0 |
+| **KCNJ3** | **1.00** | 120.0 | 96.0 | 84.0 | 144.0 | 86.0 | 39.0 |
+| **SCGB1D2** | **1.00** | 97.0 | 117.0 | 102.0 | 145.0 | 123.0 | 22.0 |
+| **CYP4Z1** | **1.00** | 122.0 | 106.0 | 108.0 | 136.0 | 128.0 | 44.0 |
+| **HMGCS2** | **1.00** | 82.0 | 97.0 | 100.0 | 138.0 | 40.0 | 37.0 |
+| **CPB1** | **1.00** | 5.0 | 108.0 | 96.0 | 128.0 | 89.0 | 10.0 |
+| **SCGB2A2** | **1.00** | 111.0 | 104.0 | 121.0 | 147.0 | 26.0 | 11.0 |
+| **S100A7** | **0.99** | 67.0 | 141.0 | 140.0 | 150.0 | 140.5 | 5.0 |
+| **AGR3** | **0.75** | 144.0 | 3.0 | 2.0 | 4.0 | 63.0 | 1.0 |
+| **MUCL1** | **0.75** | 20.0 | 124.0 | 134.0 | 100.0 | 140.5 | 2.0 |
+| **SERPINA6** | **0.73** | 127.0 | 120.0 | 85.0 | 130.0 | 47.0 | 15.0 |
+| **DHRS2** | **0.66** | 112.0 | 103.0 | 97.0 | 103.0 | 38.0 | 38.0 |
+| **UGT2B11** | **0.07** | 147.0 | 144.0 | 136.0 | 127.0 | 85.0 | 50.0 |
+| **ADH1B** | **0.04** | 24.0 | 139.0 | 143.0 | 98.0 | 101.0 | 30.0 |
+| **GP2** | **0.01** | 25.0 | 41.0 | 32.0 | 50.0 | 73.0 | 12.0 |
+
+*Ranks are out of 152 consensus genes (lower rank = higher importance).*
+
+#### 2. Cross-Cohort Verification Summary
+- **SMC 2018 (RNA-seq) & SCAN-B (RNA-seq):** 19/19 genes present and verified.
+- **METABRIC (Microarray):** Only 5/19 genes (*ANKRD30A*, *KCNJ3*, *TFF1*, *AGR3*, *GP2*) present, demonstrating the platform coverage limitations of hybridization microarrays compared to dynamic RNA sequencing.
+
+#### Section 14: Computational Biomarker Validation (DepMap/LINCS)
+
+For a full biological and mathematical walkthrough, see the detailed report: `reports/Biomarker_Recovery.md` (Generated locally during notebook execution, omitted from repo).
 
 ### Section 11: Cross-Platform External Cohort Validation
 
@@ -784,8 +862,8 @@ The pipeline generates several output files, serialized models, and intermediate
 | `full_cohort_latent_coordinates.parquet` | `data/artifacts/` | PCA, t-SNE, and UMAP 2D coordinates for all patients in the full consensus cohort | Section 10: Latent Manifold |
 | `fig34_tme_deconvolution.png` | `data/artifacts/` | Boxplot of 10 immune/stromal ssGSEA fractions across PAM50 subtypes | Section 13: TME Deconvolution |
 | `fig35_depmap_lincs_validation.png` | `data/artifacts/` | Joint visualization of CRISPR essentiality heatmap and drug reversal connectivity scores | Section 14: Computational Validation |
-| `latest_trained_pipeline_predictions.csv` | Output directory / temporary | Prediction log containing classified subtypes for the latest batch of inference samples | Streamlit AutoML Engine |
-| `subtype_predictions_report.csv` | User-downloadable | Exported prediction report with detailed SHAP importance and patient similarity rankings | Streamlit UI |
+| `latest_trained_pipeline_predictions.csv` | Output directory / temporary | Prediction log containing classified subtypes for the latest batch of inference samples | Streamlit AutoML Engine (Runtime output) |
+| `subtype_predictions_report.csv` | UI Download | Formatted prediction matrix with per-class confidence intervals for clinical review | Streamlit AutoML Engine (Runtime output) |
 
 ---
 
@@ -909,25 +987,30 @@ OncoResolve-Breast-Cancer-Transcriptomics/
 ├── Dockerfile              # Multi-stage production build configuration
 ├── CITATION.cff            # Repo metadata for automatic citation
 ├── README.md               # Extensive project documentation
-├── social.txt              # Developer profiles and repository links
 ├── .streamlit/
 │   └── config.toml         # Streamlit visual configuration
 ├── notebooks/
-│   └── OncoResolve_Subtyping_and_Precision_Profiling.ipynb  # Primary exploration notebook
+│   ├── OncoResolve_Subtyping_and_Precision_Profiling.ipynb  # Primary exploration notebook
+│   └── OncoResolve_Model_Training_Validation.ipynb          # Dedicated training & validation notebook
 ├── data/
-│   ├── raw/
+│   ├── raw/                 # (Gitignored — generated locally)
 │   │   ├── Breast_TCGA_BRCA_RNAseq.csv      # Illumina HiSeq log2(RSEM) expression
 │   │   ├── Breast_TCGA_BRCA_clinical.csv    # TCGA survival metadata & PAM50 labels
 │   │   └── Breast_GSE45827.csv              # Legacy microarray comparison dataset
 │   ├── external_cohort/
-│   │   ├── SCANB_GSE96058_expression_subset.csv  # SCAN-B RNA-seq cohort (N=3,273 raw; N=317 validated)
-│   │   ├── SCANB_GSE96058_clinical.csv      # SCAN-B clinical & survival data
+│   │   ├── Breast_GSE70947.csv              # Breast cancer external cohort (Gitignored)
+│   │   ├── Breast_GSE70947.parquet          # Breast cancer external cohort (Gitignored)
+│   │   ├── SMC_2018_expression.csv          # SMC 2018 RNA-seq expression
+│   │   ├── SMC_2018_clinical.csv            # SMC 2018 clinical data
+│   │   ├── SCANB_GSE96058_expression_subset.csv  # SCAN-B RNA-seq cohort (Gitignored)
+│   │   ├── SCANB_GSE96058_clinical.csv      # SCAN-B clinical & survival data (Gitignored)
+│   │   ├── SCANB_mapping.csv                # SCAN-B GSM to barcode mapping
+│   │   ├── METABRIC_expression.csv          # METABRIC microarray cohort (Gitignored)
+│   │   ├── METABRIC_clinical.csv            # METABRIC clinical data (Gitignored)
+│   │   ├── prepare_external_cohorts.py      # Cleans & filters external cohorts
 │   │   └── download_external_cohorts.py     # Automated data retrieval script
-│   ├── processed/
-│   │   ├── SMC_expression_clean.parquet     # SMC 2018 RNA-seq cohort, processed (N=166)
-│   │   └── SCANB_expression_clean.parquet   # SCAN-B RNA-seq cohort, processed (N=3,273)
-│   ├── processed/                           # Parquet intermediates and serialized states
-│   └── artifacts/                           # Saved models, encoders, and reports
+│   ├── processed/           # Parquet intermediates and serialized states (Gitignored)
+│   └── artifacts/           # Saved models, encoders, and reports
 └── src/
     ├── __init__.py
     └── config.py           # Path configuration registry
