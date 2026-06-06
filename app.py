@@ -634,7 +634,7 @@ elif page == "Feature Selection":
         with col_fs2:
             top = consensus_genes.head(25)
             fig = px.bar(top, x="consensus_importance", y="mapped_symbol", orientation="h",
-                title="Consensus Genes Ranked by Dual-SHAP Consensus Score",
+                title="Consensus Genes Ranked by SHAP Importance Score",
                 template="plotly_white", color="consensus_importance",
                 color_continuous_scale="Blues", height=580)
             fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
