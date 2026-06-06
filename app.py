@@ -276,9 +276,9 @@ a.soc:hover svg {{ opacity:1; }}
 
 <!-- DOI + Colab badges -->
 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-  <a href="https://doi.org/10.5281/zenodo.20537449" target="_blank" title="Cite on Zenodo">
-    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.20537449.svg"
-         alt="DOI" style="height:19px;vertical-align:middle;">
+  <a href="https://doi.org/10.5281/zenodo.20565148" target="_blank" title="Cite on Zenodo">
+    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.20565148.svg"
+         alt="DOI" style="margin-top: 5px; height: 20px;">
   </a>
   <a href="https://colab.research.google.com/github/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics/blob/main/notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb"
      target="_blank" title="Open in Colab">
@@ -357,7 +357,7 @@ st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**External Validation Cohorts**")
 st.sidebar.caption("SMC 2018: N=166 (RNA-seq) | SCAN-B: N=317 (RNA-seq) | METABRIC: N=1,608 (microarray)")
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
-st.sidebar.caption("OncoResolve v3.3.0 — TCGA-BRCA edition.")
+st.sidebar.caption("OncoResolve v3.3.3 — TCGA-BRCA edition.")
 
 # =============================================================================
 # PLOTLY DEFAULTS (clinical light theme)
@@ -1180,7 +1180,7 @@ st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.markdown("""
 <div style="text-align:center; padding:10px 0;">
     <span style="color:#64748b; font-size:13.5px;">
-       <b>OncoResolve v3.3.0 — Breast Cancer Transcriptomics Pipeline</b>
+       <b>OncoResolve v3.3.3 — Breast Cancer Transcriptomics Pipeline</b><br/>
     </span><br>
     <span style="color:#94a3b8; font-size:11.5px;">
         TCGA-BRCA RNA-seq (N=1,084) &nbsp;|&nbsp; SMC 2018 (N=166) &nbsp;|&nbsp; SCAN-B (N=317) &nbsp;|&nbsp; METABRIC (N=1,608) &nbsp;|&nbsp; PAM50 Subtyping &nbsp;|&nbsp; explainable AI
