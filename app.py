@@ -912,7 +912,7 @@ elif page == "Functional Genomics":
 
 elif page == "Patient Uniqueness":
     st.markdown('<div class="main-title">N-of-1 Patient Uniqueness <span class="main-title-accent">Framework (CUS)</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">The Composite Uniqueness Score (CUS) evaluates each patient along orthogonal axes: topological distance (Mahalanobis centroid deviation) and cross-patient reconstruction residual. Outliers reflect atypical genomic programs.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">The Composite Uniqueness Score (CUS) evaluates each patient along orthogonal axes: topological distance (network centroid deviation) and cross-patient reconstruction residual. Outliers reflect atypical genomic programs.</div>', unsafe_allow_html=True)
 
     t_plots, t_table = st.tabs(["Uniqueness Projections & Landscapes", "Outlier Patient Registry"])
 
@@ -922,7 +922,7 @@ elif page == "Patient Uniqueness":
         with col_img1:
             show_artifact_image("fig22_cus_landscape_scatter.png", "CUS Landscape Scatter Plot (Topological vs Reconstruction)")
         with col_img2:
-            show_artifact_image("fig30_cus_vs_subtype_boxplot.png", "Mahalanobis CUS distribution across PAM50 subtypes")
+            show_artifact_image("fig30_cus_vs_subtype_boxplot.png", "Composite CUS distribution across PAM50 subtypes")
         
         st.markdown('<div class="section-title">Comparative Benchmark against Baseline Models</div>', unsafe_allow_html=True)
         col_img3, col_img4 = st.columns([2, 1])
@@ -931,7 +931,7 @@ elif page == "Patient Uniqueness":
         with col_img4:
             st.markdown("""
             ###  Uniqueness Insights
-            * **Mahalanobis Advantage:** Utilizing the covariance matrix (Mahalanobis distance) rather than independent Euclidean distances allows the model to respect gene correlation pathways, drastically reducing the false-positive outlier rate.
+            * **Composite Advantage:** Combining physical similarity graph distance (Topo_Distance) with autoencoder projection error (Recon_Error) allows the model to capture orthogonal dimensions of transcriptomic deviation, reducing false-positive rates.
             * **Basal Subtype Heterogeneity:** Basal-like tumors exhibit the highest CUS variance. This matches the clinical reality that Triple-Negative Breast Cancer is highly chaotic and contains multiple distinct molecular subclasses.
             * **Luminal A Uniformity:** Luminal A exhibits the lowest CUS, reflecting its homogeneous transcriptomic profile driven by a shared, stable estrogen-receptor program.
             * **Private Biology:** The low Jaccard overlap (~14%) between outlier and population-level pathways proves that unique patients run completely different biological software (e.g. metabolic remodeling) rather than extreme versions of normal cancer.
