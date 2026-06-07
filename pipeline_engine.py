@@ -141,7 +141,7 @@ def preprocess(X, y, var_threshold=0.1, test_size=0.2, random_state=42, log=_noo
             "variance_selector": var_sel, "shape_before": X_train.shape, "shape_after": X_train_var.shape}
 
 # ── 4. FEATURE SELECTION ────────────────────────────────────────────
-def run_feature_selection(X_train, y_train, feature_names, top_k=250, log=_noop):
+def run_feature_selection(X_train, y_train, feature_names, top_k=50, log=_noop):
     n_features = X_train.shape[1]; safe_k = min(top_k, n_features)
     working_X, working_names, pre_filtered = X_train, feature_names, False
     if n_features > _MAX_FEATURES_FOR_EXPENSIVE:
@@ -316,8 +316,17 @@ def run_shap_analysis(pipeline, X_full, top_n=25, log=_noop):
         log("Scaling features..."); X_t = steps["scaler"].transform(X_t)
     model = steps.get("model")
     if not model: return {"error": "No 'model' step found."}
-    log(f"Computing TreeSHAP values ({X_t.shape[0]} samples × {X_t.shape[1]} features)...")
-    explainer = shap.TreeExplainer(model); shap_values = explainer.shap_values(X_t)
+    
+    if isinstance(model, LogisticRegression):
+        log(f"Computing LinearSHAP Consensus ({X_t.shape[0]} samples × {X_t.shape[1]} features)...")
+        explainer = shap.LinearExplainer(model, X_t)
+        shap_values = explainer.shap_values(X_t)
+    elif type(model).__name__ in ["RandomForestClassifier", "XGBClassifier", "LGBMClassifier"]:
+        log(f"Computing TreeSHAP values ({X_t.shape[0]} samples × {X_t.shape[1]} features)...")
+        explainer = shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(X_t)
+    else:
+        return {"error": "SHAP strictly validated for Linear and Tree models to avoid Kernel leakage."}
     log("Aggregating SHAP importance...")
     sa = np.array(shap_values)
     if sa.ndim == 3:
@@ -330,7 +339,7 @@ def run_shap_analysis(pipeline, X_full, top_n=25, log=_noop):
     return {"shap_importance": imp.head(top_n), "selected_gene_names": names}
 
 # ── 9. GENE DEEP DIVE ───────────────────────────────────────────────
-def get_top_genes_with_pct(shap_result, n=21):
+def get_top_genes_with_pct(shap_result, n=50):
     """Return top N genes with their percentage contribution."""
     imp = shap_result["shap_importance"].head(n).copy()
     total = imp["importance"].sum()
@@ -371,7 +380,7 @@ def run_gene_deep_dive(gene, X, y, shap_result, top_genes_df, log=_noop):
 
     # Gene SHAP contribution
     gene_row = top_genes_df[top_genes_df["gene"] == gene].iloc[0]
-    log(f"Gene '{gene}' contributes {gene_row['pct']:.2f}% of total SHAP importance (top 21)")
+    log(f"Gene '{gene}' contributes {gene_row['pct']:.2f}% of total SHAP importance (top 50)")
     log("Gene deep dive complete ✓")
 
     return {

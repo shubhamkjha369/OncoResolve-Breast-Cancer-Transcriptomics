@@ -352,7 +352,7 @@ page = st.session_state.active_page
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**TCGA-BRCA Pan-Can Atlas 2018**")
 st.sidebar.caption("Illumina HiSeq RNA-seq V2 (RSEM batch-normalized).")
-st.sidebar.caption("N=1,084 patients (945 post-QC) | 152 consensus genes | 5 PAM50 subtypes | OS+DFS survival")
+st.sidebar.caption("N=1,084 patients (945 post-QC) | 50 consensus genes | 5 PAM50 subtypes | OS+DFS survival")
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**External Validation Cohorts**")
 st.sidebar.caption("SMC 2018: N=166 (RNA-seq) | SCAN-B: N=317 (RNA-seq) | METABRIC: N=1,608 (microarray)")
@@ -629,7 +629,7 @@ elif page == "Feature Selection":
             1. **Variance Filtering & Outlier Removal:** Stagnant transcripts are removed, and low-correlation outliers are pruned to yield a clean discovery cohort of 756 samples.
             2. **Welch's t-test & FDR Correction:** Subtype-specific differentially expressed genes (DGE) are identified under strict significance thresholds ($|\log_2\text{FC}| > 0.58$, $\text{FDR} < 0.05$).
             3. **Dual-Architecture SHAP Fusion:** SHAP values from independent **Logistic Regression** and **SVM** models are MinMax-normalized and averaged to calculate a robust consensus score.
-            4. **Consensus Ranking:** The top **152 consensus genes** are locked as features, reducing feature dimensionality by >99% while preserving classification power.
+            4. **Consensus Ranking:** The top **50 consensus genes** are locked as features, reducing feature dimensionality by >99% while preserving classification power.
             """)
         with col_fs2:
             top = consensus_genes.head(25)
@@ -688,7 +688,7 @@ elif page == "Model Performance":
             <b>Classifier Evaluation Insights:</b>
             <ul style="margin: 8px 0 0 20px; padding: 0;">
                 <li style="margin-bottom: 6px;"><b>Linear vs. Non-Linear Separability:</b> <b>Logistic Regression (Linear)</b> and <b>Support Vector Machine (RBF-SVM)</b> show outstanding performance. OncoResolve utilizes both architectures to capture linear and complex non-linear diagnostic boundaries.</li>
-                <li style="margin-bottom: 6px;"><b>Consensus Feature Space:</b> Training classifiers on the 152 consensus biomarker space achieves competitive performance compared to the full 18,000 gene space, drastically reducing technical noise and ensuring computational tractability.</li>
+                <li style="margin-bottom: 6px;"><b>Consensus Feature Space:</b> Training classifiers on the 50 consensus biomarker space achieves competitive performance compared to the full 18,000 gene space, drastically reducing technical noise and ensuring computational tractability.</li>
                 <li><b>Platform Stability:</b> The dual-architecture locked model demonstrates high transferability to external cohorts, maintaining accuracy without any fine-tuning or retraining.</li>
             </ul>
         </div>
@@ -900,7 +900,7 @@ elif page == "Functional Genomics":
         st.markdown("""
         <div class="success-box">
             <b>MSigDB Hallmark Significance:</b><br>
-            The MSigDB Hallmark queries demonstrate that our 152 consensus genes are heavily enriched in core cell cycle progression pathways, estrogen response targets, and apical junction signaling, validating their direct mechanistic links to breast cancer pathology.
+            The MSigDB Hallmark queries demonstrate that our 50 consensus genes are heavily enriched in core cell cycle progression pathways, estrogen response targets, and apical junction signaling, validating their direct mechanistic links to breast cancer pathology.
         </div>
         """, unsafe_allow_html=True)
     with t2:
@@ -1138,23 +1138,24 @@ elif page == "Drug Discovery":
         show_artifact_image("fig35_depmap_lincs_validation.png", "CRISPR CERES Essentiality Scores & LINCS Reversal tau metrics")
 
     with col_details:
-        st.markdown('<div class="section-title">Broad DepMap CRISPR Essentiality Screen</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Broad DepMap CRISPR Essentiality Screen (Public 26Q1 Chronos)</div>', unsafe_allow_html=True)
         depmap_data = {
-            "Gene Symbol": ["ESR1", "ERBB2", "FOXA1", "AURKA", "TOP2A", "KRT5 / KRT14"],
-            "Subtype Relevance": ["Luminal A/B", "HER2-enriched", "Luminal A", "Pan-cancer", "Proliferative", "Basal structural"],
-            "Essentiality Class": ["Context-essential", "Context-essential", "Context-essential", "Pan-essential", "Pan-essential", "Non-essential"],
-            "CERES score Details": ["MCF7 CERES -0.62 (essential in ER+ lines only)", "SKBR3 CERES -1.45 (strongly essential in HER2-amplified)", "MCF7 -0.81, T47D -0.79 (essential in ER+ lines)", "MCF7 -0.82, MDA-MB-231 -0.79 (mitosis-dependent)", "All lines -0.58 to -0.71 (DNA replication dependency)", "CERES ≈ 0 (structural markers, not oncogenic drivers)"]
+            "Gene Symbol": ["ESR1", "ERBB2", "FOXA1", "AURKA", "TOP2A", "KRT5", "FGFR4"],
+            "Subtype Relevance": ["Luminal A/B", "HER2-enriched", "Luminal A/B & HER2+", "Pan-cancer", "Proliferative", "Basal structural", "HER2+ subclass"],
+            "Essentiality Class": ["Context-essential", "Context-essential", "Context-essential", "Pan-essential", "Pan-essential", "Non-essential", "Context-essential"],
+            "Chronos score Details": ["MCF7 -1.47, T47D -1.91 (essential in ER+ lines)", "SKBR3 -1.81, HCC1954 -0.61 (essential in HER2+ lines)", "MCF7 -2.05, T47D -1.56, SKBR3 -1.31 (pioneer factor)", "MCF7 -1.43, MDA-MB-231 -0.90 (mitosis check)", "All lines -1.68 to -3.31 (DNA replication machinery)", "Chronos ≈ 0 (structural marker, not driver)", "HCC1954 -1.60 (strongly essential in FGFR4-overexpressing)"]
         }
         st.dataframe(pd.DataFrame(depmap_data), use_container_width=True, hide_index=True)
 
-        st.markdown('<div class="section-title">LINCS L1000 Connectivity Map Candidates (tau ≤ −75)</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">LINCS L1000 Connectivity Map Candidates (Reversal Score)</div>', unsafe_allow_html=True)
         lincs_data = {
-            "Compound": ["Fulvestrant", "Lapatinib", "Alisertib", "Doxorubicin"],
-            "Mechanism": ["ESR1 antagonist", "ERBB2/EGFR dual inhibitor", "AURKA inhibitor", "TOP2A inhibitor / Anthracycline"],
-            "Score (tau)": [-92, -88, -85, -95],
-            "Clinical Context": ["FDA-approved ER+ breast cancer standard", "FDA-approved HER2+ breast cancer standard", "Clinical trials for TNBC", "Gold-standard adjuvant chemotherapy"]
+            "Compound": ["vorinostat", "neratinib", "OSI-027", "Purvalanol A", "wortmannin"],
+            "Mechanism": ["HDAC inhibitor", "HER2/EGFR dual inhibitor", "mTOR inhibitor", "CDK inhibitor", "PI3K inhibitor"],
+            "Score (-score)": [-0.60, -0.60, -0.33, -0.29, -0.29],
+            "Clinical Context": ["Reverses cell cycle gene upregulation", "Targeted anti-HER2 clinical standard", "Reverses proliferation signatures", "Cell cycle checkpoint arrest", "PI3K pathway blockade"]
         }
         st.dataframe(pd.DataFrame(lincs_data), use_container_width=True, hide_index=True)
+        st.caption("Disclaimer: LINCS scores represent transcriptomic pattern reversal and do not directly predict clinical therapeutic efficacy.")
 
     st.markdown("""
     <div class="success-box">
