@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 data_dir = REPO_ROOT / "data"
 raw_dir = data_dir / "raw"
 ext_dir = data_dir / "external_cohort"
@@ -53,7 +53,7 @@ if "patient_id" in df_met_clin.columns:
 
 # Strict Filter METABRIC
 met_claudin = df_met.index.map(df_met_clin["CLAUDIN_SUBTYPE"])
-valid_claudin_subtypes = ["LumA", "LumB", "Her2", "claudin-low", "Basal"]
+valid_claudin_subtypes = ["LumA", "LumB", "Her2", "claudin-low", "Basal", "Normal"]
 met_keep_mask = met_claudin.isin(valid_claudin_subtypes)
 df_met = df_met[met_keep_mask]
 print(f"METABRIC filtered shape (retained only valid cancer subtypes): {df_met.shape}")
@@ -74,7 +74,7 @@ if "sample_id" in df_scan_clin.columns:
 # Strict Filter SCAN-B
 scan_gsm = df_scan.index.map(f_to_gsm)
 scan_pam50 = scan_gsm.map(df_scan_clin["pam50_subtype"])
-valid_pam50_subtypes = ["LumA", "LumB", "Her2", "Basal"]
+valid_pam50_subtypes = ["LumA", "LumB", "Her2", "Basal", "Normal"]
 scan_keep_mask = scan_pam50.isin(valid_pam50_subtypes)
 df_scan = df_scan[scan_keep_mask]
 print(f"SCAN-B filtered shape (retained only valid cancer subtypes): {df_scan.shape}")

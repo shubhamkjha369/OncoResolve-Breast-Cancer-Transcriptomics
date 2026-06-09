@@ -1,0 +1,7 @@
+Panel,Total_Genes,Overlap_Count,Overlapping_Genes,Coverage_Percentage
+Oncotype DX,21,3,"ESR1, PGR, SCUBE2",14.285714285714285
+MammaPrint,51,0,,0.0
+EndoPredict,12,0,,0.0
+PAM50,50,12,"ESR1, FGFR4, FOXA1, KRT14, KRT17, KRT5, MAPT, MIA, MLPH, NAT1, PGR, SFRP1",24.0
+Overall Union,112,13,"ESR1, FGFR4, FOXA1, KRT14, KRT17, KRT5, MAPT, MIA, MLPH, NAT1, PGR, SCUBE2, SFRP1",11.607142857142858
+Overall Intersection,0,0,,0.0

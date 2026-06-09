@@ -73,7 +73,7 @@ def _prediction_color_map(labels):
 # =============================================================================
 def _load_and_align_features(df, top_deg_genes, entrez_to_hugo):
     """
-    Transposes, filters, and aligns the uploaded dataframe to match the 152
+    Transposes, filters, and aligns the uploaded dataframe to match the 178
     consensus biomarker signature, applying log2 scaling if raw counts are detected.
     """
     raw_df = df.copy()
@@ -239,7 +239,7 @@ div[data-testid="stFileUploader"] {
             model_choice = st.selectbox(
                 "Select Pre-trained Model",
                 [PRETRAINED_LR_KEY, PRETRAINED_SVM_KEY],
-                format_func=lambda x: "Logistic Regression (Linear Classifier — Holdout ACC: 88.89%)" if x == PRETRAINED_LR_KEY else "Support Vector Machine (RBF Classifier — Holdout ACC: 87.30%)"
+                format_func=lambda x: "Logistic Regression (Linear Classifier — Holdout ACC: 91.37%)" if x == PRETRAINED_LR_KEY else "Support Vector Machine (RBF Classifier — Holdout ACC: 90.36%)"
             )
         with col_scaling:
             scaling_choice = st.selectbox(
@@ -298,13 +298,13 @@ div[data-testid="stFileUploader"] {
                 if ground_truth_col and ground_truth_col in raw_df.columns:
                     y_true_raw = raw_df[ground_truth_col].copy()
 
-                # Align features to 152 signature
+                # Align features to 178 signature
                 X_aligned, patient_ids, mapped_features, missing_features = _load_and_align_features(
                     raw_df, top_deg_genes, entrez_to_hugo
                 )
 
                 if len(mapped_features) == 0:
-                    st.error("Error: The uploaded dataset does not share any mapped HUGO symbols with the 152 consensus biomarker signature. Check your column labels.")
+                    st.error("Error: The uploaded dataset does not share any mapped HUGO symbols with the 178 consensus biomarker signature. Check your column labels.")
                     return
 
                 # Choose model pipeline
@@ -347,7 +347,7 @@ div[data-testid="stFileUploader"] {
                 # Render metrics
                 st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
                 st.markdown(
-                    f'<div class="success-box"><b>Prediction Complete!</b> Successfully aligned <b>{len(mapped_features)}/152</b> signature genes.</div>',
+                    f'<div class="success-box"><b>Prediction Complete!</b> Successfully aligned <b>{len(mapped_features)}/178</b> signature genes.</div>',
                     unsafe_allow_html=True
                 )
 

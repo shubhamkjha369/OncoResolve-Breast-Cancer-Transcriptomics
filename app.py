@@ -352,10 +352,10 @@ page = st.session_state.active_page
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**TCGA-BRCA Pan-Can Atlas 2018**")
 st.sidebar.caption("Illumina HiSeq RNA-seq V2 (RSEM batch-normalized).")
-st.sidebar.caption("N=1,084 patients (945 post-QC) | 50 consensus genes | 5 PAM50 subtypes | OS+DFS survival")
+st.sidebar.caption("N=1,084 patients (981 post-QC) | 178 consensus genes | 5 PAM50 subtypes | OS+DFS survival")
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**External Validation Cohorts**")
-st.sidebar.caption("SMC 2018: N=166 (RNA-seq) | SCAN-B: N=317 (RNA-seq) | METABRIC: N=1,608 (microarray)")
+st.sidebar.caption("SMC 2018: N=168 (RNA-seq) | SCAN-B: N=340 (RNA-seq) | METABRIC: N=1,756 (microarray)")
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.caption("OncoResolve v3.3.3 — TCGA-BRCA edition.")
 
@@ -407,9 +407,9 @@ if page == "Project Overview":
     st.markdown('<div class="section-title">Discovery Cohort: TCGA-BRCA Pan-Can Atlas 2018</div>', unsafe_allow_html=True)
     cols = st.columns(4)
     with cols[0]:
-        st.markdown(card("945", "Post-QC Patients", True), unsafe_allow_html=True)
+        st.markdown(card("981", "Post-QC Patients", True), unsafe_allow_html=True)
     with cols[1]:
-        st.markdown(card("152", "Consensus Biomarkers", False), unsafe_allow_html=True)
+        st.markdown(card("178", "Consensus Biomarkers", False), unsafe_allow_html=True)
     with cols[2]:
         st.markdown(card("5", "PAM50 Subtypes Classified", False), unsafe_allow_html=True)
     with cols[3]:
@@ -418,11 +418,11 @@ if page == "Project Overview":
     st.markdown('<div class="section-title">Independent Validation Cohorts</div>', unsafe_allow_html=True)
     cols2 = st.columns(3)
     with cols2[0]:
-        st.markdown(card("166", "SMC 2018 Patients (RNA-seq)"), unsafe_allow_html=True)
+        st.markdown(card("168", "SMC 2018 Patients (RNA-seq)"), unsafe_allow_html=True)
     with cols2[1]:
-        st.markdown(card("317", "SCAN-B Patients (RNA-seq)"), unsafe_allow_html=True)
+        st.markdown(card("340", "SCAN-B Patients (RNA-seq)"), unsafe_allow_html=True)
     with cols2[2]:
-        st.markdown(card("1,608", "METABRIC Patients (Microarray)"), unsafe_allow_html=True)
+        st.markdown(card("1,756", "METABRIC Patients (Microarray)"), unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">PAM50 Subtype Biology</div>', unsafe_allow_html=True)
     pam50_data = {
@@ -456,7 +456,7 @@ elif page == "Dataset Comparison":
                                "Probe IDs (need MyGene mapping)", "54,613 probes", "None",
                                "Embedded CSV label", "14 cell lines (must remove)", "None",
                                "Probe IDs (70-85% mappable)", "Obsolete (microarray era)"],
-        "TCGA-BRCA (Current)": ["1,084 primary tumours (945 post-QC)", "Illumina HiSeq RNA-seq V2 (RSEM)",
+        "TCGA-BRCA (Current)": ["1,084 primary tumours (981 post-QC)", "Illumina HiSeq RNA-seq V2 (RSEM)",
                                 "HUGO gene symbols (direct)", "~18,000 genes", "OS + DFS (94% of samples)",
                                 "PAM50 from clinical metadata", "0 (all primary biopsies)",
                                 "TCGA Pan-Cancer Atlas pipeline",
@@ -472,7 +472,7 @@ elif page == "Dataset Comparison":
     st.markdown("""
     <div class="success-box">
         <b>Yes — in every measurable dimension.</b><br><br>
-        <b>1. Statistical reliability (8x more data):</b> With N=945 post-QC samples, the stratified CV runs on much larger cohorts, providing tighter confidence intervals and publication-grade metrics.<br><br>
+        <b>1. Statistical reliability (8x more data):</b> With N=981 post-QC samples, the stratified CV runs on much larger cohorts, providing tighter confidence intervals and publication-grade metrics.<br><br>
         <b>2. Biological accuracy (RNA-seq vs microarray):</b> RNA-seq measures actual transcript abundance (reads per gene) rather than relative fluorescence. It avoids cross-hybridisation artefacts, has a wider dynamic range, and represents the modern molecular profiling standard.<br><br>
         <b>3. Clinical relevance:</b> TCGA-BRCA is the canonical reference dataset cited in all major breast cancer publications post-2015, enabling head-to-head benchmarking with the literature.<br><br>
         <b>4. Survival integration:</b> TCGA-BRCA includes Overall Survival (OS) and Disease-Free Survival (DFS) data, enabling downstream Kaplan-Meier and Cox regression analysis to confirm that predicted subtypes are prognostic.<br><br>
@@ -488,7 +488,7 @@ elif page == "EDA Insights":
     st.markdown('<div class="main-title">Exploratory <span class="main-title-accent">Data Analysis</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="info-box">PCA and UMAP projections of TCGA-BRCA RNA-seq data confirm that PAM50 subtypes exhibit highly distinct transcriptomic signatures.</div>', unsafe_allow_html=True)
 
-    t1, t2 = st.tabs(["Latent Space Projections", "Quality Control & Class Distributions"])
+    t1, t2, t3 = st.tabs(["Latent Space Projections", "Quality Control & Class Distributions", "Differential Gene Expression (DGE)"])
 
     with t1:
         st.markdown('<div class="section-title">Latent Space Projections (PCA)</div>', unsafe_allow_html=True)
@@ -500,7 +500,7 @@ elif page == "EDA Insights":
             
             fig = px.scatter(pca_plot_df, x="PC1", y="PC2", color="Subtype",
                 color_discrete_map=SUBTYPE_COLORS,
-                title="PCA Projection — TCGA-BRCA RNA-seq (N=945, ~18,000 genes)",
+                title="PCA Projection — TCGA-BRCA RNA-seq (N=981, ~18,000 genes)",
                 template="plotly_white", opacity=0.75, height=540)
             fig.update_traces(marker=dict(size=7, line=dict(width=0.5, color="#ffffff")))
             fig.update_layout(**PLOTLY_LAYOUT, legend=dict(font=dict(size=12)))
@@ -540,13 +540,22 @@ elif page == "EDA Insights":
                 dist.columns = ["Subtype", "Count"]
                 fig2 = px.bar(dist, x="Subtype", y="Count", color="Subtype",
                     color_discrete_map=SUBTYPE_COLORS,
-                    title="TCGA-BRCA PAM50 Subtype Distribution (N=945)",
+                    title="TCGA-BRCA PAM50 Subtype Distribution (N=981)",
                     template="plotly_white", text="Count")
                 fig2.update_traces(textposition="outside", marker_line_width=0)
                 fig2.update_layout(**PLOTLY_LAYOUT, showlegend=False)
                 fig2.update_xaxes(showgrid=False)
                 fig2.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
                 st.plotly_chart(fig2, use_container_width=True)
+
+    with t3:
+        st.markdown('<div class="section-title">Subtype-Specific Volcano Plots (DGE Welch\'s t-test)</div>', unsafe_allow_html=True)
+        st.markdown("""
+        To isolate robust molecular markers that differentiate each molecular subtype from all other breast cancer tissue, we perform Welch's t-test Differential Gene Expression (DGE) with Benjamini-Hochberg (FDR) correction:
+        * **Significance Thresholds:** $-\\log_{10}(\\text{FDR}) > 5$ (FDR $< 10^{-5}$) and $|\\log_2\\text{FC}| > 1.5$.
+        * **Statistical Control:** Genes with zero variance are removed, and low-correlation outliers are pruned prior to testing.
+        """)
+        show_artifact_image("fig6b_dge_volcano_plots.png", "Subtype-specific Volcano Plots for 5 PAM50 Subtypes")
 
 # =============================================================================
 # PAGE: CLUSTERING & NETWORKS
@@ -614,7 +623,7 @@ elif page == "Clustering & Networks":
 
 elif page == "Feature Selection":
     st.markdown('<div class="main-title">Consensus <span class="main-title-accent">Biomarker Discovery</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">We run a dual-architecture SHAP feature selection pipeline, fusing linear (Logistic Regression) and non-linear (RBF-SVM) importance. Genes are filtered via Welch\'s t-test DGE and ranked by consensus score to select 152 biomarkers.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">We run a dual-architecture SHAP feature selection pipeline, fusing linear (Logistic Regression) and non-linear (RBF-SVM) importance. Genes are filtered via Welch\'s t-test DGE and ranked by consensus score to select 178 biomarkers.</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">Top Consensus Biomarkers</div>', unsafe_allow_html=True)
     if consensus_genes is not None:
@@ -664,12 +673,12 @@ elif page == "Model Performance":
     t_perf, t_cv = st.tabs(["Holdout Performance Benchmarks", "Cross-Validation & Hyperparameters"])
 
     with t_perf:
-        st.markdown('<div class="section-title">Classifiers Holdout Performance (N=189 Unseen Patients)</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Classifiers Holdout Performance (N=197 Unseen Patients)</div>', unsafe_allow_html=True)
         
         # Build clean holdout df from the audited results
         holdout_metrics_df = pd.DataFrame([
-            {"Model": "Logistic Regression (Linear)", "Accuracy": 0.8889, "Macro F1-Score": 0.8845, "95% Bootstrap CI (F1)": "[0.8263, 0.9304]"},
-            {"Model": "Support Vector Machine (RBF)", "Accuracy": 0.8730, "Macro F1-Score": 0.8516, "95% Bootstrap CI (F1)": "[0.7826, 0.9064]"}
+            {"Model": "Logistic Regression (Linear)", "Accuracy": 0.9137, "Macro F1-Score": 0.9180, "95% Bootstrap CI (F1)": "[0.8572, 0.9582]"},
+            {"Model": "Support Vector Machine (RBF)", "Accuracy": 0.9036, "Macro F1-Score": 0.8993, "95% Bootstrap CI (F1)": "[0.8316, 0.9466]"}
         ])
 
         fig = px.bar(holdout_metrics_df, x="Model", y=["Accuracy", "Macro F1-Score"], barmode="group",
@@ -715,8 +724,8 @@ elif page == "Model Performance":
             st.dataframe(cv_summary_df, use_container_width=True, hide_index=True)
         else:
             cv_summary_df = pd.DataFrame([
-                {"Classifier Model": "Support Vector Machine (RBF)", "Mean CV Accuracy": "84.79%", "Mean CV Macro F1": "85.18%", "F1 Std Deviation": "±2.17%", "Optimal Parameters": "{'clf__C': 10.0, 'clf__gamma': 0.01}"},
-                {"Classifier Model": "Logistic Regression (Linear)", "Mean CV Accuracy": "84.52%", "Mean CV Macro F1": "85.18%", "F1 Std Deviation": "±2.23%", "Optimal Parameters": "{'clf__C': 0.01}"}
+                {"Classifier Model": "Support Vector Machine (RBF)", "Mean CV Accuracy": "86.74%", "Mean CV Macro F1": "82.17%", "F1 Std Deviation": "±5.07%", "Optimal Parameters": "{'clf__C': 1.0, 'clf__gamma': 0.01}"},
+                {"Classifier Model": "Logistic Regression (Linear)", "Mean CV Accuracy": "86.35%", "Mean CV Macro F1": "82.88%", "F1 Std Deviation": "±6.14%", "Optimal Parameters": "{'clf__C': 0.1}"}
             ])
             st.dataframe(cv_summary_df, use_container_width=True, hide_index=True)
 
@@ -777,16 +786,23 @@ elif page == "SHAP Explainability":
             feat_cols_arr = np.array([c for c in df_holdout.columns if c != 'type'])
             gene_mask = np.isin(feat_cols_arr, top_deg_genes)
             X_holdout_ml = df_holdout[feat_cols_arr].values[:, gene_mask]
-            X_shap_fast = X_holdout_ml[:50]
-            y_holdout = df_holdout['type'].values[:50]
+
+            # Determine available SHAP sample count from pre-computed tensors
+            _shap_probe = ARTIFACT_DIR / "consensus_svm_shap_tensor.npy"
+            if _shap_probe.exists():
+                _n_shap = np.load(_shap_probe, mmap_mode='r').shape[0]
+            else:
+                _n_shap = min(30, X_holdout_ml.shape[0])
+            X_shap_fast = X_holdout_ml[:_n_shap]
+            y_holdout = df_holdout['type'].values[:_n_shap]
             
-            col_sel1, col_sel2, col_sel3 = st.columns(3)
+            col_sel1, col_sel2, col_sel3, col_sel4 = st.columns([1.2, 1.5, 1.3, 1.2])
             with col_sel1:
                 model_sel = st.selectbox("Select Classifier Model", ["SVM (RBF)", "Logistic Regression (Linear)"])
             with col_sel2:
                 sample_idx = st.selectbox(
                     "Select Patient Sample",
-                    options=list(range(50)),
+                    options=list(range(_n_shap)),
                     format_func=lambda idx: f"Patient Sample {idx+1} (Actual Subtype: {y_holdout[idx]})",
                     key="shap_waterfall_sample"
                 )
@@ -797,6 +813,8 @@ elif page == "SHAP Explainability":
                     index=list(le_cohort.classes_).index(y_holdout[sample_idx]) if y_holdout[sample_idx] in le_cohort.classes_ else 0,
                     key="shap_waterfall_class"
                 )
+            with col_sel4:
+                top_n = st.slider("Top Biomarkers to Plot", min_value=5, max_value=40, value=15, step=5)
             
             class_idx = list(le_cohort.classes_).index(target_class)
             
@@ -819,7 +837,6 @@ elif page == "SHAP Explainability":
                 # Compute base value dynamically using exact mathematical identity
                 expected_val = predicted_probability - sample_shaps.sum()
                 
-                top_n = 10
                 top_indices = np.argsort(np.abs(sample_shaps))[::-1][:top_n]
                 other_sum = sample_shaps.sum() - sample_shaps[top_indices].sum()
                 
@@ -835,8 +852,10 @@ elif page == "SHAP Explainability":
                     x_changes.append(other_sum)
                     measures.append("relative")
                     
+                # Fix scrambled lookup by aligning with model/SHAP input features
+                sorted_genes = sorted([str(g) for g in top_deg_genes])
                 for idx in reversed(top_indices):
-                    probe = top_deg_genes[idx]
+                    probe = sorted_genes[idx]
                     symbol = probe_to_symbol.get(str(probe), str(probe))
                     val = sample_features[idx]
                     y_labels.append(f"{val:.3f} = {symbol}")
@@ -865,7 +884,7 @@ elif page == "SHAP Explainability":
                     title=f"SHAP Waterfall Explainer for Patient {sample_idx+1} (Class: {target_class})",
                     waterfallgap=0.3,
                     **PLOTLY_LAYOUT,
-                    height=550
+                    height=120 + 28 * len(y_labels)
                 )
                 fig_wf.update_xaxes(showgrid=True, gridcolor="#f1f5f9", title_text="Predicted Subtype Probability")
                 fig_wf.update_yaxes(showgrid=False)
@@ -880,6 +899,51 @@ elif page == "SHAP Explainability":
                     The waterfall chart visualizes how each gene expression level either increases (red bar) or decreases (blue bar) the model's confidence in diagnosing the patient's tumor as {target_class}.
                 </div>
                 """, unsafe_allow_html=True)
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                with st.expander("📋 View Complete Individual Patient Biomarker Contribution Table (All 178 Genes)"):
+                    patient_shap_data = []
+                    for idx in range(len(sample_shaps)):
+                        probe = sorted_genes[idx]
+                        symbol = probe_to_symbol.get(str(probe), str(probe))
+                        
+                        # Find full name from consensus_genes if available
+                        fullname = "Unknown gene"
+                        if consensus_genes is not None:
+                            match_row = consensus_genes[consensus_genes['feature'].astype(str) == str(probe)]
+                            if not match_row.empty and 'full_gene_name' in match_row.columns:
+                                fullname = match_row['full_gene_name'].values[0]
+                                
+                        val = sample_features[idx]
+                        shap_val = sample_shaps[idx]
+                        
+                        if shap_val > 0.01:
+                            effect = f"🔴 Promotes {target_class} diagnosis"
+                        elif shap_val < -0.01:
+                            effect = f"🔵 Suppresses {target_class} diagnosis"
+                        else:
+                            effect = "⚪ Negligible effect"
+                            
+                        patient_shap_data.append({
+                            "Entrez ID": probe,
+                            "HUGO Symbol": symbol,
+                            "Gene Name": fullname,
+                            "Expression Value": val,
+                            "SHAP Contribution": shap_val,
+                            "Clinical Effect": effect,
+                            "abs_shap": abs(shap_val)
+                        })
+                    
+                    df_patient_shap = pd.DataFrame(patient_shap_data).sort_values(by="abs_shap", ascending=False).reset_index(drop=True)
+                    df_patient_shap.insert(0, "Rank", np.arange(1, len(df_patient_shap) + 1))
+                    
+                    # Clean formatting for presentation
+                    df_patient_shap_formatted = df_patient_shap.copy()
+                    df_patient_shap_formatted["Expression Value"] = df_patient_shap_formatted["Expression Value"].map(lambda x: f"{x:.3f}")
+                    df_patient_shap_formatted["SHAP Contribution"] = df_patient_shap_formatted["SHAP Contribution"].map(lambda x: f"{x:+.4f}")
+                    df_patient_shap_formatted = df_patient_shap_formatted.drop(columns=["abs_shap"])
+                    
+                    st.dataframe(df_patient_shap_formatted, use_container_width=True, hide_index=True)
             else:
                 st.warning("SHAP values tensor or models not found in data/artifacts/.")
         else:
@@ -1002,7 +1066,7 @@ elif page == "External Validation":
                             "Accuracy": f"{data[model]['acc']:.2%}",
                             "F1 Macro": f"{data[model]['f1_macro']:.2%}",
                             "F1 Weighted": f"{data[model]['f1_weighted']:.2%}",
-                            "Shared Genes": f"{data.get('n_shared', 152)}/152",
+                            "Shared Genes": f"{data.get('n_shared', 178)}/178",
                             "Samples (N)": data.get("n_samples", 0)
                         })
             val_df = pd.DataFrame(rows)
@@ -1010,12 +1074,12 @@ elif page == "External Validation":
         else:
             st.warning("External validation results dictionary not found. Showing baseline validated scores:")
             val_df = pd.DataFrame([
-                {"Cohort": "SCAN-B", "Platform": "Illumina NextSeq RNA-seq", "Model": "Support Vector Machine (RBF)", "Accuracy": "86.12%", "F1 Macro": "85.06%", "F1 Weighted": "85.91%", "Shared Genes": "147/152", "Samples (N)": 317},
-                {"Cohort": "SCAN-B", "Platform": "Illumina NextSeq RNA-seq", "Model": "Logistic Regression (Linear)", "Accuracy": "85.80%", "F1 Macro": "86.18%", "F1 Weighted": "85.94%", "Shared Genes": "147/152", "Samples (N)": 317},
-                {"Cohort": "SMC 2018", "Platform": "Illumina RNA-seq", "Model": "Logistic Regression (Linear)", "Accuracy": "81.93%", "F1 Macro": "83.20%", "F1 Weighted": "81.32%", "Shared Genes": "152/152", "Samples (N)": 166},
-                {"Cohort": "SMC 2018", "Platform": "Illumina RNA-seq", "Model": "Support Vector Machine (RBF)", "Accuracy": "75.90%", "F1 Macro": "77.84%", "F1 Weighted": "74.08%", "Shared Genes": "152/152", "Samples (N)": 166},
-                {"Cohort": "METABRIC", "Platform": "Illumina HT-12 v3 Microarray", "Model": "Support Vector Machine (RBF)", "Accuracy": "72.70%", "F1 Macro": "72.12%", "F1 Weighted": "72.45%", "Shared Genes": "73/152", "Samples (N)": 1608},
-                {"Cohort": "METABRIC", "Platform": "Illumina HT-12 v3 Microarray", "Model": "Logistic Regression (Linear)", "Accuracy": "72.01%", "F1 Macro": "70.59%", "F1 Weighted": "71.03%", "Shared Genes": "73/152", "Samples (N)": 1608}
+                {"Cohort": "SCAN-B", "Platform": "Illumina NextSeq RNA-seq", "Model": "Support Vector Machine (RBF)", "Accuracy": "83.24%", "F1 Macro": "79.35%", "F1 Weighted": "83.83%", "Shared Genes": "168/178", "Samples (N)": 340},
+                {"Cohort": "SCAN-B", "Platform": "Illumina NextSeq RNA-seq", "Model": "Logistic Regression (Linear)", "Accuracy": "77.94%", "F1 Macro": "74.56%", "F1 Weighted": "79.02%", "Shared Genes": "168/178", "Samples (N)": 340},
+                {"Cohort": "SMC 2018", "Platform": "Illumina RNA-seq", "Model": "Support Vector Machine (RBF)", "Accuracy": "79.17%", "F1 Macro": "75.80%", "F1 Weighted": "78.73%", "Shared Genes": "178/178", "Samples (N)": 168},
+                {"Cohort": "SMC 2018", "Platform": "Illumina RNA-seq", "Model": "Logistic Regression (Linear)", "Accuracy": "77.38%", "F1 Macro": "75.26%", "F1 Weighted": "76.77%", "Shared Genes": "178/178", "Samples (N)": 168},
+                {"Cohort": "METABRIC", "Platform": "Illumina HT-12 v3 Microarray", "Model": "Support Vector Machine (RBF)", "Accuracy": "72.10%", "F1 Macro": "65.87%", "F1 Weighted": "71.48%", "Shared Genes": "78/178", "Samples (N)": 1756},
+                {"Cohort": "METABRIC", "Platform": "Illumina HT-12 v3 Microarray", "Model": "Logistic Regression (Linear)", "Accuracy": "69.08%", "F1 Macro": "61.41%", "F1 Weighted": "67.72%", "Shared Genes": "78/178", "Samples (N)": 1756}
             ])
             st.dataframe(val_df, use_container_width=True, hide_index=True)
 
@@ -1026,7 +1090,7 @@ elif page == "External Validation":
         <div class="success-box">
             <b>Platform Shift & Normalization Insights:</b><br>
             • <b>Model Collapse without scaling:</b> Direct execution of raw external cohorts without independent scaling causes complete model collapse (accuracy drops to 11%-21%), as raw RNA-seq or Microarray intensities differ from the TCGA discovery scale.<br>
-            • <b>Z-Score Standardization:</b> Independent scaling successfully bridges the platform shift, recovering high transportable accuracy (~82% on SMC 2018, ~86% on SCAN-B, and ~73% on METABRIC microarray).<br>
+            • <b>Z-Score Standardization:</b> Independent scaling successfully bridges the platform shift, recovering high transportable accuracy (~79% on SMC 2018, ~83% on SCAN-B, and ~72% on METABRIC microarray).<br>
             • <b>Feature Order Alignment:</b> Programmatically locking features in strict alphabetical order is mandatory; feeding features in arbitrary order causes identical collapse.
         </div>
         """, unsafe_allow_html=True)
