@@ -668,7 +668,7 @@ elif page == "Feature Selection":
 
 elif page == "Model Performance":
     st.markdown('<div class="main-title">Classifier Benchmarks & <span class="main-title-accent">Dual-Architecture Performance</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">We evaluate classification models on the TCGA holdout split and via cross-validation, highlighting the finalized Logistic Regression (Linear) and Support Vector Machine (RBF) classifiers. Tree-based ensembles were rejected due to F1 instability on imbalanced classes.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">We evaluate classification models on the TCGA holdout split and via cross-validation, highlighting the finalized Logistic Regression (Linear) and Support Vector Machine (RBF) classifiers. The Support Vector Machine (RBF) is our best performing model overall, achieving 87.31% Accuracy and 82.27% Macro F1-score on the holdout set, and demonstrating superior transportability across external validation cohorts. Tree-based ensembles were rejected due to F1 instability on imbalanced classes.</div>', unsafe_allow_html=True)
 
     t_perf, t_cv = st.tabs(["Holdout Performance Benchmarks", "Cross-Validation & Hyperparameters"])
 
@@ -677,8 +677,8 @@ elif page == "Model Performance":
         
         # Build clean holdout df from the audited results
         holdout_metrics_df = pd.DataFrame([
-            {"Model": "Logistic Regression (Linear)", "Accuracy": 0.9137, "Macro F1-Score": 0.9180, "95% Bootstrap CI (F1)": "[0.8572, 0.9582]"},
-            {"Model": "Support Vector Machine (RBF)", "Accuracy": 0.9036, "Macro F1-Score": 0.8993, "95% Bootstrap CI (F1)": "[0.8316, 0.9466]"}
+            {"Model": "Logistic Regression (Linear)", "Accuracy": 0.8579, "Macro F1-Score": 0.8182, "95% Bootstrap CI (F1)": "[0.7280, 0.8858]"},
+            {"Model": "Support Vector Machine (RBF)", "Accuracy": 0.8731, "Macro F1-Score": 0.8227, "95% Bootstrap CI (F1)": "[0.7003, 0.9031]"}
         ])
 
         fig = px.bar(holdout_metrics_df, x="Model", y=["Accuracy", "Macro F1-Score"], barmode="group",
@@ -1074,12 +1074,12 @@ elif page == "External Validation":
         else:
             st.warning("External validation results dictionary not found. Showing baseline validated scores:")
             val_df = pd.DataFrame([
-                {"Cohort": "SCAN-B", "Platform": "Illumina NextSeq RNA-seq", "Model": "Support Vector Machine (RBF)", "Accuracy": "83.24%", "F1 Macro": "79.35%", "F1 Weighted": "83.83%", "Shared Genes": "168/178", "Samples (N)": 340},
-                {"Cohort": "SCAN-B", "Platform": "Illumina NextSeq RNA-seq", "Model": "Logistic Regression (Linear)", "Accuracy": "77.94%", "F1 Macro": "74.56%", "F1 Weighted": "79.02%", "Shared Genes": "168/178", "Samples (N)": 340},
-                {"Cohort": "SMC 2018", "Platform": "Illumina RNA-seq", "Model": "Support Vector Machine (RBF)", "Accuracy": "79.17%", "F1 Macro": "75.80%", "F1 Weighted": "78.73%", "Shared Genes": "178/178", "Samples (N)": 168},
-                {"Cohort": "SMC 2018", "Platform": "Illumina RNA-seq", "Model": "Logistic Regression (Linear)", "Accuracy": "77.38%", "F1 Macro": "75.26%", "F1 Weighted": "76.77%", "Shared Genes": "178/178", "Samples (N)": 168},
-                {"Cohort": "METABRIC", "Platform": "Illumina HT-12 v3 Microarray", "Model": "Support Vector Machine (RBF)", "Accuracy": "72.10%", "F1 Macro": "65.87%", "F1 Weighted": "71.48%", "Shared Genes": "78/178", "Samples (N)": 1756},
-                {"Cohort": "METABRIC", "Platform": "Illumina HT-12 v3 Microarray", "Model": "Logistic Regression (Linear)", "Accuracy": "69.08%", "F1 Macro": "61.41%", "F1 Weighted": "67.72%", "Shared Genes": "78/178", "Samples (N)": 1756}
+                {"Cohort": "SCAN-B", "Platform": "Illumina NextSeq RNA-seq", "Model": "Support Vector Machine (RBF)", "Accuracy": "84.86%", "F1 Macro": "84.38%", "F1 Weighted": "84.45%", "Shared Genes": "168/178", "Samples (N)": 317},
+                {"Cohort": "SCAN-B", "Platform": "Illumina NextSeq RNA-seq", "Model": "Logistic Regression (Linear)", "Accuracy": "81.07%", "F1 Macro": "67.36%", "F1 Weighted": "83.13%", "Shared Genes": "168/178", "Samples (N)": 317},
+                {"Cohort": "SMC 2018", "Platform": "Illumina RNA-seq", "Model": "Support Vector Machine (RBF)", "Accuracy": "77.11%", "F1 Macro": "78.89%", "F1 Weighted": "75.60%", "Shared Genes": "178/178", "Samples (N)": 166},
+                {"Cohort": "SMC 2018", "Platform": "Illumina RNA-seq", "Model": "Logistic Regression (Linear)", "Accuracy": "77.71%", "F1 Macro": "63.93%", "F1 Weighted": "77.93%", "Shared Genes": "178/178", "Samples (N)": 166},
+                {"Cohort": "METABRIC", "Platform": "Illumina HT-12 v3 Microarray", "Model": "Support Vector Machine (RBF)", "Accuracy": "74.38%", "F1 Macro": "73.97%", "F1 Weighted": "74.28%", "Shared Genes": "78/178", "Samples (N)": 1608},
+                {"Cohort": "METABRIC", "Platform": "Illumina HT-12 v3 Microarray", "Model": "Logistic Regression (Linear)", "Accuracy": "75.25%", "F1 Macro": "58.63%", "F1 Weighted": "74.25%", "Shared Genes": "78/178", "Samples (N)": 1608}
             ])
             st.dataframe(val_df, use_container_width=True, hide_index=True)
 

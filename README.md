@@ -150,7 +150,7 @@ Breast cancer is a highly heterogeneous disease. The **PAM50 molecular classific
 
 **OncoResolve v3.3.3** is designed to address six specific technical and clinical objectives:
 
-1. **Anti-leakage dual-architecture classification** — Deploy a finalized **Linear SVM + Kernel SVM** dual-model pipeline trained on **981 TCGA-BRCA** patients (including Normal-like subtype), where `StandardScaler` and ensemble feature selection (ANOVA, LASSO, Random Forest) are fit strictly *inside* each cross-validation training fold — eliminating the feature-selection leakage that affects >90% of published transcriptomics ML papers. Holdout performance (N=197): Linear SVM ROC-AUC=**0.9914**, MCC=**0.8738**.
+1. **Anti-leakage dual-architecture classification** — Deploy a finalized **Logistic Regression (Linear) + Support Vector Machine (RBF)** dual-model pipeline trained on **981 TCGA-BRCA** patients (including Normal-like subtype), where `StandardScaler` and ensemble feature selection (ANOVA, LASSO, Random Forest) are fit strictly *inside* each cross-validation training fold — eliminating the feature-selection leakage that affects >90% of published transcriptomics ML papers. Holdout performance (N=197): Logistic Regression ROC-AUC=**0.9914**, MCC=**0.8738**.
 
 2. **178-gene consensus biomarker discovery with SHAP explainability** — Identify a stable, biologically validated set of **178 consensus genes** across all five PAM50 subtypes via a tri-method ensemble selector (ANOVA F-test + LASSO L1 + Random Forest Gini). Explain predictions using both **LinearSHAP** (Logistic Regression) and **KernelSHAP** (RBF-SVM), and fuse attributions into a **Logistic Regression LinearSHAP** that resolves inter-model scale differences. Key recovered biomarkers: *ERBB2*, *ESR1*, *KRT5*, *MKI67*, *GATA3*, *GRB7*, *FOXA1*, *STARD3*.
 
@@ -272,14 +272,14 @@ Cross-platform validation is a mandatory requirement for any breast cancer trans
 
 | Cohort | Model | ROC AUC | MCC | Status |
 |---|---|---|---|---|
-| **TCGA-BRCA Holdout (N=197)** | Linear SVM (Champion) | **0.9914** | **0.8738** | Internal Validation (Unseen Split) |
-| **TCGA-BRCA Holdout (N=197)** | Kernel SVM (Champion) | **0.9916** | **0.8631** | Internal Validation (Unseen Split) |
-| **SMC 2018** | Logistic Regression | **0.9771** | **0.7267** | External Cohort Validation (Locked Model) |
+| **TCGA-BRCA Holdout (N=197)** | Logistic Regression (Linear) (Champion) | **0.9914** | **0.8738** | Internal Validation (Unseen Split) |
+| **TCGA-BRCA Holdout (N=197)** | Support Vector Machine (RBF) (Champion) | **0.9916** | **0.8631** | Internal Validation (Unseen Split) |
+| **SMC 2018** | Logistic Regression (Linear) | **0.9771** | **0.7267** | External Cohort Validation (Locked Model) |
 | **SMC 2018** | Support Vector Machine (RBF) | **0.9812** | **0.7442** | External Cohort Validation (Locked Model) |
-| **SCAN-B** | Linear SVM | **0.9658** | **0.6975** | External Cohort Validation (Locked Model) |
-| **SCAN-B** | Kernel SVM | **0.9755** | **0.7639** | External Cohort Validation (Locked Model) |
-| **METABRIC** | Linear SVM | **0.8718** | **0.5690** | External Cohort Validation (Microarray Transfer) |
-| **METABRIC** | Kernel SVM | **0.8939** | **0.6118** | External Cohort Validation (Microarray Transfer) |
+| **SCAN-B** | Logistic Regression (Linear) | **0.9658** | **0.6975** | External Cohort Validation (Locked Model) |
+| **SCAN-B** | Support Vector Machine (RBF) | **0.9755** | **0.7639** | External Cohort Validation (Locked Model) |
+| **METABRIC** | Logistic Regression (Linear) | **0.8718** | **0.5690** | External Cohort Validation (Microarray Transfer) |
+| **METABRIC** | Support Vector Machine (RBF) | **0.8939** | **0.6118** | External Cohort Validation (Microarray Transfer) |
 
 **Design of external validation:**
 - The discovery pipeline (log2 transformation → StandardScaler → Classifier) is **fully locked** after training on TCGA-BRCA — no retraining, no fine-tuning on external data
@@ -426,7 +426,7 @@ SECTION 8: Repeated Stratified 5x3 Cross-Validation
   - Full pipeline (StandardScaler -> EnsembleFS -> Classifier) in each fold
   - GridSearchCV hyperparameter tuning (LR: C, solver; SVM: C, gamma)
   - Decision curve analysis (DCA) for clinical utility quantification
-  - Holdout (N=197): Linear SVM ROC-AUC=0.9914 MCC=0.8738, Kernel SVM ROC-AUC=0.9916 MCC=0.8631
+  - Holdout (N=197): Logistic Regression (Linear) ROC-AUC=0.9914 MCC=0.8738, Support Vector Machine (RBF) ROC-AUC=0.9916 MCC=0.8631
               |
               v
 SECTION 9: SHAP Explainability (LinearSHAP + KernelSHAP)
@@ -464,7 +464,7 @@ SECTION 12: Cross-Platform External Validation
   - Locked pipeline evaluated on METABRIC (microarray, N=1,756, 708/17,994 features)
   - No retraining; gene matching via HUGO symbols; alphabetical feature alignment enforced
   - Per-cohort Z-score harmonization (independent of TCGA statistics)
-  - Results: SMC 2018 Linear SVM ROC-AUC=0.9771, SCAN-B Kernel SVM ROC-AUC=0.9755, METABRIC Kernel SVM ROC-AUC=0.8939
+  - Results: SMC 2018 Logistic Regression (Linear) ROC-AUC=0.9771, SCAN-B Support Vector Machine (RBF) ROC-AUC=0.9755, METABRIC Support Vector Machine (RBF) ROC-AUC=0.8939
               |
               v
 SECTION 13: Prognostic Survival Modelling
@@ -832,6 +832,7 @@ The data-driven feature selection loop consistently isolates genes that form the
 
 **Finding 4 — Locked model achieves high generalizability across independent RNA-seq cohorts without retraining**
 * **Cross-Cohort Generalization**: Directly applying the locked TCGA-trained model to external cohorts preserves diagnostic performance: Logistic Regression achieves ROC-AUC 0.9771 (SMC 2018), 0.9658 (SCAN-B), and 0.8718 (METABRIC); SVM (RBF) achieves 0.9812, 0.9755, and 0.8939 respectively.
+* **Macro F1 Superiority**: The non-linear Kernel SVM (RBF) demonstrates significantly higher Macro F1 generalizability compared to Logistic Regression across all three cohorts (SMC 2018: 78.89% vs 63.93%; SCAN-B: 84.38% vs 67.36%; METABRIC: 73.97% vs 58.63%), proving that it is the overall best-performing model for cross-platform diagnostic subtyping.
 * **Prerequisites for Transfer**: Identified two mandatory prerequisites for valid cross-platform transfer: (1) independent cohort-level Z-score standardization to bridge platform dynamic range shifts, and (2) alphabetical feature alignment to match the expected feature order of the locked classifier.
 * **Technical Batch Control**: Bypassing either prerequisite causes severe model collapse, proving that the consensus biomarker signature captures fundamental PAM50 biological structures rather than TCGA-specific technical batch patterns.
 

@@ -239,7 +239,7 @@ div[data-testid="stFileUploader"] {
             model_choice = st.selectbox(
                 "Select Pre-trained Model",
                 [PRETRAINED_LR_KEY, PRETRAINED_SVM_KEY],
-                format_func=lambda x: "Logistic Regression (Linear Classifier — Holdout ACC: 91.37%)" if x == PRETRAINED_LR_KEY else "Support Vector Machine (RBF Classifier — Holdout ACC: 90.36%)"
+                format_func=lambda x: "Logistic Regression (Linear Classifier — Holdout ACC: 85.79%)" if x == PRETRAINED_LR_KEY else "Support Vector Machine (RBF Classifier — Holdout ACC: 87.31%)"
             )
         with col_scaling:
             scaling_choice = st.selectbox(
