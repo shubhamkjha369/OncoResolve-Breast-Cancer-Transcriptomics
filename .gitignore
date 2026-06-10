@@ -47,6 +47,8 @@ data/data/external_cohort/
 # Large raw and processed datasets
 data/raw/
 data/processed/
+!data/processed/pca_2d.parquet
+!data/processed/df_holdout.parquet
 
 #Large model checkpoints
 *.pt
