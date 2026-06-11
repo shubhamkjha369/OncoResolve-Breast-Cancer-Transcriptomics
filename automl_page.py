@@ -74,7 +74,7 @@ def _prediction_color_map(labels):
 def _load_and_align_features(df, top_deg_genes, entrez_to_hugo):
     """
     Transposes, filters, and aligns the uploaded dataframe to match the 178
-    consensus biomarker signature, applying log2 scaling if raw counts are detected.
+    consensus biomarker signature, applying log2 scaling if linear expected counts are detected.
     """
     raw_df = df.copy()
 
@@ -106,7 +106,7 @@ def _load_and_align_features(df, top_deg_genes, entrez_to_hugo):
         hugo_symbol = entrez_to_hugo.get(str(entrez_id), None)
         if hugo_symbol is not None and hugo_symbol in raw_df.columns:
             val = raw_df[hugo_symbol].astype(float).fillna(0.0).values
-            # Dynamic log2 scaling for raw counts / RSEM values
+            # Dynamic log2 scaling for linear expected counts / RSEM values
             if val.max() > 50:
                 val = np.log2(np.clip(val, 0, None) + 1.0)
             X_aligned[:, idx] = val

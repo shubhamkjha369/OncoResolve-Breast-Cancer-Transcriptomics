@@ -287,7 +287,7 @@ plt.tight_layout()
 
 # Save PCA plot
 pca_plot_path = os.path.join(art_dir, "cross_cohort_pca_compatibility.png")
-plt.savefig(pca_plot_path, dpi=300, transparent=True)
+plt.savefig(pca_plot_path, dpi=300, transparent=False, facecolor='white')
 plt.close()
 print(f"Saved cross-cohort PCA compatibility plot to: {pca_plot_path}")
 print("Workflow run complete! All outputs generated successfully.")
