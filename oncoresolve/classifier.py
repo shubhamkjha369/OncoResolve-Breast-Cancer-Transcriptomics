@@ -73,12 +73,17 @@ class OncoClassifier:
             y_encoded = y
 
         params = model_params or {}
-        if self.model_type == "svm":
+        if self.model_type in ["lgbm", "lightgbm"]:
+            from lightgbm import LGBMClassifier
+            self.model_ = LGBMClassifier(class_weight="balanced", random_state=42, verbosity=-1, n_jobs=1, **params)
+        elif self.model_type == "linear_svm":
+            self.model_ = SVC(kernel="linear", class_weight="balanced", probability=True, random_state=42, **params)
+        elif self.model_type == "svm":
             self.model_ = SVC(kernel="rbf", probability=True, random_state=42, **params)
-        elif self.model_type == "logistic_regression" or self.model_type == "lr":
+        elif self.model_type in ["logistic_regression", "lr"]:
             self.model_ = LogisticRegression(max_iter=3000, random_state=42, **params)
         else:
-            raise ValueError(f"Unsupported model_type: {self.model_type}. Select 'svm' or 'logistic_regression'.")
+            raise ValueError(f"Unsupported model_type: {self.model_type}. Select 'lgbm', 'linear_svm', 'svm', or 'logistic_regression'.")
 
         X_arr = X.values if isinstance(X, pd.DataFrame) else X
         self.model_.fit(X_arr, y_encoded)

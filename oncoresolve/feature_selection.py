@@ -9,7 +9,7 @@ class ConsensusSelector:
     """
     Ensemble consensus feature selector using:
     1. ANOVA F-Test (Linear class separation)
-    2. Ridge L2 Penalty (Feature shrinkage)
+    2. LASSO L1 Penalty (Feature selection & sparsity)
     3. Random Forest Gini Importance (Non-linear interactions)
     """
     def __init__(self, top_k=50, random_state=42):
@@ -56,14 +56,14 @@ class ConsensusSelector:
         rf_imp = pd.DataFrame({"gene": feature_names, "importance": rf.feature_importances_}).sort_values("importance", ascending=False)
         top_rf = set(rf_imp.head(safe_k)["gene"])
 
-        # 3. Ridge L2 Penalty
-        ridge = LogisticRegression(penalty="l2", solver="saga", max_iter=2000, random_state=self.random_state, n_jobs=-1)
-        ridge.fit(X_arr, y)
-        ridge_imp = pd.DataFrame({"gene": feature_names, "importance": np.abs(ridge.coef_).mean(axis=0)}).sort_values("importance", ascending=False)
-        top_ridge = set(ridge_imp.head(safe_k)["gene"])
+        # 3. LASSO L1 Penalty
+        lasso = LogisticRegression(penalty="l1", solver="saga", max_iter=2000, random_state=self.random_state, n_jobs=-1)
+        lasso.fit(X_arr, y)
+        lasso_imp = pd.DataFrame({"gene": feature_names, "importance": np.abs(lasso.coef_).mean(axis=0)}).sort_values("importance", ascending=False)
+        top_lasso = set(lasso_imp.head(safe_k)["gene"])
 
         # Consensus majority voting
-        all_selected = list(top_anova) + list(top_rf) + list(top_ridge)
+        all_selected = list(top_anova) + list(top_rf) + list(top_lasso)
         self.feature_frequencies_ = Counter(all_selected)
         
         # Select features nominated by at least 2 out of 3 methods

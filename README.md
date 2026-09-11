@@ -7,7 +7,7 @@
 [![Python 3.13](https://img.shields.io/badge/Python-3.13-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![Scikit-Learn 1.4+](https://img.shields.io/badge/Scikit--Learn-1.4+-F7931E?style=flat&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 [![SHAP](https://img.shields.io/badge/SHAP-Explainability-blueviolet?style=flat)](#)
-
+[![Preprint PDF](https://img.shields.io/badge/Preprint-PDF-red?style=flat&logo=adobeacrobatreader&logoColor=white)](pre-print/OncoResolve.pdf)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21967841.svg)](https://doi.org/10.5281/zenodo.21967841)
 [![Live App](https://img.shields.io/badge/Streamlit-Live_App-FF4B4B?logo=streamlit&logoColor=white)](https://oncoresolve.streamlit.app/)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics/blob/main/notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb)
@@ -26,6 +26,7 @@
 ## Table of Contents
 
 - [Abstract](#abstract)
+- [📄 Pre-Print Paper & Manuscript](#preprint-paper)
 - [Project Aim](#project-aim)
 - [Pipeline Workflow & Architecture](#pipeline-workflow)
 - [1. Patient Cohorts: Validating Across the Globe](#patient-cohorts)
@@ -49,19 +50,37 @@ Breast cancer is a highly heterogeneous disease characterized by transcriptional
 
 ---
 
-## 📌 Rigorous Literature Prior-Art & Fact-Verified Gap Analysis Matrix
+<a id="preprint-paper"></a>
+## 📄 Pre-Print Paper & Manuscript
+
+The complete research manuscript detailing the theoretical foundation, mathematical formulations, Anti-Leakage Protocol (ALP), dual-architecture explainability, and multi-cohort validation results is available in the [`pre-print`](pre-print/) directory:
+
+- 📄 **Manuscript PDF**: [`pre-print/OncoResolve.pdf`](pre-print/OncoResolve.pdf)
+- 📝 **LaTeX Source Code**: [`pre-print/OncoResolve.tex`](pre-print/OncoResolve.tex)
+
+### Key Methodological Highlights from the Pre-Print:
+1. **Anti-Leakage Protocol (ALP)**: Enforces 100% fold-contained Z-score scaling and feature selection inside cross-validation training loops, eliminating target leakage across 981 TCGA-BRCA patients ($N=784$ discovery, $N=197$ holdout).
+2. **Dual-Architecture Explainable AI**: Audits attributions independently across Linear Support Vector Machine ($C=0.005$) and LightGBM ($n\_estimators=150, learning\_rate=0.1$), achieving high attribution concordance ($r > 0.88$).
+3. **N-of-1 Composite Uniqueness Score (CUS)**: Mathematical formulation fusing Patient Similarity Network (PSN) manifold distance ($D_M$) and Leave-One-Out Normalized Reconstruction Error ($\text{NRE}_i$).
+4. **Zero-Retraining Cross-Platform Validation**: Evaluated on 3 independent external cohorts ($N=2,482$ total across SMC 2018, SCAN-B, and METABRIC) using per-cohort local Z-score standardization.
+5. **Consensus Ridge Cox Risk Score (CRS)**: Continuous survival risk score validated on TCGA ($C\text{-index}=0.7266$), SCAN-B ($C\text{-index}=0.6401$), and METABRIC ($C\text{-index}=0.5551$).
+
+---
+
+## 📌 Rigorous Literature Prior-Art Gap Analysis Matrix
 
 The table below explicitly maps literature benchmark papers to established prior art, demonstrating the unaddressed research gaps and where each is resolved in OncoResolve:
 
 | Literature Reference & Landmark PIs | Established Knowledge & Prior Findings | Unaddressed Gap Addressed by OncoResolve | Exact OncoResolve Mechanism & Verified Results |
 | :--- | :--- | :--- | :--- |
-| **Prof. Charles M. Perou** (UNC Chapel Hill)<br>*Cell Genomics* (2023) / *BreastSubtypeR* (2025) / *J Clin Oncol* (2009) | Defined supervised nearest-centroid 5-subtype categorical classification (PAM50, AIMS). | **Rigid Categorical Stratification**: Forces every tumor into 1 of 5 discrete categories, ignoring within-subtype transcriptomic heterogeneity and N-of-1 biological outliers. | **Composite Uniqueness Score (CUS)**<br>Fuses PSN topological distance ($D_T$) with Ridge LOO reconstruction error ($1-R^2_{\text{LOO}}$).<br>• Highest subtype $\chi^2 = 270.22$ ($p = 2.85\times 10^{-57}$). |
-| **Prof. Sayash Kapoor & Prof. Arvind Narayanan** (Princeton University)<br>*Patterns* (Cell Press 2022) | Systematically exposed widespread data leakage and reproducibility failures in ML science. | **Widespread Benchmark Inflation**: Standard subtyping benchmarks perform global feature selection/scaling before CV, artificially inflating accuracy (>94–98%) which crashes on external data. | **Anti-Leakage Protocol (ALP)**<br>Enforces 100% fold-containment of Z-scaling, missing imputation, and tri-method selection.<br>• Holdout Accuracy: **88.83%** (LightGBM), **84.77%** (Linear SVM). |
+| **Prof. Charles M. Perou** (UNC Chapel Hill)<br>*Cell Genomics* (2023) / *BreastSubtypeR* (2025) / *J Clin Oncol* (2009) | Defined supervised nearest-centroid 5-subtype categorical classification (PAM50, AIMS). | **Rigid Categorical Stratification**: Forces every tumor into 1 of 5 discrete categories, ignoring within-subtype transcriptomic heterogeneity and N-of-1 biological outliers. | **Composite Uniqueness Score (CUS)**<br>Fuses PSN topological distance ($D_M$) with Leave-One-Out Normalized Reconstruction Error ($\text{NRE}_i$).<br>• Highest subtype $\chi^2 = 270.22$ ($p = 2.85\times 10^{-57}$). |
+| **Prof. Sayash Kapoor & Prof. Arvind Narayanan** (Princeton University)<br>*Patterns* (Cell Press 2022) | Systematically exposed widespread data leakage and reproducibility failures in ML science. | **Widespread Benchmark Inflation**: Standard subtyping benchmarks perform global feature selection/scaling before CV, artificially inflating accuracy (>94–98%) which crashes on external data. | **Anti-Leakage Protocol (ALP)**<br>Enforces 100% fold-containment of Z-scaling, missing imputation, and tri-method selection.<br>• Holdout Accuracy: **88.32%** (LightGBM), **86.29%** (Linear SVM). |
 | **Prof. Christina Curtis** (Stanford University)<br>*Science* (2024) / *Nat Genet* (2020) / *Nature* (METABRIC 2012) | Discovered genomic & transcriptomic subclonal architectures in 2,000 METABRIC tumors. | **Microarray Probe Loss & Cross-Platform Shift**: Direct model transfer from RNA-seq to microarray suffers from feature loss and platform discordance without independent scaling. | **Cohort-Independent Local Z-Scaling**<br>Expanded METABRIC probe coverage (147/178 genes, 82.6%) with local Z-scaling zero-retraining.<br>• METABRIC (Microarray): **72.78%** Acc, **0.9168** AUC. |
 | **Dr. Stephen-John Sammut & Prof. Carlos Caldas** (Univ of Cambridge / CRUK)<br>*Nature* (2022) | Multi-omic machine learning predicting response to neoadjuvant chemotherapy in breast cancer. | **Lack of Prospective Single-Sample Transferability**: Complex multi-omic ML models require joint co-normalization (ComBat) across all samples, precluding real-world N-of-1 prospective subtyping. | **Local Z-Score Standardization**<br>Standardizes cohorts independently with alphabetical gene alignment zero-retraining.<br>• SMC 2018 (RNA-seq): **83.33%** Acc, **0.9856** AUC.<br>• SCAN-B (RNA-seq): **83.24%** Acc, **0.9634** AUC. |
 | **Prof. Benjamin Haibe-Kains** (Univ of Toronto / UHN)<br>*Bioinformatics* (2020) / Creator of `Genefu` | Evaluated single-sample subtyping tools (AIMS, PAM50 centroids, Genefu). | **Binary Rule Inflexibility & Decoupled Modeling**: Single-sample predictors use rigid binary rules with reduced sensitivity, while subtyping ML models remain decoupled from survival risk scoring. | **Consensus Ridge Cox Risk Score (CRS)**<br>Trains $L_2$-regularized Cox model on 178 consensus genes.<br>• Multi-cohort survival C-index: TCGA = **0.7266**, SCAN-B = **0.6401**, METABRIC = **0.5551**. |
 | **Prof. William Stafford Noble** (Univ of Washington)<br>*Nat Rev Genet* (2022) | Navigating the pitfalls of applying machine learning in genomics. | **Single-Model Inductive Bias**: Single-architecture feature attributions risk reflecting model-specific fitting artifacts rather than true biological consensus. | **Dual-Architecture SHAP Concordance**<br>Audits attributions independently across Linear SVM & LightGBM.<br>• High attribution correlation ($r > 0.88$) verifies model-agnostic drivers. |
 | **Prof. Gary S. Collins** (University of Oxford)<br>TRIPOD+AI (*BMJ* 2024) | Updated TRIPOD+AI guidelines for reporting clinical prediction models using regression or ML. | **Non-Compliance with Rigorous ML Reporting Standards**: Published subtyping models lack strict in-fold feature selection, probability calibration (ECE), or external validation. | **Full TRIPOD+AI Compliance**<br>Fold-contained CV, probability calibration ($\text{ECE} = 4.52\%$ LightGBM, $5.20\%$ SVM; Brier $= 0.0454 / 0.0418$), and zero-retraining 3-cohort validation. |
+| **Dr. Gianmarco Contino** (University of Birmingham)<br>*Cancers* (2021) | Developed DRIVE, a feature-based machine learning model for pan-cancer assessment of somatic missense mutations. | **Mutation-Centric vs. Transcriptomic Subtyping**: Focuses on DNA missense mutations; lacks prospective RNA-seq subtyping, N-of-1 uniqueness profiling (CUS), or cross-platform standardization. | **In-Fold Feature Selection Ensemble & ALP**<br>Fuses ANOVA F-test, LASSO L1, and Random Forest Gini inside outer CV loops to select 178 transcriptomic consensus biomarkers with dual-architecture SHAP attributions. |
 
 ---
 
@@ -169,7 +188,7 @@ The table below explicitly maps literature benchmark papers to established prior
 > probabilities = clf.predict_proba(df_aligned)  # Returns class probabilities DataFrame
 > 
 > # 3. Compute Patient Uniqueness Scores (CUS)
-> df_cus = orr.compute_cus(df_aligned, barcodes=df_aligned.index, alpha=0.001)
+> df_cus = orr.compute_cus(df_aligned, barcodes=df_aligned.index, alpha=1.0)
 > 
 > # 4. Predict Overall Survival Risk Scores (Consensus Cox CRS)
 > prog = orr.OncoPrognosis()
@@ -197,12 +216,12 @@ Breast cancer is a highly heterogeneous disease. The **PAM50 molecular classific
 
 2. **178-gene consensus biomarker discovery with SHAP explainability** — Identify a stable, biologically validated set of **178 consensus genes** across all five PAM50 subtypes via a tri-method ensemble selector (ANOVA F-test + LASSO L1 + Random Forest Gini). Explain predictions using SHAP attributions for both LightGBM and Linear SVM, and fuse attributions into a **Consensus SHAP Importance Index** that resolves inter-model scale differences. Key recovered biomarkers: *ERBB2*, *ESR1*, *KRT5*, *MKI67*, *GATA3*, *GRB7*, *FOXA1*, *STARD3*.
 
-3. **N-of-1 Composite Uniqueness Score (CUS)** — Quantify individual patient transcriptomic uniqueness using an original mathematical framework combining Patient Similarity Network (PSN) mean Euclidean distance with Ridge Leave-One-Out (LOO) regression reconstruction error ($1 - R^2_{\text{LOO}}$). Each patient's 178-gene profile is predicted by a Ridge model trained on all other patients; low R² indicates a transcriptomically unusual patient. Formally validate that CUS is *not* a proxy for standard anomaly scores: CUS achieves the highest subtype-discriminative chi-square (χ²=**270.22**, p=2.85×10⁻⁵⁷) and benchmarks against regularised Mahalanobis distance (C-index=**0.7668**), PCA reconstruction, and Isolation Forest baselines, while Jaccard overlap with global DGE pathways is ≈0.0 (confirming private biological signal).
+3. **N-of-1 Composite Uniqueness Score (CUS)** — Quantify individual patient transcriptomic uniqueness using an original mathematical framework combining Patient Similarity Network (PSN) manifold distance ($D_M$) with Leave-One-Out (LOO) Normalized Reconstruction Error ($\text{NRE}_i$). Each patient's 178-gene profile is predicted by a Ridge model trained on the manifold excluding sample $i$. Formally validate that CUS is *not* a proxy for standard anomaly scores: CUS achieves the highest subtype-discriminative chi-square (χ²=**270.22**, p=2.85×10⁻⁵⁷) and benchmarks against regularised Mahalanobis distance (C-index=**0.7668**), PCA reconstruction, and Isolation Forest baselines, while Jaccard overlap with global DGE pathways is ≈0.0 (confirming private biological signal).
 
 4. **Cross-platform validation on three independent external cohorts** — Evaluate the completely locked discovery pipeline (no retraining) on:
    - **SCAN-B / GSE96058** (Sweden, Illumina NextSeq, N=340, 168/178 genes): Linear SVM Accuracy=**82.94%**, Macro F1=**83.13%**, ROC-AUC=**0.9675** | LightGBM Accuracy=**79.71%**, Macro F1=**76.34%**, ROC-AUC=**0.9447**
    - **SMC 2018** (South Korea, Illumina RNA-seq, N=168, 178/178 genes): LightGBM Accuracy=**78.57%**, Macro F1=**78.17%**, ROC-AUC=**0.9728** | Linear SVM Accuracy=**78.57%**, Macro F1=**74.32%**, ROC-AUC=**0.9719**
-   - **METABRIC** (Canada/UK, Illumina HT-12 microarray, N=1,974, 147/178 genes): LightGBM Accuracy=**67.98%**, Macro F1=**60.59%**, ROC-AUC=**0.8790** | Linear SVM Accuracy=**67.63%**, Macro F1=**61.03%**, ROC-AUC=**0.8877**
+   - **METABRIC** (Canada/UK, Illumina HT-12 microarray, N=1,974, 147/178 genes): LightGBM Accuracy=**67.98%**, Macro F1=**60.59%**, ROC-AUC=**0.8870** | Linear SVM Accuracy=**67.63%**, Macro F1=**61.03%**, ROC-AUC=**0.8877**
 
    Cross-platform transfer requires per-cohort independent Z-score harmonization and strict alphabetical feature alignment — bypassing these steps collapses SVM accuracy to 11–21%.
 
@@ -226,7 +245,7 @@ To ensure our findings are robust, generalizable, and free from computational bi
 3. **Consensus Feature Selection Ensemble Layer:** Discovers biomarkers by running ANOVA F-test, LASSO L1, and Random Forest feature selectors in parallel, selecting genes nominated by $\ge$ 2 methods to lock a robust **178-gene signature**.
 4. **Model Training & Hyperparameter Tuning Layer:** Employs a 5-Fold Stratified Nested Cross-Validation (outer loop) with 3-Fold GridSearchCV (inner loop) to train and optimize LightGBM and Linear Support Vector Machine classifiers.
 5. **Explainable AI (XAI) & Biomarker Mapping Layer:** Uses LinearSHAP and TreeSHAP to map local and global classification decisions back to clinical biomarkers (e.g., *ESR1*, *ERBB2*, *MKI67*).
-6. **Precision Oncology & Outcomes Layer:** Computes an N-of-1 **Composite Uniqueness Score (CUS)** (Ridge Leave-One-Out regression reconstruction residual + mean Euclidean network distance) for personalized profiling, and maps prognosis via a **Consensus Ridge Cox Risk Score (CRS)**.
+6. **Precision Oncology & Outcomes Layer:** Computes an N-of-1 **Composite Uniqueness Score (CUS)** combining Patient Similarity Network (PSN) manifold distance ($D_M$) and Leave-One-Out Normalized Reconstruction Error ($\text{NRE}_i$), and maps prognosis via a **Consensus Ridge Cox Risk Score (CRS)**.
 
 ---
 
@@ -345,8 +364,8 @@ To prove that the locked classifier is globally transportable across labs, count
 
 Standard clinical practice often relies on the **Centroid Classifier** for subtyping. In head-to-head benchmarking on the holdout split, our models significantly outperformed the traditional Centroid method:
 - **PAM50 Centroid Benchmark**: **39.59%** Accuracy | **16.54%** Macro F1-Score
-- **OncoResolve LightGBM**: **88.83%** Accuracy | **84.96%** Macro F1-Score
-- **OncoResolve Linear SVM**: **84.77%** Accuracy | **80.49%** Macro F1-Score
+- **OncoResolve LightGBM**: **88.32%** Accuracy | **85.27%** Macro F1-Score
+- **OncoResolve Linear SVM**: **86.29%** Accuracy | **82.17%** Macro F1-Score
 
 ---
 
@@ -392,14 +411,22 @@ To bridge machine learning performance with clinical science, we used **SHAP** t
 ## 5. N-of-1 Personal Profiling: The Composite Uniqueness Score (CUS)
 
 Standard diagnostics group patients into broad bins (like "Luminal A"). However, oncology is moving toward personalized, N-of-1 medicine. We created the **Composite Uniqueness Score (CUS)**, which scores each patient's tumor from **0 (typical)** to **1 (highly unique)** based on two metrics:
-1. **Topological Distance**: How far a patient lies from others in a patient similarity network.
-2. **Reconstruction Residuals**: How much the patient's gene expression patterns deviate from expected network co-expression.
+1. **Topological Manifold Distance ($D_M$)**: How far a patient lies from others in a Patient Similarity Network (PSN).
+2. **Leave-One-Out Normalized Reconstruction Error ($\text{NRE}_i$)**: How much the patient's gene expression patterns deviate from manifold Ridge regression prediction.
 
 This helps clinicians spot outliers who do not fit the typical subtype template and might require custom therapeutic strategies.
 
-### Visualizing Patient Uniqueness
+### Mathematical Formulation & Visualizing Patient Uniqueness
 
-The Composite Uniqueness Score (CUS) is derived from two orthogonal metrics: PSN mean Euclidean topological distance (`Topo_Distance`) and Ridge Leave-One-Out regression reconstruction error (`Recon_Error` = 1 − R²_LOO). No deep learning or neural network is used — reconstruction fidelity is measured by training a Ridge regression on all other patients and evaluating R² on the left-out patient. Below is the full network, landscape, distribution, and baseline comparison suite:
+The Composite Uniqueness Score (CUS) is defined as:
+
+$$\text{CUS}_i = 0.5 \cdot \text{Norm}(D_M)_i + 0.5 \cdot \text{Norm}(\text{NRE})_i$$
+
+where the per-sample Normalized Reconstruction Error ($\text{NRE}_i$) is computed as:
+
+$$\text{NRE}_i = \frac{1}{P} \sum_{j=1}^{P} \left( x_{ij} - \hat{x}_{ij,(-i)} \right)^2$$
+
+where $P = 178$ represents the locked biomarker dimension, $\hat{x}_{ij,(-i)}$ denotes the Ridge regression prediction for gene $j$ trained on the manifold excluding sample $i$, and $\text{Norm}(\cdot)$ maps each metric to $[0, 1]$ via min-max scaling. Below is the full network, landscape, distribution, and baseline comparison suite:
 
 <p align="center">
   <img src="data/artifacts/fig24_patient_similarity_network.png" width="100%" alt="Patient Similarity Network" />
@@ -501,6 +528,7 @@ While OncoResolve represents a highly rigorous, anti-leakage diagnostic and prog
 | Parker JS, et al. Supervised risk predictor of breast cancer based on intrinsic subtypes. (2009) | *Journal of Clinical Oncology* 27, 1160–1167 | [10.1200/JCO.2008.18.1370](https://doi.org/10.1200/JCO.2008.18.1370) |
 | Sjöström M, et al. Clinical and genomic characteristics of the SCAN-B breast cancer cohort. (2022) | *Nature Communications* 13, 1–11 | [10.1038/s41467-022-29094-w](https://doi.org/10.1038/s41467-022-29094-w) |
 | Lundberg SM, Lee SI. A unified approach to interpreting model predictions. (2017) | *Advances in Neural Information Processing Systems (NeurIPS)* 30 | [NeurIPS URL](https://papers.nips.cc/paper/7062-a-unified-approach-to-interpreting-model-predictions) |
+| Dragomir I, Akbar A, Cassidy JW, Patel N, Clifford HW, Contino G. Identifying Cancer Drivers Using DRIVE: A Feature-Based Machine Learning Model for a Pan-Cancer Assessment of Somatic Missense Mutations. (2021) | *Cancers* 13(11), 2779 | [10.3390/cancers13112779](https://doi.org/10.3390/cancers13112779) |
 
 ---
 
@@ -519,8 +547,21 @@ AI Data Scientist & Computational Biology Independent Researcher
 <a id="citation"></a>
 ## Citation
 
-If you use this repository, code, methodology, or derived work in academic research, please cite:
+If you use this repository, code, pre-print manuscript, or derived methodology in academic research, please cite both the pre-print paper and the software release:
 
+### Manuscript Citation
+```bibtex
+@article{jha2026oncoresolve_preprint,
+  author       = {Shubham K. Jha},
+  title        = {OncoResolve: High-Hygiene Explainable AI and Patient-Centric Uniqueness Framework for Breast Cancer Subtyping},
+  journal      = {Preprint},
+  year         = {2026},
+  note         = {Available at: pre-print/OncoResolve.pdf},
+  url          = {https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics/blob/main/pre-print/OncoResolve.pdf}
+}
+```
+
+### Software Citation
 ```bibtex
 @software{jha2026oncoresolve,
   author       = {Shubham Jha},

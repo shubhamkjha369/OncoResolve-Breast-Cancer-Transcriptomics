@@ -30,7 +30,7 @@ def _process_sample(i, X_full, alpha):
     r2 = r2_score(y_i, y_pred_vector)
     return r2
 
-def compute_cus(X, barcodes=None, y_subtype=None, alpha=0.001, n_jobs=-1):
+def compute_cus(X, barcodes=None, y_subtype=None, alpha=1.0, n_jobs=-1):
     """
     Computes the Composite Uniqueness Score (CUS) for each patient.
     
@@ -42,7 +42,7 @@ def compute_cus(X, barcodes=None, y_subtype=None, alpha=0.001, n_jobs=-1):
         Patient IDs. If X is a DataFrame, columns/index is used.
     y_subtype : list or np.ndarray, optional
         Subtype names (for clinical grouping).
-    alpha : float, default 0.001
+    alpha : float, default 1.0
         Regularization strength for Ridge regression.
     n_jobs : int, default -1
         Number of parallel jobs to run.
