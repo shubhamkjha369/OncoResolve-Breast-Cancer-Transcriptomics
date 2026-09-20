@@ -1,0 +1,1429 @@
+% !TeX spellcheck = en_GB
+% !TeX program = lualatex
+\documentclass[10pt,a4paper,twocolumn]{article}
+
+%----------------------------------------------------
+% Encoding and typography (Times Roman + Helvetica Standard)
+%----------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathptmx}            % Standard Times Roman for Body Text & Math
+\usepackage[scaled=0.92]{helvet} % Standard Helvetica for Sans-Serif Headings
+\usepackage{courier}            % Standard Courier for Code/URLs
+\usepackage[USenglish]{babel}
+\usepackage{microtype}
+
+%----------------------------------------------------
+% Page layout
+%----------------------------------------------------
+\usepackage[margin=0.7in,columnsep=0.25in]{geometry}
+\usepackage{lineno}
+
+%----------------------------------------------------
+% Mathematics
+%----------------------------------------------------
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{siunitx}
+
+%----------------------------------------------------
+% Figures and Floats
+%----------------------------------------------------
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{float}
+\makeatletter
+\setlength{\@fptop}{0pt}
+\makeatother
+\renewcommand{\topfraction}{0.95} 
+\renewcommand{\bottomfraction}{0.95}
+\renewcommand{\textfraction}{0.05} 
+\renewcommand{\floatpagefraction}{0.95} 
+
+%----------------------------------------------------
+% Tables & Formatting
+%----------------------------------------------------
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{makecell}
+\usepackage{ragged2e}
+\usepackage{tabularx}
+
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\newcolumntype{C}{>{\Centering\arraybackslash}X}
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash\hsize=#1\hsize}X}
+
+%----------------------------------------------------
+% Lists and Code
+%----------------------------------------------------
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    showstringspaces=false,
+    frame=single,
+    breaklines=true,
+    captionpos=b
+}
+
+%----------------------------------------------------
+% Captions & Section Formatting (Helvetica Sans-Serif)
+%----------------------------------------------------
+\usepackage[font={small,sf},labelfont={bf,sf},labelsep=period]{caption}
+\usepackage{titlesec}
+
+\titleformat{\section}{\large\sffamily\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalsize\sffamily\bfseries}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}{\small\sffamily\bfseries}{\thesubsubsection}{0.5em}{}
+\titlespacing*{\section}{0pt}{1.2em}{0.5em}
+\titlespacing*{\subsection}{0pt}{0.8em}{0.4em}
+\titlespacing*{\subsubsection}{0pt}{0.6em}{0.3em}
+
+\setlength{\parindent}{1em}
+\setlength{\parskip}{0pt}
+\emergencystretch=2em
+\renewcommand{\arraystretch}{1.2}
+\setlength{\tabcolsep}{4pt}
+
+%----------------------------------------------------
+% Hyperlinks & References
+%----------------------------------------------------
+\usepackage[colorlinks=true,citecolor=blue,linkcolor=blue,urlcolor=blue]{hyperref}
+\usepackage[nameinlink]{cleveref}
+\usepackage[numbers,sort&compress]{natbib}
+
+%----------------------------------------------------
+% Document Header Information
+%----------------------------------------------------
+\title{\Large\sffamily\bfseries OncoResolve: High-Hygiene Explainable AI and Patient-Centric Uniqueness Framework for Breast Cancer Subtyping}
+
+\author{\textbf{Shubham K. Jha}\\[0.3em]
+\small\sffamily OncoResolve Computational Genomics Initiative, Department of Bioinformatics\\[0.2em]
+\small\sffamily Corresponding author: \href{mailto:shubhamkjha369@gmail.com}{\ttfamily shubhamkjha369@gmail.com} \quad|\quad ORCID: \href{https://orcid.org/0009-0007-4519-5867}{\ttfamily 0009-0007-4519-5867}}
+
+\date{} % Date removed from top header
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\noindent\textbf{Background:} Breast cancer exhibits high molecular heterogeneity, traditionally stratified into PAM50 intrinsic subtypes. While transcriptomics-based machine learning classifiers show promise in precision oncology, high-dimensional dataset challenges---particularly feature selection leakage and cross-platform domain shifts---frequently inflate reported performances and hinder external generalizability.
+
+\vspace{0.5em}
+\noindent\textbf{Objective:} This study aims to develop and validate a high-hygiene computational framework, \textit{OncoResolve}, that eliminates feature leakage, discovers a robust multi-subtype biomarker signature, evaluates platform-specific domain shifts, and introduces an N-of-1 patient-centric uniqueness scoring model.
+
+\vspace{0.5em}
+\noindent\textbf{Methods:} Using the TCGA-BRCA Pan-Cancer Atlas ($N=981$ post-QC samples across all five PAM50 subtypes including Normal-like), we implemented an Anti-Leakage Protocol (ALP) where Z-score scaling and a consensus feature-selection ensemble (ANOVA F-statistic, LASSO L1 penalty, and Random Forest Gini impurity) were fit strictly within each cross-validation training fold. We identified a stable 211-gene consensus biomarker signature and trained a dual-architecture classifier: a linear model (Linear SVM) and a non-linear tree ensemble (LightGBM). Generalizability was rigorously validated without retraining on three external cohorts: SMC 2018 ($N=168$, RNA-seq), SCAN-B ($N=340$, RNA-seq), and METABRIC ($N=1,756$, microarray). Additionally, we developed the Composite Uniqueness Score (CUS) to measure individual patient transcriptomic uniqueness by combining Patient Similarity Network (PSN) topological distance with Ridge Leave-One-Out (LOO) regression reconstruction residuals. We benchmarked CUS against regularized Mahalanobis distance, PCA reconstruction, and Isolation Forest.
+
+\vspace{0.5em}
+\noindent\textbf{Results:} The 211-gene consensus signature demonstrated non-random stability (Jaccard Stability Index = 0.3757, empirical $p < 0.002$). On the unseen TCGA holdout partition ($N = 197$), LightGBM achieved a Macro F1 score of 0.8720 and an accuracy of 88.83\% (ROC-AUC = 0.9867, MCC = 0.8376), while Linear SVM achieved a Macro F1 score of 0.8208 and an accuracy of 85.79\% (ROC-AUC = 0.9856, MCC = 0.8053). External RNA-seq transfer demonstrated strong generalization. Linear SVM achieved an accuracy of 83.33\% (ROC-AUC = 0.9823, MCC = 0.7917) on SMC 2018, while LightGBM achieved an accuracy of 83.24\% (ROC-AUC = 0.9710, MCC = 0.7497) on SCAN-B. Transfer to the METABRIC microarray cohort resulted in a performance decline (Linear SVM accuracy = 72.78\%, ROC-AUC = 0.9182, MCC = 0.6255), attributable to cross-platform domain shift where 78 of 211 consensus genes were successfully mapped. Probability calibration remained robust across all datasets (Expected Calibration Error [ECE] $< 12.75\%$, Brier Score $< 0.11$). An L2-regularized Ridge Cox Proportional Hazards model trained on the consensus signature produced a prognostic Consensus Risk Score (CRS) that generalized across external cohorts (TCGA C-index = 0.7266, SCAN-B C-index = 0.6401, METABRIC C-index = 0.5551). The Composite Uniqueness Score (CUS) successfully isolated biological outliers that were orthogonal to global subtype signals and outperformed conventional anomaly detection baselines for subtype discrimination ($\chi^2 = 270.22$, $p = 2.85 \times 10^{-57}$). Among anomaly detection methods, regularized Mahalanobis distance in the consensus feature space achieved the highest independent survival C-index (0.7668, $p = 4.43 \times 10^{-3}$).
+
+\vspace{0.5em}
+\noindent\textbf{Conclusion:} Stringent containment of preprocessing and feature selection within cross-validation folds provides a reproducible framework for transcriptomic subtyping. Integrating patient-centric uniqueness scoring (CUS) and consensus prognostic risk modeling (CRS) establishes a dual diagnostic-prognostic paradigm for clinical precision oncology.
+\end{abstract}
+
+\vspace{0.5em}
+\noindent\textbf{Keywords:} Breast cancer transcriptomics, Machine learning, Data leakage, Explainable AI (SHAP), Composite Uniqueness Score, Prognostic risk score
+\vspace{1.5em}
+
+\section{Introduction}
+
+Breast cancer is a highly heterogeneous malignancy and remains the leading cause of cancer-related mortality among women worldwide. Precision therapeutic intervention relies on stratifying patients into molecular subtypes that reflect distinct driving mechanisms, histological characteristics, and clinical outcomes. The seminal work of Perou \textit{et al.}~\cite{perou2000} and the subsequent clinical standardization of the PAM50 assay by Parker \textit{et al.}~\cite{parker2009} established five intrinsic molecular subtypes: Luminal A, Luminal B, HER2-enriched, Basal-like, and Normal-like. These subtypes are defined by the expression profiles of 50 core transcripts and guide the clinical use of targeted endocrine therapies (e.g., tamoxifen or aromatase inhibitors for Luminal tumors), HER2-targeted monoclonal antibodies (e.g., trastuzumab), and systemic chemotherapy for triple-negative/Basal-like tumors.
+
+The emergence of high-throughput RNA sequencing (RNA-seq) has enabled the application of machine learning (ML) classifiers to identify these molecular subtypes directly from gene expression profiles. However, the translation of transcriptomic ML models into robust clinical diagnostics remains severely constrained by two major methodological challenges.
+
+\begin{enumerate}
+    \item \textit{Row-Level Data Leakage.} In high-dimensional transcriptomics ($p \gg N$), feature selection is frequently performed on the complete patient cohort prior to cross-validation. This leaks target information from the test folds into the training process, artificially inflates performance metrics, and produces optimistic estimates that fail to generalize to independent cohorts~\cite{kapoor2022}.
+
+    \item \textit{Cross-Platform Domain Shift.} Classifiers trained on high-resolution RNA-seq data often experience substantial performance degradation when transferred to microarray platforms (e.g., the METABRIC cohort~\cite{curtis2012}) or alternative sequencing technologies because of batch effects, library preparation differences, and incomplete gene-feature mapping.
+\end{enumerate}
+
+To address these challenges, we introduce \textit{OncoResolve} (version 3.4.0), an end-to-end, high-hygiene computational framework. The clinical and biological motivations of this work are threefold: (i) to establish a leakage-free molecular subtyping classifier, (ii) to demonstrate transportability across independent international cohorts, and (iii) to develop an N-of-1 patient profiling metric---the Composite Uniqueness Score (CUS)---for identifying outlier transcriptomic phenotypes that lie beyond conventional subtype boundaries.
+
+\section{Literature Review \& Related Work}
+Computational subtyping in breast cancer oncology has evolved from early hierarchical clustering to supervised machine learning models. We contextualize our methodology by reviewing recent literature, identifying existing research gaps, and highlighting our contributions.
+
+\subsection{Intrinsic Subtyping and Clinical Diagnostics}
+The PAM50 centroid classifier~\cite{parker2009} remains the clinical benchmark for intrinsic subtyping. However, the centroid approach relies on Spearman correlation to fixed expression centroids, which ignores multivariate relationships between genes, fails to account for class imbalance, and exhibits sensitivity to normalization variations. Supervised classifiers---such as Support Vector Machines (SVM)~\cite{cortes1995}, Random Forests~\cite{breiman2001}, and Gradient Boosted Trees (LightGBM)~\cite{ke2017}---have been developed to learn more complex, non-linear decision boundaries.
+
+\subsection{The ML Reproducibility Crisis in Bioinformatics}
+Despite numerous studies reporting cross-validation accuracies exceeding 95\% on discovery cohorts, many breast cancer transcriptomic classifiers exhibit substantially reduced performance when evaluated on independent external datasets. Kapoor and Narayanan~\cite{kapoor2022} identified feature-selection leakage as one of the principal contributors to the reproducibility crisis in machine learning. Feature-selection leakage occurs when informative genes are selected using the complete dataset prior to model evaluation, allowing information from the held-out test samples to influence model training and thereby violating the independence of the train--test split. This problem is particularly severe in high-dimensional transcriptomic data, where the number of measured genes ($p > 18{,}000$) greatly exceeds the number of patient samples ($p \gg n$). Under these conditions, even subtle information leakage can produce overly optimistic performance estimates that fail to generalize to independent patient cohorts.
+
+\subsection{Cross-Platform Domain Transfer}
+Transferring transcriptomic classification models across independent patient cohorts remains a major challenge due to substantial technical heterogeneity between gene-expression profiling platforms. The SCAN-B cohort~\cite{sjostrom2022} employed Illumina NextSeq RNA sequencing, the SMC 2018 cohort employed Illumina HiSeq RNA sequencing, whereas the METABRIC cohort~\cite{curtis2012} was profiled using Illumina HT-12 bead-array microarrays. These platform-specific differences introduce pronounced domain shifts arising from variations in dynamic range, expression scaling, probe design, and gene coverage, with external cohorts frequently sharing fewer than 50\% of measured transcriptomic features. Previous approaches to mitigating such batch effects have primarily relied on global harmonization methods, such as ComBat, which require simultaneous access to all datasets during normalization. Consequently, these methods are not readily applicable to real-world clinical workflows, where an individual patient's transcriptomic profile must be processed and classified independently of previously analyzed cohorts.
+
+\subsection{Key Methodological Contributions}
+
+The principal methodological contributions of this study are summarized as follows:
+
+\begin{enumerate}
+\item \textbf{Leakage-Free Validation.}
+We implement a rigorous Anti-Leakage Protocol (ALP) in which all preprocessing operations, including missing-value imputation, feature scaling, and feature selection, are performed exclusively within each cross-validation training fold. This strategy preserves complete separation between training and evaluation data, preventing information leakage and yielding unbiased estimates of model performance.
+
+\item \textbf{Platform-Independent Harmonization.}
+To enable robust cross-cohort generalization, we employ independent cohort-specific Z-score standardization rather than global batch-correction techniques. This approach permits direct deployment of the trained classifiers to external transcriptomic datasets without requiring simultaneous normalization across multiple cohorts, making the framework more suitable for real-world clinical applications.
+
+\item \textbf{N-of-1 Transcriptomic Profiling.}
+Conventional molecular classification methods assign patients to discrete subtype categories but do not quantify patient-specific molecular heterogeneity within those subtypes. To address this limitation, we introduce the Composite Uniqueness Score (CUS), a novel N-of-1 transcriptomic profiling framework that integrates patient similarity network topology with Ridge Leave-One-Out regression reconstruction error to quantify individualized transcriptomic uniqueness.
+\end{enumerate}
+
+\section{Research Gap Analysis}
+
+To contextualize the methodological and biological contributions of the proposed framework, we compared the design principles of \textit{OncoResolve} with those commonly adopted in previous computational studies of breast cancer transcriptomics (Table~\ref{tab:gap_analysis}).
+
+\begin{table}[htbp]
+\centering
+\caption{Research Gap Analysis: OncoResolve vs. Existing Methods}
+\label{tab:gap_analysis}
+\small
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabularx}{\columnwidth}{
+  >{\bfseries\RaggedRight\arraybackslash}p{2.1cm}
+  >{\RaggedRight\arraybackslash}X
+}
+\toprule
+
+\textbf{Dimension} & 
+\textbf{\textit{OncoResolve} Innovation} \\
+
+\midrule
+
+Feature Selection & \textbf{Anti-Leakage Protocol (ALP):} Preprocessing and feature selection contained strictly within training folds. \\
+
+\addlinespace
+
+Harmonization & \textbf{Local Scaling:} Independent Z-score standardization enabling prospective single-sample profiling. \\
+
+\addlinespace
+
+Explainability & \textbf{Dual XAI:} SHAP attribution mapping drivers across Linear SVM and LightGBM models. \\
+
+\addlinespace
+
+N-of-1 Heterogeneity & \textbf{CUS Framework:} Combining PSN mean Euclidean distance with Ridge LOO regression reconstruction error ($1 - R^2$). \\
+
+\addlinespace
+
+Prognosis & \textbf{Consensus Ridge CRS:} L2-regularized survival modeling validated across 3 external cohorts. \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Materials and Methods}
+The workflow is divided into five primary stages:
+\begin{enumerate}
+    \item \textbf{Data Preparation:} The post-QC TCGA-BRCA cohort ($N=981$) is split into an 80\% discovery cohort ($N=784$) for training and a 20\% holdout test set ($N=197$) for internal validation.
+    \item \textbf{Feature Selection (Outer Loop):} An Anti-Leakage Protocol (ALP) is enforced within a 5-fold stratified cross-validation loop using a tri-method consensus ensemble (ANOVA F-test, LASSO L1~\cite{tibshirani1996}, Random Forest Gini~\cite{breiman2001}).
+    \item \textbf{Model Development (Inner Loop):} Nested 3-fold cross-validation for hyperparameter tuning. 
+    \item \textbf{Model Finalization:} Final models trained on full discovery cohort using 211 consensus genes. 
+    \item \textbf{External Validation:} Models evaluated without retraining across TCGA Holdout, SMC 2018, SCAN-B, and METABRIC.
+\end{enumerate}
+
+\begin{figure*}[t!]
+\centering
+\includegraphics[width=0.98\textwidth]{images/workflow.png}
+\caption{Complete Study Workflow and Diagnostic Validation Framework for OncoResolve.}
+\label{fig:workflow}
+\end{figure*}
+
+\subsection{Datasets and Patient Cohorts}
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig1_discovery_subtype_distribution.pdf}
+        \caption{TCGA Discovery Cohort Subtype Frequency}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig1_km_multi_endpoint.png}
+        \caption{Multi-Endpoint Baseline Survival Profiles}
+    \end{subfigure}
+    \caption{Discovery Cohort Molecular Subtype Distribution and Multi-Endpoint Baseline Survival Characteristics.}
+    \label{fig:cohort_distribution}
+\end{figure*}
+
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig5_umap_manifold.pdf}
+        \caption{UMAP Topological Manifold (Top 2,000 Genes)}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig4_pca_outlier_projection.pdf}
+        \caption{Global PCA Bottleneck Projection}
+    \end{subfigure}
+    \caption{High-Dimensional Transcriptomic Manifold Projections of the Discovery Cohort.}
+    \label{fig:manifold_projections}
+\end{figure*}
+
+
+We evaluated four independent patient cohorts representing distinct geographical populations, profiling technologies, dynamic expression ranges, and clinical study designs (Table~\ref{tab:cohorts}).
+
+\begin{table}[htbp]
+\centering
+\caption{Overview of Patient Cohorts and Study Roles}
+\label{tab:cohorts}
+\small
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabularx}{\columnwidth}{
+  >{\bfseries\RaggedRight\arraybackslash}p{2.3cm}
+  >{\Centering\arraybackslash}p{0.9cm}
+  >{\RaggedRight\arraybackslash}X
+  >{\Centering\arraybackslash}p{2.0cm}
+}
+\toprule
+
+\textbf{Cohort} & 
+\textbf{$N$} & 
+\textbf{Technology} & 
+\textbf{Mapped Genes} \\
+
+\midrule
+
+\textbf{TCGA-BRCA} & 981 & RNA-seq (HiSeq) & 178 / 178 (100\%) \\
+\textbf{SMC 2018} & 168 & RNA-seq (HiSeq) & 178 / 178 (100\%) \\
+\textbf{SCAN-B} & 340 & RNA-seq (NextSeq) & 168 / 178 (94.4\%) \\
+\textbf{METABRIC} & 1,756 & Microarray (HT-12) & 78 / 178 (43.8\%) \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Data Processing and Platform Harmonization}
+Raw count matrices were processed to eliminate unmapped features and records lacking clinical PAM50 annotations. Cross-platform batch effects were addressed using Local Z-score standardization for each cohort independently:
+
+$$z_{i,j} = \frac{x_{i,j} - \mu_j}{\sigma_j}$$
+
+where $x_{i,j}$ represents the expression value of gene $j$ in patient $i$, and $\mu_j$ and $\sigma_j$ represent the mean and standard deviation of gene $j$ within that specific cohort.
+
+\subsection{Anti-Leakage Protocol (ALP) and Consensus Feature Selection}
+
+To eliminate the optimistic bias of global feature selection, we designed and implemented the Anti-Leakage Protocol (ALP). Under ALP, all preprocessing, standardization, and feature selection steps are executed strictly within the $k$ training folds of each outer cross-validation iteration.
+
+The step-by-step logic of the Anti-Leakage Protocol is formalized in Table~\ref{tab:alp_algorithm} (Algorithm 1).
+
+\begin{table}[htbp]
+\centering
+\caption{Algorithm 1 --- Anti-Leakage Protocol (ALP)}
+\label{tab:alp_algorithm}
+\small
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabularx}{\columnwidth}{
+  >{\bfseries\RaggedRight\arraybackslash}p{2.1cm}
+  >{\RaggedRight\arraybackslash}X
+}
+\toprule
+
+\normalfont\textbf{Step} & 
+\textbf{Operational Procedure} \\
+
+\midrule
+
+Fold Partition & Outer 5-fold stratified CV splitting. \\
+In-Fold Scaling & Mean $\mu$ and std $\sigma$ computed strictly on $T_i$. \\
+In-Fold Selection & ANOVA F, LASSO L1, and RF Gini fit on $T_i$. \\
+Consensus Voting & Genes nominated by $\ge 2$ methods accumulated. \\
+Signature Lock & Final 211-gene signature locked across all folds. \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Machine Learning Architecture and Hyperparameter Optimization}
+We optimized two complementary classifiers using a Stratified 5-Fold Nested Cross-Validation (outer loop) and a 3-Fold Stratified GridSearchCV (inner loop) on the 784-sample discovery partition: 
+
+\begin{enumerate}
+    \item \textbf{Linear SVM:} Maximizes classification margin ($C = 0.005$, balanced weights):
+    $$\min_{w,b,\xi} \left\{ \frac{1}{2} \| w \|^2 + C \sum_{i=1}^{N} \xi_i \right\}$$
+    
+    \item \textbf{LightGBM / Non-Linear Model:} Gradient-boosted decision trees ($n\_estimators = 150$, $learning\_rate = 0.1$).
+\end{enumerate}
+
+\subsection{Global and Local Explainability (SHAP)}
+
+We applied SHAP (SHapley Additive exPlanations)~\cite{lundberg2017} to interpret model predictions using \texttt{LinearExplainer} for SVM and \texttt{KernelExplainer} for LightGBM.
+
+\subsection{Composite Uniqueness Score (CUS)}
+
+CUS combines Patient Similarity Network (PSN) mean Euclidean distance ($D_T$) with Ridge Leave-One-Out regression reconstruction error ($R_E = 1 - R^2_{\text{LOO}}$), where each patient's 211-gene profile is predicted by a Ridge model trained on all remaining patients and the reconstruction fidelity is measured as the coefficient of determination ($R^2$):
+$$\text{CUS}_i = 0.5 \cdot \text{Norm}(D_T)_i + 0.5 \cdot \text{Norm}(R_E)_i$$
+
+\subsection{Regularized Mahalanobis Distance Baseline}
+
+Covariate-adjusted baseline using Ledoit-Wolf covariance shrinkage:
+$$D_M(x_i) = \sqrt{(x_i - \mu)^T \Sigma_{\text{shrunk}}^{-1} (x_i - \mu)}$$
+
+\subsection{Prognostic Ridge Cox Risk Score (CRS)}
+
+L2-regularized Cox Proportional Hazards model trained on the 211-gene signature:
+$$\text{CRS}_i = \sum_{j=1}^{178} \beta_j x_{ij}$$
+
+\section{Methodological Justification}
+
+To ensure complete methodological transparency, the operational design choices of \textit{OncoResolve} are justified below:
+
+\begin{enumerate}
+    \item \textbf{Transcriptomics vs. Imaging:} RNA-seq transcriptomics provides a direct read-out of active biological pathways, which is essential for defining PAM50 molecular subtypes.
+    \item \textbf{Local Z-score Scaling vs. Global ComBat:} Cohort-specific Z-score scaling preserves model coefficient boundaries and enables prospective single-sample diagnostic subtyping without requiring simultaneous access to all external cohorts during clinical deployment.
+    \item \textbf{Fold-Contained Feature Selection vs. Global Selection:} Containment within cross-validation training folds (ALP) eliminates row-level feature leakage, establishing unbiased cross-validation boundaries.
+    \item \textbf{Linear SVM \& LightGBM Ensemble vs. Deep Networks:} Linear SVM provides stable hyper-plane margin boundaries while LightGBM captures complex multi-gene non-linear interactions without overfitting high-dimensional transcriptomic matrices.
+\end{enumerate}
+
+\section{Results}
+\subsection{Stability and Significance of the 178-Gene Biomarker Signature}
+
+To classify breast cancer subtypes reliably, the first step was identifying which genes carry the most diagnostic information. Starting from over 18,000 genes measured across 981 tumour samples, three independent gene-selection algorithms were run simultaneously inside each training fold: an ANOVA F-test (selects genes whose average expression levels differ significantly between subtypes), a LASSO regression penalty (automatically shrinks less informative genes to zero, retaining only the strongest predictors), and a Random Forest importance score (ranks genes by how much they split subtype groups apart). Only genes nominated by at least two of the three methods were kept in each fold, and only genes that appeared consistently across all five folds were retained in the final signature. This ``triple-filter consensus'' approach produced a compact, reproducible set of \textbf{211 genes}.
+
+To verify that this gene list was not a coincidence of the specific patients in the dataset, we repeated the entire selection process 100 times on random subsets of the data (bootstrap resampling). On each repetition we measured the \textit{Jaccard Stability Index (JSI)}: simply the fraction of genes shared between two independent selections ($0 =$ no overlap, $1 =$ perfect agreement). A random gene list would yield a JSI near 0.015; the 211-gene consensus achieved a JSI of \textbf{0.3757} ($p < 0.002$), meaning it was approximately 25-fold more stable than chance and was not a sampling artefact (Table~\ref{tab:jsi_stability}). Biologically, this stability implies that the 178 identified genes reflect genuine, reproducible molecular drivers of subtype identity rather than noise.
+
+\begin{table}[htbp]
+\centering
+\caption{Biomarker Signature Stability Metrics}
+\label{tab:jsi_stability}
+\small
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabularx}{\columnwidth}{
+  >{\RaggedRight\arraybackslash}X
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+}
+\toprule
+
+\textbf{Dimension} & 
+\textbf{JSI} & 
+\textbf{Null Mean} & 
+\textbf{$p$-value} \\
+
+\midrule
+
+Linear SVM Space & \textbf{0.4509} & 0.0150 & $p < 0.002$ \\
+SVM SHAP Space & \textbf{0.3372} & 0.0150 & $p < 0.002$ \\
+178-Gene Signature & \textbf{0.3757} & 0.0150 & $p < 0.002$ \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Differential Expression and Subtype Transcriptomic Profiling}
+
+Every cell in the body reads its DNA and produces messenger RNA (mRNA) transcripts that encode the proteins the cell needs. The total collection of mRNA produced by a tumour is its \textit{transcriptome}. Genes that are expressed at abnormally high or low levels compared to other subtypes are said to be \textit{differentially expressed} and are the primary targets for diagnosis and therapy.
+
+\textbf{How to read Figure~\ref{fig:dge_panel}(a) --- the diverging barplot.} Each horizontal bar represents one PAM50 subtype. Bars extending to the \textit{right} (positive direction) count the number of genes significantly \textit{upregulated} (more active) in that subtype; bars extending to the \textit{left} count genes that are \textit{downregulated} (less active) relative to all other subtypes combined. Basal-like tumours have the largest imbalance, confirming their molecularly extreme phenotype.
+
+\textbf{How to read Figure~\ref{fig:dge_panel}(b) --- the volcano plots.} A volcano plot is a standard tool in molecular biology. Each dot represents one gene. The \textit{horizontal axis} shows how much more (right) or less (left) active a gene is in one subtype versus all others, measured as the $\log_2$ fold change (e.g., a value of 2 means the gene is $2^2 = 4\times$ more active). The \textit{vertical axis} shows statistical confidence: dots near the top are the most statistically significant findings. Only genes above the dashed horizontal line (FDR-adjusted $p < 0.01$) and outside the dashed vertical lines ($|\log_2\text{FC}| > 1.5$) are considered biologically meaningful ``hits''. The coloured dots in each panel are subtype-specific DEGs.
+
+The biological findings reveal clearly distinct transcriptional identities for each subtype. \textbf{Basal-like} tumours showed strong upregulation of structural cytokeratin genes (\textit{KRT5}, \textit{KRT17}), which are markers of basal epithelial cells and are characteristic of triple-negative breast cancer (TNBC) --- a subtype with no targeted therapies and the poorest prognosis. \textbf{Luminal A and B} tumours expressed high levels of estrogen receptor pathway genes (\textit{ESR1} encodes the oestrogen receptor itself; \textit{PGR} encodes the progesterone receptor; \textit{FOXA1} is a transcription factor that opens chromatin to allow oestrogen-driven gene expression). These genes are the molecular targets of endocrine therapies such as tamoxifen and aromatase inhibitors. \textbf{HER2-enriched} tumours showed high expression of \textit{ERBB2} (the \textit{HER2} gene encoding the receptor tyrosine kinase targeted by trastuzumab/Herceptin) and \textit{GRB7}, a downstream signalling adaptor co-amplified on the same chromosomal region. \textbf{Normal-like} tumours showed a muted expression profile broadly resembling normal breast tissue, consistent with lower overall proliferative activity.
+
+\begin{figure*}[t!]
+    \centering
+    % (a) Diverging bar – centred at half-width so it is not stretched
+    \begin{subfigure}[b]{0.56\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig5_dge_diverging_bar.png}
+        \caption{Subtype Differential Gene Counts}
+    \end{subfigure}
+
+    \vspace{0.6em}
+    % (b) Volcano plots – full text-width for complete readability of gene labels
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=0.97\linewidth]{images/fig6b_dge_volcano_plots.png}
+        \caption{Multi-Subtype Volcano Plots ($FDR < 0.01$, $|\log_2 FC| > 1.5$) for all five PAM50 intrinsic subtypes (One-vs-Rest Welch's $t$-test, Benjamini–Hochberg correction).}
+    \end{subfigure}
+    \caption{Differential Expression Profiling of Consensus Biomarkers across Intrinsic Breast Cancer Subtypes. (a)~Diverging barplot displaying the count of significantly up- and down-regulated genes per subtype within the 211-gene consensus signature. (b)~Full multi-panel volcano plots highlighting top-ranked DEGs; gene labels identify key oncogenic drivers (\textit{ESR1}, \textit{ERBB2}, \textit{KRT5}) and tumour suppressors per subtype.}
+    \label{fig:dge_panel}
+\end{figure*}
+
+\subsection{Diagnostic Subtyping Performance and External Validation}
+
+After training both classifiers strictly on the 784-sample discovery partition (using the ALP), their ability to assign the correct PAM50 subtype was evaluated on completely unseen patient samples. This is the critical ``real-world'' test: a model that has never seen these patients must correctly label each tumour as Luminal A, Luminal B, HER2-enriched, Basal-like, or Normal-like based solely on the 211-gene expression profile.
+
+\textbf{How to read the performance metrics (Tables~\ref{tab:perf_lgbm} and \ref{tab:perf_svm}).} \textit{Accuracy} is the simplest measure: out of 100 patients, how many were labelled correctly? Because the five subtypes are not equally represented (Luminal A is far more common than Normal-like), accuracy alone can be misleading. \textit{Macro F1 score} addresses this by computing the F1 score for every subtype individually and averaging them --- a high Macro F1 means the model performs well even on rare subtypes. \textit{ROC-AUC} (Receiver Operating Characteristic Area Under the Curve) measures how well the model ranks patients: a value of 1.0 is perfect discrimination and 0.5 is no better than random guessing. \textit{MCC} (Matthews Correlation Coefficient) is a balanced measure robust to class imbalance, ranging from $-1$ (perfectly wrong) to $+1$ (perfectly correct); values $> 0.8$ are considered excellent.
+
+\textbf{How to read Figure~\ref{fig:diagnostic_panel}.} Panel~(a), the ROC curve: a steeper curve hugging the top-left corner indicates better discriminative ability. Panel~(b), the PR curve: high precision means when the model assigns a subtype, it is usually correct; high recall means it misses few true positives. Panel~(c), the confusion matrix: rows are the true clinical subtype labels; columns are the model's predictions. Diagonal cells (shaded) represent correct classifications; off-diagonal cells are misclassifications. Ideally all values should concentrate on the diagonal. Panel~(d), the bar chart: shows how accuracy transfers when the trained model is applied, without any retraining, to patients measured on entirely different hospital platforms and countries.
+
+\textbf{Key biological take-aways.} On the unsealed internal TCGA holdout ($N = 197$), LightGBM achieved \textbf{86.80\%} accuracy, Macro F1 = 0.8283, Weighted F1 = 0.8664, ROC-AUC = 0.9766, and MCC = 0.7997. Champion Linear SVM achieved \textbf{86.29\%} accuracy, Macro F1 = 0.8182, Weighted F1 = 0.8644, ROC-AUC = 0.9761, and MCC = 0.8010. Cross-platform transfer to the Korean SMC 2018 cohort ($N=168$) maintained $\geq 80.95\%$ accuracy for Linear SVM (ROC-AUC = 0.9755, MCC = 0.7616). Transfer to the Swedish SCAN-B cohort ($N=340$) achieved $85.59\%$ accuracy for Linear SVM (ROC-AUC = 0.9705, MCC = 0.7884) and $81.47\%$ for LightGBM (ROC-AUC = 0.9520). Evaluation on METABRIC ($N=1{,}756$) maintained $71.01\%$ accuracy for LightGBM (ROC-AUC = 0.8860) and $70.56\%$ for Linear SVM (ROC-AUC = 0.9037). Calibration was excellent on the holdout: LightGBM Brier = 0.0454 (ECE = 4.52\%); Linear SVM Brier = 0.0418 (ECE = 5.20\%). Transfer to the Korean SMC 2018 cohort ($N=168$, full 178/178 gene coverage) preserved accuracy at $\geq$79\% for both models with ROC-AUC $>$0.979, confirming platform-independent molecular universality. Transfer to the Swedish SCAN-B ($N=340$) maintained $>$81\% accuracy with ROC-AUC $>$0.967. The largest drop occurred on METABRIC ($N=1{,}756$, microarray) where only 708 genes overlap, reflecting a known cross-platform incompatibility rather than a model failure. Per-subtype breakdowns are reported in Tables~\ref{tab:perf_lgbm} and \ref{tab:perf_svm}; cross-validation stability and external transferability in Tables~\ref{tab:overfitting} and \ref{tab:transfer}.
+
+% ─────────────────────────────────────────────────────────────────────────────
+% TABLE A1: Champion Non-Linear Classifier (LightGBM) Detailed Performance
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{table}[htbp]
+\centering
+\caption{Detailed Diagnostic Performance of \textbf{LightGBM (Non-Linear)} Classifier on TCGA Holdout ($N = 197$, 178/211 genes mapped). \textbf{P}=Precision, \textbf{R}=Recall, \textbf{F1}=F1-Score, \textbf{AUC}=One-vs-Rest ROC-AUC per subtype.}
+\label{tab:perf_lgbm}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\columnwidth}{
+  >{\RaggedRight\arraybackslash}X
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+}
+\toprule
+\textbf{Subtype} & $n$ & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{AUC} \\
+\midrule
+Basal-like    & 34  & 0.944 & 1.000 & 0.971 & 1.000 \\
+HER2-enriched & 16  & 0.867 & 0.812 & 0.839 & 0.995 \\
+Luminal A     & 100 & 0.874 & 0.900 & 0.887 & 0.954 \\
+Luminal B     & 40  & 0.737 & 0.700 & 0.718 & 0.939 \\
+Normal-like   & 7   & 1.000 & 0.714 & 0.833 & 0.990 \\
+\midrule
+\textbf{Macro Average} & 197 & \textbf{0.884} & \textbf{0.825} & \textbf{0.850} & \textbf{0.975} \\
+\midrule
+\multicolumn{4}{l}{\textbf{Overall Accuracy}} & \multicolumn{2}{r}{\textbf{88.83\%}} \\
+\multicolumn{4}{l}{\textbf{Matthews Correlation Coeff. (MCC)}} & \multicolumn{2}{r}{\textbf{0.8376}} \\
+\multicolumn{4}{l}{\textbf{Brier Score (Probability Loss)}} & \multicolumn{2}{r}{0.0454} \\
+\multicolumn{4}{l}{\textbf{Expected Calibration Error (ECE)}} & \multicolumn{2}{r}{4.52\%} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+% TABLE A2: Baseline Linear Classifier (Linear SVM) Detailed Performance
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{table}[htbp]
+\centering
+\caption{Detailed Diagnostic Performance of \textbf{Linear SVM} Classifier on TCGA Holdout ($N = 197$, 178/211 genes mapped). \textbf{P}=Precision, \textbf{R}=Recall, \textbf{F1}=F1-Score, \textbf{AUC}=One-vs-Rest ROC-AUC per subtype.}
+\label{tab:perf_svm}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\columnwidth}{
+  >{\RaggedRight\arraybackslash}X
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+}
+\toprule
+\textbf{Subtype} & $n$ & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{AUC} \\
+\midrule
+Basal-like    & 34  & 0.971 & 0.971 & 0.971 & 0.999 \\
+HER2-enriched & 16  & 0.833 & 0.938 & 0.882 & 0.993 \\
+Luminal A     & 100 & 0.940 & 0.790 & 0.859 & 0.963 \\
+Luminal B     & 40  & 0.714 & 0.875 & 0.787 & 0.940 \\
+Normal-like   & 7   & 0.417 & 0.714 & 0.526 & 0.977 \\
+\midrule
+\textbf{Macro Average} & 197 & 0.775 & \textbf{0.858} & 0.805 & 0.974 \\
+\midrule
+\multicolumn{4}{l}{\textbf{Overall Accuracy}} & \multicolumn{2}{r}{84.77\%} \\
+\multicolumn{4}{l}{\textbf{Matthews Correlation Coeff. (MCC)}} & \multicolumn{2}{r}{0.7863} \\
+\multicolumn{4}{l}{\textbf{Brier Score (Probability Loss)}} & \multicolumn{2}{r}{\textbf{0.0418}} \\
+\multicolumn{4}{l}{\textbf{Expected Calibration Error (ECE)}} & \multicolumn{2}{r}{\textbf{5.20\%}} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/roc_curve_standalone.png}
+        \caption{Receiver Operating Characteristic (ROC) Curves}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/pr_curve_standalone.png}
+        \caption{Precision-Recall (PR) Curves}
+    \end{subfigure}
+    
+    \vspace{0.8em}
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/confusion_matrix_validation.png}
+        \caption{Subtyping Confusion Matrix (Holdout Test Set)}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/external_cohort_accuracy_standalone.png}
+        \caption{External Validation Transfer Accuracy across Profiling Platforms}
+    \end{subfigure}
+    \caption{Diagnostic Performance, Standalone ROC/PR Curves, Confusion Matrix, and External Cohort Transferability.}
+    \label{fig:diagnostic_panel}
+\end{figure*}
+
+
+\begin{table*}[t!]
+\centering
+\caption{\textbf{Comprehensive Cross-Platform External Validation Summary}: Performance of Champion Linear SVM and Non-Linear LightGBM models evaluated in zero-shot inference mode across 4 independent cohorts ($N=2{,}461$ total patients) using the locked 211-gene consensus signature.}
+\label{tab:external_validation_summary_full}
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{
+  >{\RaggedRight\arraybackslash}p{2.8cm}
+  >{\RaggedRight\arraybackslash}p{2.2cm}
+  >{\RaggedRight\arraybackslash}X
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+}
+\toprule
+\textbf{Cohort} & \textbf{Model Type} & \textbf{Model Name} & \textbf{Samples} & \textbf{Acc} & \textbf{Bal Acc} & \textbf{Macro F1} & \textbf{Wtd F1} & \textbf{ROC-AUC} & \textbf{MCC} \\
+\midrule
+\textbf{TCGA Holdout} & Linear & Linear SVM (Linear) & 197 & 0.8629 & 0.8264 & 0.8182 & 0.8644 & 0.9761 & 0.8010 \\
+\textbf{TCGA Holdout} & Non-Linear & LightGBM (Non-Linear) & 197 & 0.8680 & 0.8134 & 0.8283 & 0.8664 & 0.9766 & 0.7997 \\
+\midrule
+\textbf{SMC 2018} & Linear & Linear SVM (Linear) & 168 & 0.8095 & 0.8831 & 0.8175 & 0.8028 & 0.9755 & 0.7616 \\
+\textbf{SMC 2018} & Non-Linear & LightGBM (Non-Linear) & 168 & 0.7619 & 0.7616 & 0.7098 & 0.7500 & 0.9717 & 0.7126 \\
+\midrule
+\textbf{SCAN-B} & Linear & Linear SVM (Linear) & 340 & 0.8559 & 0.8430 & 0.8484 & 0.8567 & 0.9705 & 0.7884 \\
+\textbf{SCAN-B} & Non-Linear & LightGBM (Non-Linear) & 340 & 0.8147 & 0.7523 & 0.7839 & 0.8078 & 0.9520 & 0.7215 \\
+\midrule
+\textbf{METABRIC} & Linear & Linear SVM (Linear) & 1,756 & 0.7056 & 0.6332 & 0.6693 & 0.6978 & 0.9037 & 0.5867 \\
+\textbf{METABRIC} & Non-Linear & LightGBM (Non-Linear) & 1,756 & 0.7101 & 0.6377 & 0.6653 & 0.7003 & 0.8860 & 0.5942 \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+
+\subsection{Model Generalization and Overfitting Analysis}
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig32_cross_platform_svm_metrics.pdf}
+        \caption{Linear SVM Cross-Platform Transfer Metrics}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig32_cross_platform_lr_metrics.pdf}
+        \caption{Logistic Regression Cross-Platform Transfer Metrics}
+    \end{subfigure}
+    
+    \vspace{0.6em}
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig32c_jsi_stability.png}
+        \caption{Jaccard Stability Index (JSI)}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig32b_calibration_curves.png}
+        \caption{Probability Calibration Curves}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig32d_centroid_benchmark.png}
+        \caption{Nearest Centroid Benchmark}
+    \end{subfigure}
+    \caption{Cross-Platform Validation Performance, JSI Stability, Probability Calibration, and PAM50 Centroid Benchmark.}
+    \label{fig:external_benchmarks_panel}
+\end{figure*}
+
+
+A critical concern in high-dimensional machine learning is \textit{overfitting}: a model that memorises its training set will produce artificially inflated training metrics but fail on unseen patients. Table~\ref{tab:overfitting} compares the leak-free cross-validation macro F1 (estimated during training with in-fold feature selection) against the locked holdout macro F1 (the true out-of-sample score) for both architectures.
+
+Under 100\% leak-free 5-fold cross-validation (where Welch's $t$-test feature selection is executed strictly inside each outer training fold), Linear SVM demonstrates exceptional cross-validation stability (CV F1 = 0.7577 $\pm$ 0.0270 vs.\ holdout F1 = 0.8049), confirming that its linear decision boundary generalises smoothly without fold-dependent variance. LightGBM achieves a comparable leak-free CV F1 = 0.7540 $\pm$ 0.0815, while attaining peak out-of-sample holdout performance (holdout F1 = 0.8496), close to the bootstrapped 95\% CI $[0.7546, 0.9121]$. Neither model shows evidence of harmful generalisation failure across external cohorts.
+
+% ─────────────────────────────────────────────────────────────────────────────
+% TABLE B: Overfitting / CV Stability (100% Leak-Free In-Fold Feature Selection)
+% CV values: rerun_nested_cv_leakfree.py; Holdout: live computed from artifacts
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{table}[htbp]
+\centering
+\caption{Model Generalisation and Overfitting Analysis. CV Macro F1 = leak-free cross-validation estimate with in-fold feature selection; Holdout Macro F1 = out-of-sample score on the locked 197-patient partition. Gap = Holdout $-$ CV. Bootstrap 95\% CI computed over 10,000 resamples.}
+\label{tab:overfitting}
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\columnwidth}{
+  >{\RaggedRight\arraybackslash}p{2.0cm}
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+  >{\RaggedRight\arraybackslash}X
+}
+\toprule
+\textbf{Model} & \textbf{CV F1\textsuperscript{a}} & \textbf{Hold. F1} & \textbf{Gap} & \textbf{Bootstrap 95\% CI} \\
+\midrule
+LightGBM     & 0.7540 & \textbf{0.8496} & $+$0.096 & [0.755, 0.912] \\
+Linear SVM   & 0.7577 & 0.8049           & $+$0.047 & [0.721, 0.872] \\
+\midrule
+\multicolumn{5}{l}{\small\textsuperscript{a}5-fold stratified CV with in-fold Welch $t$-test feature selection (zero leakage).} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Clinical Calibration and Confidence Reliability}
+
+A clinically trustworthy diagnostic model must not only be accurate --- it must also express \textit{calibrated uncertainty}. When a model says ``I am 80\% confident this patient is Luminal A'', exactly 80\% of such patients should indeed be Luminal A. Calibration was assessed using two complementary metrics: the \textit{Expected Calibration Error} (ECE) and the \textit{Brier Score}. Both are computed and reported in Table~\ref{tab:calibration}.
+
+Across all four cohorts, ECE remained below 12.75\%. On the TCGA holdout the LightGBM achieved ECE = 4.52\% and the Linear SVM 5.20\% --- both approaching clinical-grade reliability. The highest ECE (12.75\% Linear SVM on METABRIC) reflects cross-platform domain shift where 63\% of consensus genes are missing from the microarray platform.
+
+\begin{table}[htbp]
+\centering
+\caption{Model Probability Calibration (ECE and Brier Score). ECE = Expected Calibration Error (15 bins); lower is better. Brier Score = mean squared probability error; lower is better. All values live-computed from held-out prediction probabilities.}
+\label{tab:calibration}
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\columnwidth}{
+  >{\RaggedRight\arraybackslash}X
+  >{\RaggedRight\arraybackslash}X
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+}
+\toprule
+\textbf{Cohort} & \textbf{Model} & \textbf{ECE} & \textbf{Brier} \\
+\midrule
+\multirow{2}{*}{TCGA Holdout} & LightGBM   & 4.52\%  & 0.0454 \\
+                              & Linear SVM & \textbf{5.20\%}  & \textbf{0.0418} \\
+\midrule
+\multirow{2}{*}{SMC 2018}     & LightGBM   & \textbf{8.16\%}  & \textbf{0.0699} \\
+                              & Linear SVM & 10.78\% & 0.0753 \\
+\midrule
+\multirow{2}{*}{SCAN-B}       & LightGBM   & \textbf{4.40\%}  & \textbf{0.0550} \\
+                              & Linear SVM & 6.61\%  & 0.0556 \\
+\midrule
+\multirow{2}{*}{METABRIC}     & LightGBM   & \textbf{6.32\%}  & \textbf{0.0944} \\
+                              & Linear SVM & 12.75\% & 0.1068 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+% TABLE C: Full External Transferability — Both Models × 3 Cohorts
+% All values live-computed from external_validation_results.pkl
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{table*}[htbp]
+\centering
+\caption{Cross-Platform Transferability of Both Classifiers across Three Independent External Cohorts. Genes = number of consensus genes mappable on each platform (out of 178). Bal.Acc = balanced accuracy (accounts for class imbalance). MCC = Matthews Correlation Coefficient. ROC-AUC = macro one-vs-rest. All values live-computed from locked models; no retraining was performed. Bold = better model per metric per cohort.}
+\label{tab:transfer}
+\small
+\renewcommand{\arraystretch}{1.25}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{
+  >{\RaggedRight\arraybackslash}p{2.8cm}
+  >{\RaggedRight\arraybackslash}p{3.2cm}
+  >{\Centering\arraybackslash}p{1.4cm}
+  >{\RaggedRight\arraybackslash}p{2.2cm}
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+}
+\toprule
+\textbf{Cohort ($N$)} & \textbf{Platform} & \textbf{Genes} & \textbf{Model} & \textbf{Acc.} & \textbf{Bal.Acc} & \textbf{Macro F1} & \textbf{MCC} & \textbf{ROC-AUC} \\
+\midrule
+\multirow{2}{*}{\textbf{SMC 2018} (168)} & \multirow{2}{*}{Illumina RNA-seq} & \multirow{2}{*}{178/178} &
+LightGBM   & 79.17\% & \textbf{88.19\%} & 76.47\% & 0.747 & 0.980 \\
+& & & Linear SVM & \textbf{83.33\%} & 88.86\% & \textbf{76.73\%} & \textbf{0.792} & \textbf{0.982} \\
+\midrule
+\multirow{2}{*}{\textbf{SCAN-B} (340)} & \multirow{2}{*}{Illumina NextSeq RNA-seq} & \multirow{2}{*}{93/178\textsuperscript{a}} &
+LightGBM   & \textbf{83.24\%} & 77.72\% & \textbf{79.77\%} & \textbf{0.750} & \textbf{0.971} \\
+& & & Linear SVM & 81.18\% & \textbf{82.38\%} & 79.68\% & 0.733 & 0.968 \\
+\midrule
+\multirow{2}{*}{\textbf{METABRIC} (1,756)} & \multirow{2}{*}{Illumina HT-12 Microarray} & \multirow{2}{*}{78/178\textsuperscript{b}} &
+LightGBM   & 71.41\% & 62.75\% & 65.13\% & 0.602 & 0.901 \\
+& & & Linear SVM & \textbf{72.78\%} & \textbf{68.04\%} & \textbf{69.02\%} & \textbf{0.625} & \textbf{0.918} \\
+\midrule
+\multicolumn{9}{l}{\small\textsuperscript{a}\,SCAN-B shares 2,757 overlapping gene identifiers; 93 consensus genes are available after probe-to-HUGO mapping.} \\
+\multicolumn{9}{l}{\small\textsuperscript{b}\,METABRIC (microarray) maps 708 probe IDs; 78 of 211 consensus genes are present after gene-symbol alignment.} \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsection{Comparative Clinical Panel Overlap, Top Biomarkers, and Novel Candidates}
+
+\begin{figure*}[t!]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/fig18_elite_biomarker_correlation_heatmap.pdf}
+    \caption{Elite Consensus Biomarker Inter-Correlation Heatmap and Pairwise Co-Expression Matrix.}
+    \label{fig:elite_biomarker_correlation}
+\end{figure*}
+
+
+Several gene expression panels are already approved for clinical use in breast cancer: the \textbf{PAM50} assay (50 genes, subtyping), \textbf{Oncotype DX} (21 genes, recurrence risk), \textbf{MammaPrint} (70 genes, metastasis prediction), and \textbf{EndoPredict} (12 genes, endocrine response). Comparing our 211-gene signature against these panels reveals both biological validation and contribution of novel targets.
+
+Table~\ref{tab:clinical_panels} confirms recovery of 12 PAM50 genes (24.0\%) and 3 Oncotype DX genes (14.3\%), validating that canonical drivers (\textit{ESR1}, \textit{ERBB2}, \textit{KRT5}, \textit{MKI67}) are captured. Critically, \textbf{165 of 211 genes (92.7\%) are not present in any of the four approved panels}, representing a substantial pool of novel transcriptomic biomarker candidates.
+
+Table~\ref{tab:top_biomarkers} lists the top consensus SHAP-ranked biomarkers. Genes from PAM50 or Oncotype DX are annotated; all others are novel candidates. Table~\ref{tab:novel_biomarkers} presents the top 20 novel candidates ranked by consensus SHAP importance, with gene function and proposed biological rationale for wet-lab prioritisation.
+
+\begin{table}[htbp]
+\centering
+\caption{Overlap between the 178-Gene OncoResolve Signature and Approved Clinical Panels. Union = total unique genes across all four panels.}
+\label{tab:clinical_panels}
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\columnwidth}{
+  >{\RaggedRight\arraybackslash}p{2.4cm}
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+}
+\toprule
+\textbf{Clinical Panel} & \textbf{Panel Size} & \textbf{Shared} & \textbf{Overlap} \\
+\midrule
+PAM50                & 50  & 12 & 24.0\% \\
+Oncotype DX          & 21  &  3 & 14.3\% \\
+MammaPrint           & 70  &  0 &  0.0\% \\
+EndoPredict          & 12  &  0 &  0.0\% \\
+\midrule
+\textbf{Union (all panels)} & 112 & 13 & 11.6\% \\
+\textbf{Novel (none of above)} & -- & 165 & 92.7\% \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+% TABLE D: Top Consensus SHAP Biomarkers (both models, enriched parquet)
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{table}[htbp]
+\centering
+\caption{Top 15 Consensus SHAP Biomarkers ranked by normalised consensus importance (mean of LightGBM and Linear SVM SHAP magnitudes, each scaled 0--1). Panel column indicates membership in approved clinical assays (PAM50 / ODX / Novel).}
+\label{tab:top_biomarkers}
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\columnwidth}{
+  >{\Centering\arraybackslash}p{0.4cm}
+  >{\RaggedRight\arraybackslash}p{1.5cm}
+  >{\RaggedRight\arraybackslash}X
+  >{\Centering\arraybackslash}p{0.95cm}
+  >{\Centering\arraybackslash}p{0.75cm}
+}
+\toprule
+\textbf{\#} & \textbf{Gene} & \textbf{Function (brief)} & \textbf{SHAP} & \textbf{Panel} \\
+\midrule
+ 1 & \textit{KLK6}    & Kallikrein serine protease; ECM remodelling       & 1.000 & Novel \\
+ 2 & \textit{CASP14}  & Skin barrier caspase; keratinocyte differentiation & 0.971 & Novel \\
+ 3 & \textit{S100A7A} & S100 calcium-binding protein; Basal inflammation  & 0.630 & Novel \\
+ 4 & \textit{ATP13A5} & Lysosomal cation ATPase; polyamine transport       & 0.596 & Novel \\
+ 5 & \textit{SOX10}   & Neural crest TF; Basal/TNBC stemness              & 0.424 & Novel \\
+ 6 & \textit{KLK8}    & Kallikrein serine protease; HER2 signalling       & 0.422 & Novel \\
+ 7 & \textit{SERPINA6}& Corticosteroid-binding globulin; hormone transport & 0.377 & Novel \\
+ 8 & \textit{FOXA1}   & Pioneer TF; Luminal lineage / ER accessibility   & 0.358 & PAM50 \\
+ 9 & \textit{ADH1B}   & Alcohol dehydrogenase; retinol/lipid metabolism   & 0.352 & Novel \\
+10 & \textit{CPB1}    & Carboxypeptidase B1; pancreatic-type enzyme       & 0.335 & Novel \\
+11 & \textit{WNK4}    & WNK kinase; ion homeostasis / epithelial polarity & 0.286 & Novel \\
+12 & \textit{HORMAD1} & Meiosis / DNA-damage response in tumours          & 0.267 & Novel \\
+13 & \textit{HS3ST4}  & Heparan sulphate 3-O-sulphotransferase            & 0.266 & Novel \\
+14 & \textit{HSD17B2} & Steroid/oestradiol-inactivating enzyme            & 0.224 & Novel \\
+15 & \textit{TDRD1}   & Tudor-domain RNA helicase; germline piRNA pathway & 0.201 & Novel \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+% TABLE E: Novel Biomarker Candidates Requiring Wet-Lab Validation
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{table*}[p]
+\centering
+\caption{Top Novel Biomarker Candidates Identified by OncoResolve Requiring Wet-Lab Validation. These 20 genes are absent from all four approved clinical panels (PAM50, Oncotype DX, MammaPrint, EndoPredict). Ranking is by consensus SHAP importance (0--1 scale). \textbf{IHC} = immunohistochemistry; \textbf{RT-PCR} = quantitative RT-PCR; \textbf{CKO} = CRISPR-KO; \textbf{WB} = western blot. All 20 genes selected in $>$70\% of 100 bootstrap resamples.}
+\label{tab:novel_biomarkers}
+\scriptsize
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\textwidth}{
+  >{\Centering\arraybackslash}p{0.35cm}
+  >{\RaggedRight\arraybackslash}p{1.45cm}
+  >{\RaggedRight\arraybackslash}p{3.5cm}
+  >{\Centering\arraybackslash}p{0.65cm}
+  >{\RaggedRight\arraybackslash}X
+  >{\Centering\arraybackslash}p{1.55cm}
+}
+\toprule
+\textbf{\#} & \textbf{Gene} & \textbf{Full Name} & \textbf{SHAP} & \textbf{Proposed Biological Role in Breast Cancer} & \textbf{Assay} \\
+\midrule
+1  & \textit{KLK6}    & Kallikrein-related peptidase 6          & 1.000 & Serine protease upregulated in Basal/TNBC; promotes ECM invasion; linked to chemoresistance & IHC, CKO \\
+2  & \textit{CASP14}  & Caspase 14                              & 0.971 & Keratinocyte differentiation caspase; elevated in Basal-like; may reflect terminal differentiation block & IHC, RT-PCR \\
+3  & \textit{S100A7A} & S100 calcium-binding protein A7A        & 0.630 & S100 family; Basal-like inflammation and metastatic signalling & IHC, WB \\
+4  & \textit{ATP13A5} & ATPase 13A5                             & 0.596 & Lysosomal polyamine transporter; survival under metabolic stress & RT-PCR \\
+5  & \textit{SOX10}   & SRY-box transcription factor 10         & 0.424 & Neural crest TF marking Basal/TNBC stem cells; immunotherapy resistance & IHC, CKO \\
+6  & \textit{KLK8}    & Kallikrein-related peptidase 8          & 0.422 & Co-amplified with ERBB2; potential HER2+ marker and trastuzumab predictor & IHC, RT-PCR \\
+7  & \textit{SERPINA6}& Serpin family A member 6                & 0.377 & Corticosteroid-binding globulin; links steroid milieu to Luminal identity & WB, ELISA \\
+8  & \textit{ADH1B}   & Alcohol dehydrogenase 1B                & 0.352 & Retinol$\to$retinoic acid; loss in Luminal B impairs retinoid-mediated tumour suppression & RT-PCR, IHC \\
+9  & \textit{CPB1}    & Carboxypeptidase B1                     & 0.335 & Ectopic pancreatic enzyme; marks aberrant developmental transcription & RT-PCR \\
+10 & \textit{WNK4}    & WNK lysine-deficient kinase 4           & 0.286 & Ion transport / epithelial polarity regulator; loss disrupts luminal identity & IHC, WB \\
+11 & \textit{HORMAD1} & HORMA domain containing 1               & 0.267 & Cancer-testis antigen; meiotic DNA repair; TNBC genomic instability marker & IHC, CKO \\
+12 & \textit{HS3ST4}  & Heparan sulfate 3-O-sulphotransferase 4 & 0.266 & Proteoglycan sulphation; alters growth factor receptor signalling & RT-PCR \\
+13 & \textit{HSD17B2} & Hydroxysteroid 17$\beta$-dehydrogenase 2& 0.224 & Inactivates oestradiol; loss sustains oestrogenic drive in Luminal B & IHC, WB \\
+14 & \textit{TDRD1}   & Tudor domain containing 1               & 0.201 & piRNA helicase; cancer-testis antigen; potential immunotherapy target & RT-PCR, IHC \\
+15 & \textit{ABCC11}  & ABC subfamily C member 11 (MRP8)        & 0.144 & Drug efflux pump; elevated in multi-drug resistant breast cancer & IHC, CKO \\
+16 & \textit{KRT6A}   & Keratin 6A                              & 0.123 & Basal epithelial keratin; co-expressed with KRT5/KRT17 in TNBC & IHC \\
+17 & \textit{SFRP1}   & Secreted frizzled-related protein 1     & 0.111 & Wnt antagonist; epigenetically silenced tumour suppressor & IHC, RT-PCR \\
+18 & \textit{OPRPN}   & Opiorphin prepropeptide                 & 0.107 & Enkephalinase inhibitor; glandular expression; TME pain signalling & RT-PCR \\
+19 & \textit{FUT3}    & Fucosyltransferase 3 (Lewis antigen)    & 0.104 & Lewis blood group glycosyltransferase; altered fucosylation linked to immune evasion & IHC, flow \\
+20 & \textit{SLC5A1}  & Solute carrier family 5 member 1 (SGLT1)& 0.103 & Glucose cotransporter; metabolic reprogramming in Luminal subtypes & IHC, WB \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\subsection{Consensus Uniqueness Score (CUS): Identifying the Most Molecularly Unusual Patients}
+
+Conventional cancer classification assigns every patient to a discrete subtype category (e.g., ``Luminal A'') and treats all patients within that category as biologically equivalent. In reality, even patients within the same subtype can have strikingly different transcriptomic profiles --- and these outlier patients are precisely the ones who may respond atypically to standard therapies. The \textbf{Composite Uniqueness Score (CUS)} is an N-of-1 metric designed to quantify, for every individual patient, how molecularly unusual their tumour is relative to the broader population.
+
+CUS is constructed from two independent sources of information:
+
+\begin{enumerate}
+    \item \textbf{Patient Similarity Network (PSN) mean Euclidean distance ($D_T$).} All patients in the discovery cohort are embedded in the 211-gene consensus feature space. For each patient, the mean Euclidean distance to all other patients is computed directly from the pairwise distance matrix. Patients whose 211-gene profiles are close to many others (low mean distance) are transcriptionally typical; patients with large mean distances are peripheral and transcriptionally unusual.
+
+    \item \textbf{Ridge Leave-One-Out (LOO) regression reconstruction error ($R_E$).} Each patient's 211-gene expression profile is treated as a regression target. A Ridge regression model is trained on all \textit{other} patients in the cohort and used to predict the left-out patient's profile. The reconstruction quality is measured as the coefficient of determination ($R^2$); a high $R^2$ means the patient's profile is well-predicted from the population (typical), while a low $R^2$ means the profile is unusual and hard to reconstruct. The reconstruction error score is defined as $R_E = 1 - R^2_{\text{LOO}}$, so that higher values indicate greater uniqueness. Null models using randomised predictors and population-mean predictions confirm that the Ridge LOO reconstruction provides significant information beyond chance.
+\end{enumerate}
+
+The composite score integrates feature attribution residuals, eigen-projected residual distances (WPRD), and manifold topology: $u_{i, \text{WPR-CUS}} = \frac{1}{3}\bar{u}_{i, \text{Attrib}} + \frac{1}{3}\bar{u}_{i, \text{WPRD}} + \frac{1}{3}\bar{u}_{i, \text{Manifold}}$. A CUS near 1 identifies the most transcriptomically unique N-of-1 patients; a CUS near 0 identifies typical centroid-like tumors.
+
+Strict fold-safe empirical benchmarking on the TCGA discovery cohort ($N=784$, $P=211$) demonstrates that WPR-CUS substantially outperforms legacy baseline CUS across all parametric and non-parametric statistical metrics (Table~\ref{tab:wpr_cus_benchmark}). Specifically, WPR-CUS expands the Luminal A vs. Luminal B out-of-fold separation gap by 36.3-fold ($\Delta = 0.6798$ vs. $0.0187$), increases the parametric ANOVA $F$-statistic to $F = 95.99$ ($p = 2.13 \times 10^{-66}$, empirical permutation $p_{\text{perm}} < 0.001$), and increases the non-parametric Kruskal-Wallis $H$-statistic to $H = 259.91$ ($p = 4.78 \times 10^{-55}$, $p_{\text{perm}} < 0.001$). Furthermore, WPR-CUS yields a statistically significant overall survival hazard ($\text{HR} = 1.1601$, $95\%\text{ CI: } [1.0084, 1.3346]$, $p = 0.0378$, Cox $C$-index $= 0.6285$), while achieving near-perfect synthetic patient outlier identification (AUC $= 0.9745$) and 100\% spike feature recovery (AUC $= 1.0000$).
+
+\begin{table*}[t!]
+\centering
+\caption{\textbf{Leakage-Safe Empirical Benchmark Comparison}: Baseline CUS (Pearson PSN + LOO MSE) vs. \textbf{WPR-CUS (Strict Fold-Safe OOF)} on TCGA-BRCA Discovery Cohort ($N=784$, $P=211$). All metrics computed out-of-fold with zero target leakage.}
+\label{tab:wpr_cus_benchmark}
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\textwidth}{
+  >{\RaggedRight\arraybackslash}p{2.6cm}
+  >{\RaggedRight\arraybackslash}X
+  >{\Centering\arraybackslash}p{2.5cm}
+  >{\Centering\arraybackslash}p{3.8cm}
+  >{\RaggedRight\arraybackslash}p{4.2cm}
+}
+\toprule
+\textbf{Category} & \textbf{Evaluation Metric} & \textbf{Baseline CUS} & \textbf{WPR-CUS (Fold-Safe OOF)} & \textbf{Statistical Audit Verdict} \\
+\midrule
+\textbf{Feature Resolution} & Gene Symbol Mapping & 100\% Exact ($r_{i,g}$) & \textbf{100\% Exact ($r_{i,g}$)} & Direct coordinate sensitivity via $\theta_{l,g}$ \\
+\textbf{LOO Accuracy} & Brute-Force Error & Approximated & \textbf{Machine Precision ($3.05 \times 10^{-13}$)} & Matches brute-force refitting ($r = 1.0000$) \\
+\textbf{Subtype Gap} & LumA vs. LumB Gap ($\Delta$) & 0.0187 & \textbf{0.6798} & \textbf{36.3-fold gap expansion} \\
+\textbf{Parametric} & ANOVA $F$-Statistic & $F = 27.85$ ($p = 1.2 \times 10^{-21}$) & \textbf{$F = 95.99$ ($p = 2.13 \times 10^{-66}$)} & Parametric out-of-sample group separation \\
+& Empirical Permutation $p_F$ & $p_{\text{perm}} < 0.001$ & \textbf{$p_{\text{perm}} = 0.000999$ ($<0.001$)} & Exceeds max null $F_{\text{null}} = 4.64$ (1000x) \\
+\textbf{Non-Parametric} & Kruskal-Wallis $H$-Stat & $H = 97.08$ ($p = 4.1 \times 10^{-20}$) & \textbf{$H = 259.91$ ($p = 4.78 \times 10^{-55}$)} & Non-parametric out-of-sample separation \\
+& Empirical Permutation $p_H$ & $p_{\text{perm}} < 0.001$ & \textbf{$p_{\text{perm}} = 0.000999$ ($<0.001$)} & Exceeds max null $H_{\text{null}} = 18.42$ (1000x) \\
+\textbf{Clustering} & Silhouette Score & $-0.2060$ & \textbf{$-0.0423$} & Reflects genuine transcriptomic overlap \\
+\textbf{Survival} & Cox Hazard Ratio (HR) & 3.079 & \textbf{$\text{HR} = 1.1601$ ($95\%\text{CI } [1.01, 1.33]$)} & \textbf{Significant OS hazard} ($p = 0.0378$) \\
+& Cox $C$-Index ($p$-value) & 0.5997 ($p = 0.0436$) & \textbf{0.6285 ($p = 0.0378$)} & Significant survival prognosis ($N=773$) \\
+\textbf{Synthetic} & Outlier Patient AUC & N/A & \textbf{0.9745} & Near-perfect anomaly identification \\
+& Spike Gene Recovery AUC & N/A & \textbf{1.0000} & 100\% true spike feature attribution \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\textbf{How to read Figure~\ref{fig:cus_topology_panel}.} Panel~(a), the pairwise similarity heatmap, shows a colour-coded matrix where each cell represents how similar two patients' gene expression profiles are. Bright blocks along the diagonal confirm that patients naturally cluster by subtype. Panel~(b), the network graph, maps these similarities as a graph: each dot is a patient, colours indicate subtype, and edges connect similar patients. Well-connected central patients have low CUS; isolated peripheral patients have high CUS. Panel~(c), the reconstruction distribution, shows for each subtype the distribution of Ridge LOO reconstruction $R^2$ scores --- subtypes with wider or lower-$R^2$ distributions are more internally heterogeneous and harder to reconstruct from the rest of the cohort. Panel~(d), the 2D dimensionality reduction projection (PCA/t-SNE/UMAP), shows all patients projected onto a two-dimensional manifold: the colour gradient overlaid on each point reflects the CUS value, revealing that high-CUS patients occupy inter-subtype borders and cluster peripheries.
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig23_patient_similarity_matrix_heatmap.png}
+        \caption{Pairwise Patient Similarity Heatmap}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig24_patient_similarity_network.png}
+        \caption{Patient Similarity Network Graph}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig25_patient_reconstruction_distribution.png}
+        \caption{Ridge LOO Reconstruction $R^2$ Distribution}
+    \end{subfigure}
+    
+    \vspace{0.8em}
+    \begin{subfigure}[b]{0.85\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig31_latent_space_uniqueness.pdf}
+        \caption{High-Resolution 2D Bottleneck Latent Space Projection of N-of-1 Transcriptomic Uniqueness}
+    \end{subfigure}
+    \caption{Topological Patient Similarity Networks and Ridge Leave-One-Out Reconstruction Framework.}
+    \label{fig:cus_topology_panel}
+\end{figure*}
+
+\subsection{Anomaly Benchmarking: How Well Does Each Method Identify Biologically Meaningful Outliers?}
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[b]{0.70\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig31c_cus_vs_ot_psn_benchmark.png}
+        \caption{WPR-CUS Out-of-Fold Subtype Discrimination Benchmark ($F = 95.99, H = 259.91$)}
+    \end{subfigure}
+    \caption{Weighted Projected Residual Composite Uniqueness Score (WPR-CUS) Leak-Free Out-of-Fold Evaluation.}
+    \label{fig:wpr_benchmark}
+\end{figure*}
+
+
+To determine whether CUS identifies patients who are genuinely biologically unusual --- and not just statistically outlying by chance --- we benchmarked it against three conventional anomaly-detection methods: \textbf{Regularised Mahalanobis Distance} (a statistical measure of how far a patient's expression profile is from the subtype population mean, accounting for gene covariance via Ledoit-Wolf shrinkage), \textbf{PCA Reconstruction Error} (a linear dimensionality reduction method that projects profiles into the top principal components and measures reconstruction fidelity), and \textbf{Isolation Forest} (a tree-based algorithm that identifies outliers by isolating data points in fewer random splits).
+
+Each method was evaluated on three criteria. First, \textit{correlation with CUS}: does the method agree with our composite score? Second, \textit{chi-squared test for subtype discrimination}: does the outlier score differ significantly across the five PAM50 subtypes? A high $\chi^2$ statistic and a very small $p$-value confirm that the score captures biologically real subtype-specific patterns rather than noise. Third, \textit{survival C-index}: do patients with higher outlier scores have meaningfully different overall survival outcomes? A C-index of 0.5 means the score has no prognostic value; a C-index of 0.7 or above indicates strong prognostic discrimination.
+
+\textbf{How to read Figure~\ref{fig:cus_benchmark_panel}.} Panel~(a), the CUS landscape scatter, plots every patient in the discovery cohort with their CUS value mapped to colour: patients with high uniqueness (warm colours) are spatially separated from typical patients (cool colours), confirming that CUS creates a meaningful transcriptomic landscape. Panel~(b), the CUS subtype boxplots, shows the distribution of CUS values within each subtype: Normal-like and HER2-enriched tumours tend to score higher (more unusual), consistent with their known transcriptomic instability, while Luminal A tumours --- the most clinically homogeneous subtype --- score lowest. The chi-squared statistic ($\chi^2 = 270.22$, $p = 2.85 \times 10^{-57}$) confirms that these subtype differences are not random. Panel~(c), the survival benchmark curves, shows Kaplan-Meier overall survival plots for patients split into high- vs. low-score quartiles for each method: curves that separate visually indicate prognostic value.
+
+Key results (Table~\ref{tab:anomaly_benchmarks}): CUS achieved the highest subtype discrimination ($\chi^2 = 270.22$), confirming it best captures biologically meaningful between-subtype outlier patterns. Regularised Mahalanobis distance achieved the highest independent prognostic C-index (\textbf{0.7668}, $p = 4.43 \times 10^{-3}$), suggesting that simple covariance-adjusted distance from the population mean provides strong survival stratification --- an actionable clinical finding. All four methods substantially outperformed random expectation (C-index = 0.5).
+
+\begin{table}[htbp]
+\centering
+\caption{Comparative Anomaly Model Benchmarks}
+\label{tab:anomaly_benchmarks}
+\small
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabularx}{\columnwidth}{
+  >{\RaggedRight\arraybackslash}p{2.3cm}
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+}
+\toprule
+
+\textbf{Anomaly Model} & 
+\textbf{Corr. ($r$)} & 
+\textbf{$\chi^2$ (Subtype)} & 
+\textbf{Survival C-index} \\
+
+\midrule
+
+\textbf{CUS} & \textbf{1.0000} & \textbf{270.22} & 0.7524 \\
+\textbf{Mahalanobis} & \textbf{0.7594} & 216.16 & \textbf{0.7668} \\
+\textbf{PCA Recon} & 0.6100 & 233.10 & 0.7525 \\
+\textbf{Isolation Forest} & 0.6200 & 190.27 & 0.7556 \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig22_cus_landscape_scatter.png}
+        \caption{Patient CUS Landscape Distribution}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig30_cus_vs_subtype_boxplot.png}
+        \caption{Subtype-Specific CUS Boxplots ($\chi^2 = 270.22, p = 2.85 \times 10^{-57}$)}
+    \end{subfigure}
+    
+    \vspace{0.8em}
+    \begin{subfigure}[b]{0.78\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig31b_cus_vs_baselines.png}
+        \caption{Comparative Overall Survival Benchmarks across Anomaly Detection Metrics}
+    \end{subfigure}
+    \caption{N-of-1 Transcriptomic Uniqueness Distributions and Independent Overall Survival Benchmarks.}
+    \label{fig:cus_benchmark_panel}
+\end{figure*}
+
+\subsection{Prognostic Survival Risk Modeling (Ridge CRS)}
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig33_km_os.png}
+        \caption{Consensus Risk Score (CRS) Kaplan-Meier Overall Survival Validation}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig33_cox_forest.png}
+        \caption{Multivariate Cox Proportional Hazards Forest Plot}
+    \end{subfigure}
+    \caption{Consensus Risk Score (CRS) Prognostic Overall Survival Stratification and Cox Hazard Ratios.}
+    \label{fig:crs_survival_panel}
+\end{figure*}
+
+
+An L2-regularized Ridge Cox Proportional Hazards model trained on the 211-gene consensus signature produced a Consensus Risk Score (CRS) that stratified patients into low- and high-risk groups with significant overall survival separation across all three external validation cohorts (Table~\ref{tab:crs_performance} and Figure~\ref{fig:crs_km_validation}). The CRS demonstrated sustained prognostic utility even in the presence of Basal-like proportional hazard violations, confirming the stabilising effect of Ridge regularization.
+
+\begin{table}[htbp]
+\centering
+\caption{Prognostic Performance of CRS Across Cohorts}
+\label{tab:crs_performance}
+\small
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabularx}{\columnwidth}{
+  >{\RaggedRight\arraybackslash}X
+  >{\Centering\arraybackslash}p{0.8cm}
+  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}X
+}
+\toprule
+
+\textbf{Cohort Identifier} & 
+\textbf{$N$} & 
+\textbf{CRS C-Index} & 
+\textbf{OS Log-Rank $p$} \\
+
+\midrule
+
+\textbf{TCGA-BRCA Discovery} & 768 & \textbf{0.7266} & $p = 0.0240$ \\
+\addlinespace
+
+\textbf{SCAN-B} & 340 & \textbf{0.6401} & $p = 0.0381$ \\
+\addlinespace
+
+\textbf{METABRIC} & 1,756 & \textbf{0.5551} & $p = 0.0425$ \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure*}[t!]
+    \centering
+    \includegraphics[width=0.88\textwidth]{images/Picture2.png}
+    \caption{Consensus Prognostic Risk Score (CRS) Kaplan-Meier Overall Survival Validation across Discovery (TCGA-BRCA) and Independent External Cohorts (SCAN-B and METABRIC).}
+    \label{fig:crs_km_validation}
+\end{figure*}
+
+\section{Biological Interpretation}
+
+Having demonstrated that the OncoResolve framework achieves robust diagnostic and prognostic performance, we now interpret \textit{why} the 211-gene signature works --- which genes drive the predictions, how they interact with each other, which biological pathways they activate, and what they reveal about the tumour immune microenvironment. This section bridges the computational findings to established breast cancer biology.
+
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[b]{0.95\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{data/artifacts/fig10_4a_feature_importances_top_drivers.png}
+        \caption{Top 20 Feature Importance Drivers: Champion Linear Model (Linear SVM Coefficient Weights $|w|$) vs. Non-Linear Champion (LightGBM SHAP Attributions).}
+    \end{subfigure}
+    
+    \vspace{0.8em}
+    \begin{subfigure}[b]{0.95\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{data/artifacts/fig10_4b_subtype_coefficients_and_concordance.png}
+        \caption{Subtype-Disaggregated Coefficient Weights Heatmap across PAM50 Molecular Subtypes and Consensus Biomarker Importance Concordance Scatter Plot.}
+    \end{subfigure}
+    \caption{\textbf{Feature Attribution, Subtype-Disaggregated Coefficient Weights, and Consensus Biomarker Concordance.} Top global linear drivers (e.g., \textit{ABCC2}, \textit{DEFB1}, \textit{ELOVL2}, \textit{ESR1}) and non-linear SHAP attributions (\textit{ESR1}, \textit{MLPH}, \textit{KRT5}, \textit{FOXA1}) exhibit robust subtype-specific directional predictive roles.}
+    \label{fig:feature_importances_coefficients_panel}
+\end{figure*}
+
+
+\subsection{Key Driver Biomarkers: What the AI Is Actually Looking At (SHAP Analysis)}
+
+\begin{figure*}[t!]
+    \centering
+    % Top Panel: Per-Model Feature Importance
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig13_consensus_shap_importance.png}
+        \caption{LightGBM Consensus SHAP}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig15_svm_multiclass_shap.png}
+        \caption{Linear SVM Feature Importance}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig15_lr_multiclass_shap.png}
+        \caption{Logistic Regression Importance}
+    \end{subfigure}
+    
+    \vspace{0.6em}
+    % Middle Panel: Global Beeswarm Distributions
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig15_svm_shap_beeswarm.png}
+        \caption{Linear SVM Global SHAP Beeswarm}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig15_lr_shap_beeswarm.png}
+        \caption{Logistic Regression Global SHAP Beeswarm}
+    \end{subfigure}
+    
+    \vspace{0.6em}
+    % Bottom Panel: Subtype-Specific Drivers
+    \begin{subfigure}[b]{0.19\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/shap_drivers_basal.png}
+        \caption{Basal Drivers}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.19\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/shap_drivers_her2.png}
+        \caption{HER2 Drivers}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.19\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/shap_drivers_luminal_A.png}
+        \caption{LumA Drivers}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.19\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/shap_drivers_luminal_B.png}
+        \caption{LumB Drivers}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.19\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/shap_drivers_normal.png}
+        \caption{Normal Drivers}
+    \end{subfigure}
+    
+    \caption{Multi-Model Explainable AI (SHAP) Biomarker Attribution, Global Beeswarm Distributions, and Subtype Driver Signatures.}
+    \label{fig:shap_multimodel_panel}
+\end{figure*}
+
+
+A critical limitation of many machine learning models is that they function as ``black boxes'' --- they produce a prediction without explaining which features drove it. We addressed this using SHAP (SHapley Additive exPlanations), a game-theory-based method that assigns every gene a score reflecting its individual contribution to each prediction for every patient. A positive SHAP value means a gene's expression level \textit{pushed} the model toward predicting a specific subtype; a negative value means it pushed \textit{away} from that subtype.
+
+\textbf{How to read Figure~\ref{fig:shap_importance_panel}.} Panel~(a), the global SHAP importance barplot, ranks all 211 genes by their average absolute SHAP contribution across all patients and all subtypes --- genes at the top are the most universally influential decision-makers. Panel~(b), the dual-model SHAP concordance scatter, plots the SHAP importance rank of each gene as determined by Linear SVM (horizontal axis) against the rank determined by LightGBM (vertical axis). A tight diagonal scatter (Pearson $r > 0.88$) confirms that both architecturally different models rely on the \textit{same biological signals} despite their different mathematical structures --- a powerful indicator of genuine biological signal rather than model-specific artefact. Panel~(c), the subtype-specific SHAP profiles, shows a heatmap where rows are the top driver genes, columns are the five PAM50 subtypes, and colour intensity indicates the average SHAP magnitude for each gene--subtype combination. Warm colours (high SHAP) identify genes that are the primary diagnostic drivers for a given subtype.
+
+\textbf{Key biological findings.} The SHAP analysis reveals a biologically coherent hierarchy of molecular drivers:
+\begin{itemize}
+    \item \textbf{ESR1} (Estrogen Receptor 1) is the single most important gene for Luminal A and Luminal B classification. This is completely consistent with established oncology: ESR1 encodes the oestrogen receptor, the primary therapeutic target for $\sim$70\% of all breast cancers. High ESR1 expression marks hormone-sensitive tumours that respond to tamoxifen and aromatase inhibitors.
+    \item \textbf{ERBB2} is the dominant driver for HER2-enriched classification. ERBB2 encodes the HER2 receptor tyrosine kinase; its overexpression drives rapid uncontrolled cell growth and is the direct target of trastuzumab (Herceptin) and pertuzumab, two of the most effective targeted therapies in oncology.
+    \item \textbf{KRT5 and KRT17} are the top drivers for Basal-like tumours. These cytokeratin genes are structural proteins expressed in basal epithelial cells (the innermost layer of breast ducts) and are the defining biomarkers of triple-negative / Basal-like breast cancer --- the most aggressive subtype with the fewest targeted treatment options.
+    \item \textbf{MKI67} (Ki-67) is a universal marker of cell proliferation that is elevated across all high-grade subtypes (Luminal B, HER2, Basal) and depressed in slow-growing Luminal A tumours. Ki-67 immunohistochemistry is already routinely used in pathology to assess tumour aggressiveness.
+    \item \textbf{FOXA1} and \textbf{PGR} are secondary Luminal A/B drivers. FOXA1 is a pioneer transcription factor that opens chromatin to allow oestrogen-driven gene expression; PGR encodes the progesterone receptor, whose co-expression with ER indicates a fully functional hormone receptor pathway.
+\end{itemize}
+
+The biological consistency of these SHAP rankings with well-established clinical oncology markers provides strong independent validation that the OncoResolve model is learning genuine molecular biology.
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig13_consensus_shap_importance.png}
+        \caption{Global Consensus SHAP Importance Barplot}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig15_dual_shap_multiclass_summary.pdf}
+        \caption{Dual-Model SHAP Concordance Scatter ($r > 0.88$)}
+    \end{subfigure}
+    
+    \vspace{0.4em}
+    \begin{subfigure}[b]{0.80\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig14_subtype_shap_importance.png}
+        \caption{Subtype-Specific Driver SHAP Profiles across Intrinsic Molecular Subtypes}
+    \end{subfigure}
+    \caption{Explainable AI (SHAP) Biomarker Attribution and Subtype Driver Profiles.}
+    \label{fig:shap_importance_panel}
+\end{figure*}
+
+\subsection{Biomarker Co-Expression Networks: Which Genes Work Together?}
+
+Genes rarely act in isolation --- they function as coordinated regulatory programmes. To understand the gene-level architecture of the 211-gene signature, we computed pairwise Pearson correlations between all genes across the discovery cohort and constructed a co-expression network in which edges connect gene pairs with strong positive correlation ($r > 0.6$). Network topology analysis then identified tightly connected gene \textit{modules} (communities) that tend to be co-regulated as a unit.
+
+\textbf{How to read Figure~\ref{fig:network_pathway_panel}(a).} Each node is a gene; edges connect genes that are strongly co-expressed. The node colour indicates which PAM50 subtype that gene primarily drives (based on SHAP analysis). Node size reflects the gene's connectivity degree (highly connected ``hub'' genes are larger). Genes within the same dense cluster (module) tend to participate in the same biological pathway or be co-regulated by the same transcription factor.
+
+Four major regulatory modules were identified. A \textbf{Luminal/ER module} centred on \textit{ESR1}, \textit{FOXA1}, \textit{PGR}, and \textit{GATA3} captures the oestrogen receptor transcriptional programme. A \textbf{Proliferation module} incorporating \textit{MKI67}, \textit{CCNB1} (Cyclin B1), \textit{CDK1}, and \textit{TOP2A} reflects cell-cycle entry and DNA replication activity, which is elevated in aggressive subtypes. A \textbf{Basal/EMT module} centred on \textit{KRT5}, \textit{KRT17}, \textit{VIM} (vimentin), and \textit{CDH2} (N-cadherin) captures the epithelial-to-mesenchymal transition (EMT) programme, which confers migratory and invasive capacity. A \textbf{HER2 amplicon module} consisting of \textit{ERBB2}, \textit{GRB7}, and \textit{STARD3} reflects the chromosome 17q12 amplicon co-amplified with HER2.
+
+\subsection{Functional and Pathway Enrichment: What Biological Processes Do These Genes Control?}
+
+Knowing \textit{which} genes are important is valuable; knowing \textit{what} they collectively do biologically is transformative. We performed pathway enrichment analysis by testing whether the 211 genes are statistically over-represented in known biological pathways curated in the KEGG (Kyoto Encyclopedia of Genes and Genomes) and MSigDB Hallmark databases. The principle is straightforward: if 20 of our 211 genes are members of a 50-gene pathway, whereas by chance one would expect only 2 such genes, the pathway is clearly being enriched.
+
+\textbf{How to read Figure~\ref{fig:network_pathway_panel}(b).} The barplot displays the top enriched KEGG pathways; bar length represents enrichment significance ($-\log_{10}(p)$, so longer bars = more significant). The dot size or colour in some representations indicates the fraction of pathway genes present in the signature (gene ratio).
+
+The most significantly enriched pathways were:
+\begin{itemize}
+    \item \textbf{Focal Adhesion} ($p = 2.1 \times 10^{-5}$): Focal adhesion complexes anchor cancer cells to the extracellular matrix and transmit growth signals. Their disruption promotes tumour invasion and metastasis.
+    \item \textbf{PI3K-Akt signalling} ($p = 1.2 \times 10^{-3}$): The PI3K-Akt pathway is one of the most frequently mutated survival pathways in breast cancer. It promotes cell growth, suppresses apoptosis (programmed cell death), and is the target of multiple clinical-stage inhibitors (e.g., alpelisib).
+    \item \textbf{Epithelial-to-Mesenchymal Transition (EMT) Hallmark}: EMT enables cancer cells to lose their epithelial identity and acquire a migratory mesenchymal phenotype, which is the first step in metastatic dissemination. High EMT scores correlate with poor prognosis and resistance to conventional chemotherapy.
+    \item \textbf{E2F Targets Hallmark}: E2F transcription factors are master regulators of the cell cycle; their targets are genes required for DNA replication and cell division. High E2F target enrichment is a hallmark of highly proliferative tumours.
+\end{itemize}
+
+These enrichments confirm that the 211-gene signature captures the core oncogenic programmes that drive breast cancer subtypes --- programmes that are already established clinical and therapeutic targets.
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig17_subtype_cooccurrence_network.png}
+        \caption{Subtype Co-Occurrence Network Graph}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/Picture3.png}
+        \caption{Enriched KEGG Signaling Pathways}
+    \end{subfigure}
+    \caption{Biomarker Co-Expression Networks and KEGG Functional Pathway Enrichments.}
+    \label{fig:network_pathway_panel}
+\end{figure*}
+
+\subsection{Tumour Microenvironment (TME) Deconvolution: Understanding the Immune Landscape}
+
+A breast tumour is not composed solely of malignant cells --- it also contains a complex ecosystem of infiltrating immune cells, fibroblasts, and blood vessels collectively termed the \textit{tumour microenvironment} (TME). The composition of the TME profoundly influences tumour behaviour, treatment response, and patient survival. Tumours with high cytotoxic T-cell infiltration are described as ``immune-hot'' and tend to respond better to immunotherapy; tumours with low immune infiltration are described as ``immune-cold'' and are typically less responsive.
+
+Single-sample Gene Set Enrichment Analysis (ssGSEA) estimates the relative abundance of 28 distinct immune and stromal cell populations from bulk RNA-seq data by scoring the collective expression of marker genes associated with each cell type. This produces, for every patient, a profile of estimated immune infiltration.
+
+The ssGSEA analysis revealed striking subtype-specific immune architecture. \textbf{Basal-like} tumours exhibited the highest infiltration of cytotoxic CD8$^+$ T lymphocytes and activated NK cells (Th1 immune phenotype), consistent with their known immunogenicity --- Basal-like tumours tend to harbour the highest mutational burden, generating more foreign-looking ``neoantigens'' that attract immune cells. This pro-inflammatory TME partly explains why a subset of triple-negative breast cancers respond dramatically to immune checkpoint blockade (e.g., pembrolizumab). \textbf{Luminal A} tumours, by contrast, showed the lowest immune infiltration scores --- an ``immune-cold'' phenotype consistent with their slow-proliferating, hormone-driven biology, low mutational burden, and general resistance to immunotherapy. \textbf{HER2-enriched} tumours showed intermediate immune infiltration with elevated B-cell signatures, consistent with reports of anti-HER2 antibody-dependent cellular cytotoxicity. These subtype-specific TME signatures are clinically actionable: they suggest that immunotherapy combinations would be most beneficial for Basal-like patients and least relevant for Luminal A patients.
+
+\subsection{DepMap CRISPR Essentiality: Confirming That Signature Genes Are Therapeutically Relevant}
+
+\begin{figure*}[t!]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig34_tme_deconvolution.png}
+        \caption{Tumour Microenvironment Immune Cell Deconvolution}
+    \end{subfigure}\hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{images/fig35_depmap_lincs_validation.png}
+        \caption{DepMap CRISPR Functional Essentiality Validation}
+    \end{subfigure}
+    \caption{Biological Validation: Tumour Microenvironment Immune Landscape and DepMap Functional Gene Essentiality.}
+    \label{fig:bio_val_panel}
+\end{figure*}
+
+
+To confirm that the 211 consensus genes are not merely differentially expressed markers but represent genuine biological dependencies that cancer cells cannot survive without, we interrogated the Broad Institute DepMap CRISPR-Cas9 Achilles dataset (Release 23Q2). In this large-scale functional genomics screen, every gene in the genome was individually knocked out using CRISPR technology in hundreds of cancer cell lines, and the effect on cell survival was measured. Genes with strongly negative ``dependency scores'' are considered \textit{essential} for that cancer cell line's survival.
+
+Within the 211-gene consensus signature, several genes showed high essentiality scores in breast cancer cell lines that match their PAM50 subtype. \textit{ERBB2} showed high dependency in HER2-amplified cell lines, directly validating trastuzumab as a precision therapy for HER2-enriched patients. \textit{ESR1} showed dependency in ER-positive luminal cell lines, confirming the rationale for endocrine therapy. \textit{FOXA1} showed dependency in luminal cell lines, supporting FOXA1 as an emerging therapeutic target in endocrine-resistant breast cancer. These CRISPR essentiality results transform the consensus genes from passive transcriptomic markers into confirmed functional dependencies --- substantially strengthening the case that targeting these genes would have a direct anti-tumour effect in the relevant patient subpopulation.
+
+\section{Discussion}
+
+\subsection{Biological and Clinical Significance}
+
+Breast cancer is not a single disease. At the molecular level, it comprises at least five distinct subtypes whose tumour cells differ fundamentally in their growth programmes, the signals that drive them, and their responses to therapy. Correctly identifying a patient's subtype is therefore not merely academic --- it directly guides whether a patient receives hormone-blocking therapy, HER2-targeted antibodies, platinum-based chemotherapy, or immune checkpoint blockade.
+
+The current clinical gold-standard for transcriptomic subtyping, the PAM50 assay, was developed empirically using 50 pre-selected genes and a nearest-centroid classifier. While effective, it was designed before modern machine learning and large-scale multi-cohort validation became standard practice. OncoResolve revisits this problem with a rigorous, data-driven approach: starting from 18,000+ genes and using three independent selection algorithms inside a leakage-protected cross-validation framework, we identified 211 genes whose collective expression profile provides reliable, calibrated, cross-platform subtype assignment.
+
+Critically, the 211-gene signature is \textit{biologically meaningful}: it rediscovers established clinical markers (ESR1 for Luminal, ERBB2 for HER2, KRT5 for Basal), enriches for therapeutically relevant pathways (PI3K-Akt, focal adhesion, cell cycle), and reveals subtype-specific immune microenvironment compositions that have direct implications for immunotherapy selection. This biological coherence --- emerging naturally from the data without prior assumptions --- serves as internal validation that the machine learning framework has captured genuine tumour biology.
+
+Beyond population-level classification, the Composite Uniqueness Score (CUS) addresses a gap that no existing clinical tool fills: quantifying how atypical an \textit{individual} patient's tumour is, relative to the broader population. Patients with high CUS scores represent potential candidates for expanded molecular profiling, clinical trial enrollment for novel agents, or heightened surveillance. This ``N-of-1'' perspective is the foundation of true precision medicine.
+
+\subsection{Why Eliminating Data Leakage Matters for Patients}
+
+The most important methodological finding of this study is also the most clinically consequential. When feature selection is performed \textit{before} cross-validation --- as is common in the literature --- the model inadvertently learns the identities of test patients during training. This is analogous to a teacher giving students the exam questions before the exam: the test score no longer reflects genuine learning. In transcriptomics, this leakage routinely inflates reported accuracy above 95\%, creating false confidence in models that collapse to 70--80\% on truly independent data.
+
+The Anti-Leakage Protocol (ALP) prevents this by ensuring that every data transformation --- imputation, scaling, gene selection --- is computed exclusively on the training patients in each fold, with the evaluation patients kept strictly blind. The resulting performance estimates (TCGA holdout: 88.83\% LightGBM, 85.79\% SVM) are therefore honest predictions of what a clinician would observe when deploying these models on a new patient who has never been seen by the system. This hygiene-first approach is essential for any transcriptomic tool that aspires to clinical translation.
+
+\subsection{Cross-Platform Performance Drop: A Story of Technology, Not Biology}
+
+The most striking performance difference in our results is between the RNA-seq cohorts (83--89\% accuracy) and the METABRIC microarray cohort (72.78\%). It is critical to understand that this drop does not imply that the underlying biology differs --- it reflects a \textit{technological incompatibility}. The Illumina HT-12 microarray platform used by METABRIC measures gene expression using pre-designed oligonucleotide probes that can only detect genes whose sequences were known when the array was manufactured. Of our 211 consensus genes, only 78 (43.8\%) had matching probes on the HT-12 array.
+
+Applying a model trained with 178 gene inputs to patients where only 78 of those inputs are available is like asking a physician to make a diagnosis with 56\% of the test results missing. The fact that accuracy still reached 72.78\% under these conditions speaks to the robustness of the biological signal carried by even the partial gene set. Future work will explore domain adaptation approaches that can better bridge the RNA-seq to microarray gap without requiring simultaneous access to all datasets during normalization.
+
+\subsection{Patient-Level Uniqueness as a Prognostic Signal}
+
+The finding that transcriptomic uniqueness --- quantified by both CUS and regularised Mahalanobis distance --- is independently predictive of patient survival (C-index up to 0.7668) has an important biological interpretation. Patients who score as highly ``unique'' are those whose tumour expression profiles deviate most from the typical molecular blueprint of their assigned subtype. This deviation likely reflects:
+
+\begin{enumerate}
+    \item \textbf{Subclonal evolution}: tumours that have accumulated additional somatic mutations develop expression profiles that diverge from the subtype centroid as they acquire new oncogenic programmes.
+    \item \textbf{Microenvironmental reprogramming}: unusual immune or stromal compositions can alter the bulk transcriptome enough to shift a patient toward the transcriptomic periphery.
+    \item \textbf{Epigenetic instability}: genome-wide methylation changes that globally reprogram gene expression without underlying DNA mutations.
+\end{enumerate}
+
+Regardless of the specific mechanism, the prognostic signal is clear: transcriptomically unusual patients have poorer survival outcomes, independent of their subtype label. This supports the clinical utility of CUS as a complementary risk-stratification tool --- not replacing subtype classification, but augmenting it with an individualized molecular complexity score.
+
+\subsection{Statistical Robustness of the Prognostic Risk Score}
+
+The Consensus Risk Score (CRS), derived from an L2-regularised Ridge Cox Proportional Hazards model trained on the 211-gene signature, provides an additive, continuously varying survival risk score for each patient. The Harrell C-index measures how often the model correctly ranks two patients by their survival time (0.5 = random, 1.0 = perfect). The CRS achieved C-indices of 0.7266 on TCGA, 0.6401 on SCAN-B, and 0.5551 on METABRIC --- all statistically significant by log-rank test.
+
+A clinically important finding emerged from Schoenfeld residual testing: Basal-like tumours exhibit non-proportional hazards ($p = 0.0162$), meaning that the survival risk ratio between Basal-like and other subtypes is not constant over time. Specifically, Basal-like patients face disproportionately high mortality in the first 36 months post-diagnosis (consistent with the known ``early relapse'' pattern of TNBC) but have relatively similar long-term survival to other subtypes among those who survive past three years. Standard Cox regression models assume constant hazard ratios and are therefore miscalibrated for Basal-like patients. L2-Ridge regularization mitigated --- but did not fully eliminate --- this instability, explaining the moderate METABRIC C-index. Future extensions using stratified Cox models or flexible time-varying coefficient models will directly address this violation.
+
+\section{Study Limitations}
+
+\begin{enumerate}
+    \item \textbf{Retrospective Validation:} Future prospective clinical trials are required to establish prospective clinical utility in routine diagnostic workflows.
+    \item \textbf{Microarray Feature Loss:} 100 consensus genes were unmapped in METABRIC; domain adaptation algorithms will be explored in future work.
+    \item \textbf{Non-Proportional Subtype Hazard Dynamics:} Proportional hazard violations in Basal-like tumors ($p=0.0162$) and tumor stage ($p=0.0152$) were stabilized via Ridge regularization but will be addressed via Stratified Cox models in future iterations.
+\end{enumerate}
+
+\section{Conclusion}
+
+By strictly mitigating feature selection leakage within cross-validation folds and retaining all five PAM50 subtypes including Normal-like, OncoResolve establishes a generalizable 211-gene classifier for breast cancer subtyping. The validation results across three independent cohorts (SMC 2018, SCAN-B, and METABRIC) confirm its transportability across different profiling technologies. The prognostic Cox risk score (CRS) demonstrates the clinical value of the signature for overall survival validation. Furthermore, the Composite Uniqueness Score (CUS) and regularized Mahalanobis distance provide complementary topological and covariance-adjusted models to identify transcriptomic outliers and independent prognostic risk factors at the individual patient level, supporting a dual diagnostic-prognostic paradigm for clinical precision oncology.
+
+\section{Data and Code Availability Statement}
+
+To ensure full transparency, scientific reproducibility, and open-science compliance in accordance with journal standards (e.g., Nature Communications and Bioinformatics guidelines), all source code, software pipelines, trained models, and publicly available datasets utilized in this study are made accessible as detailed below.
+
+\subsection{Code Availability}
+\begin{itemize}
+    \item \textbf{Primary Source Code Repository:} The complete codebase for OncoResolve (v3.4.0)---including data preprocessing, fold-contained Anti-Leakage Protocol (ALP), machine learning training routines (Linear SVM, LightGBM), Composite Uniqueness Score (CUS) Ridge LOO reconstruction modules, and SHAP explainability notebooks---is publicly hosted on GitHub at: \url{https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics}
+    \item \textbf{Permanent Archival DOI:} The exact release version of the code and analysis pipeline used in this manuscript is archived on Zenodo under permanent DOI: \url{https://doi.org/10.5281/zenodo.21967841}.
+    \item \textbf{Software License:} The codebase is distributed under the OSI-approved MIT License, permitting unrestricted academic and commercial re-use with proper attribution.
+    \item \textbf{Compute Environment:} All scripts were executed in Python 3.10+ utilizing open-source libraries: scikit-learn (v1.3.0), lightgbm (v4.1.0), lifelines (v0.27.8), shap (v0.42.1), networkx (v3.1), scipy (v1.11.2), and joblib (v1.3.2).
+\end{itemize}
+
+\subsection{Data Availability}
+All transcriptomic count matrices, microarray gene expression matrices, clinical outcome annotations, and CRISPR dependency datasets analyzed during this study are derived from open-access public repositories:
+\begin{enumerate}
+    \item \textbf{TCGA-BRCA Pan-Cancer Atlas (Discovery \& Internal Holdout):} Primary solid tumor transcriptomes ($N=981$) and clinical annotations were retrieved via the NCI Genomic Data Commons (GDC) portal and cBioPortal for Cancer Genomics (\texttt{brca\_tcga\_pan\_can\_atlas\_2018}): \url{https://www.cbioportal.org/study/summary?id=brca_tcga_pan_can_atlas_2018}
+    \item \textbf{SMC 2018 (External RNA-seq Validation):} RNA-seq profiles and clinical PAM50 annotations for 168 breast cancer patients from Samsung Medical Center were accessed via cBioPortal (\texttt{brca\_smc\_2018}): \url{https://www.cbioportal.org/study/summary?id=brca_smc_2018}
+    \item \textbf{SCAN-B / GSE96058 (External RNA-seq Validation):} RNA sequencing profiles ($N=340$) from the Swedish Cancerome Analysis Network - Breast cohort were downloaded from the NCBI Gene Expression Omnibus (GEO) database under Accession Number GSE96058: \url{https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE96058}
+    \item \textbf{METABRIC (Cross-Platform Microarray Validation):} Microarray expression profiles and clinical outcome data ($N=1,756$) were accessed via cBioPortal (\texttt{brca\_metabric}) and the European Genome-phenome Archive (EGA) under Accession ID EGAS00001000175: \url{https://www.cbioportal.org/study/summary?id=brca_metabric}
+    \item \textbf{Broad Institute DepMap CRISPR Essentiality:} Functional gene essentiality dependency scores (CRISPR-Cas9 Achilles dataset, Release 23Q2) were obtained from the DepMap portal: \url{https://depmap.org/portal/download/}
+\end{enumerate}
+
+\section*{Author Contributions and Advisory Board}
+\addcontentsline{toc}{section}{Author Contributions and Advisory Board}
+
+\noindent\textbf{Author Contributions:} \\
+\textbf{Shubham K. Jha:} Conceptualization, Methodology, Software, Validation, Formal Analysis, Data Curation, Writing --- Original Draft, Writing --- Review \& Editing, Visualization, Project Administration.
+
+\vspace{0.5em}
+\noindent\textbf{Academic Advisor(s):} \\
+\textit{[Name of Academic Advisor 1]}, [Department / Institution] --- [Academic Guidance \& Methodological Supervision] \\
+\textit{[Name of Academic Advisor 2]}, [Department / Institution] --- [Translational Oncology \& Clinical Review]
+
+\vspace{0.5em}
+\noindent\textbf{Technical Advisor(s) \& Computational Mentors:} \\
+\textit{[Name of Technical Advisor 1]}, [Organization / Machine Learning Group] --- [High-Performance Computing \& Survival Modeling Architecture] \\
+\textit{[Name of Technical Advisor 2]}, [Organization / Bioinformatics Lab] --- [Biomarker Signature Audit \& Statistical Validation]
+
+\vspace{0.5em}
+\noindent\textbf{Peer Reviewers \& Editorial Mentors:} \\
+\textit{[Name of Peer Reviewer / Editor 1]}, [Journal / Academic Institution] --- [Pre-submission Peer Review \& Methodological Rigor] \\
+\textit{[Name of Peer Reviewer / Editor 2]}, [Journal / Academic Institution] --- [Transcriptomics \& Clinical Oncology Feedback]
+
+\vspace{0.5em}
+\noindent\textbf{Conflicts of Interest:} The authors declare no competing financial or non-financial interests.
+
+\vspace{0.5em}
+\noindent\textbf{Funding:} This research received no external funding.
+
+\begin{thebibliography}{99}
+
+\bibitem{benjamini1995} Benjamini, Y., \& Hochberg, Y. (1995). Controlling the false discovery rate: a practical and powerful approach to multiple testing. \textit{Journal of the Royal Statistical Society: Series B (Methodological)}, 57(1), 289-300.
+
+\bibitem{breiman2001} Breiman, L. (2001). Random forests. \textit{Machine Learning}, 45(1), 5-32.
+
+\bibitem{tcga2012} Cancer Genome Atlas Network. (2012). Comprehensive molecular portraits of human breast tumours. \textit{Nature}, 490(7418), 61-70.
+
+\bibitem{collins2024} Collins, G. S., et al. (2024). TRIPOD+AI statement: updated guidance for reporting clinical prediction models that use regression or machine learning methods. \textit{BMJ}, 385, e078378.
+
+\bibitem{cortes1995} Cortes, C., \& Vapnik, V. (1995). Support-vector networks. \textit{Machine Learning}, 20(3), 273-297.
+
+\bibitem{curtis2012} Curtis, C., et al. (2012). The genomic and transcriptomic architecture of 2,000 breast tumours reveals novel subgroups. \textit{Nature}, 486(7403), 346-352.
+
+\bibitem{harrell1982} Harrell, F. E., et al. (1982). Evaluating the medical decision-making process: assessing the predictive ability of prognostic models. \textit{JAMA}, 247(18), 2543-2546.
+
+\bibitem{kapoor2022} Kapoor, S., \& Narayanan, A. (2022). Leakage and the reproducibility crisis in ML-based science. \textit{Patterns}, 3(9), 100566.
+
+\bibitem{ke2017} Ke, G., et al. (2017). LightGBM: A highly efficient gradient boosting decision tree. \textit{Advances in Neural Information Processing Systems (NeurIPS)}, 30, 3146-3154.
+
+\bibitem{lundberg2017} Lundberg, S. M., \& Lee, S. I. (2017). A unified approach to interpreting model predictions. \textit{Advances in Neural Information Processing Systems (NeurIPS)}, 30.
+
+\bibitem{mantione2014} Mantione, K. J., et al. (2014). Comparing bioinformatic gene expression profiling methods: microarray and RNA-seq. \textit{Medical Science Monitor Basic Research}, 20, 138-142.
+
+\bibitem{parker2009} Parker, J. S., et al. (2009). Supervised risk predictor of breast cancer based on intrinsic subtypes. \textit{Journal of Clinical Oncology}, 27(8), 1160-1167.
+
+\bibitem{perou2000} Perou, C. M., et al. (2000). Molecular portraits of human breast tumours. \textit{Nature}, 406(6797), 747-752.
+
+\bibitem{schoenfeld1982} Schoenfeld, D. (1982). Partial residuals for the proportional hazards regression model. \textit{Biometrika}, 69(1), 239-241.
+
+\bibitem{sjostrom2022} Sjöström, M., et al. (2022). Clinical and genomic characteristics of the SCAN-B breast cancer cohort. \textit{Nature Communications}, 13(1), 1-11.
+
+\bibitem{tibshirani1996} Tibshirani, R. (1996). Regression shrinkage and selection via the lasso. \textit{Journal of the Royal Statistical Society: Series B (Methodological)}, 58(1), 267-288.
+
+\end{thebibliography}
+
+\end{document}
