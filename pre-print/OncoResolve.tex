@@ -360,39 +360,47 @@ We applied SHAP (SHapley Additive exPlanations)~\cite{lundberg2017} to interpret
 
 \subsection{Composite Uniqueness Score: Baseline CUS vs. Weighted Projected Residual CUS (WPR-CUS)}
 
-To quantify N-of-1 transcriptomic uniqueness for individual patients, we compare the baseline formulation of the Composite Uniqueness Score (Baseline CUS) against the advanced Weighted Projected Residual Composite Uniqueness Score (WPR-CUS).
+To quantify reference-cohort-relative transcriptomic atypicality without assuming spherical Gaussian cluster distributions, \textit{OncoResolve} evaluates patient uniqueness through both the baseline formulation and the leakage-free Weighted Projected Residual Composite Uniqueness Score (WPR-CUS).
 
 \subsubsection{Baseline (Standard) CUS Formulation}
-The baseline CUS metric evaluates individual patient transcriptomic atypicality by computing unweighted, isotropic scalar averages across raw Leave-One-Out (LOO) reconstruction Mean Squared Error (MSE), Patient Similarity Network (PSN) degree isolation, and subtype centroid distance:
+The original baseline CUS metric integrates two complementary geometric metrics: (1) Patient Similarity Network (PSN) isolation score ($\text{Isolation}_i = 1 - \text{degree\_centrality}_i$), and (2) Leave-One-Out PCA reconstruction Mean Squared Error ($\text{MSE}_i$):
 \begin{equation}
-u_{i, \text{Baseline CUS}} = \alpha \bar{u}_{i, \text{MSE}} + \beta \bar{u}_{i, \text{PSN Isolation}} + \gamma \bar{u}_{i, \text{Centroid Distance}}
+\text{CUS}_i = 0.5 \cdot \text{Norm}(\text{Isolation})_i + 0.5 \cdot \text{Norm}(\text{MSE})_i
 \end{equation}
-where $\alpha = \beta = \gamma = \frac{1}{3}$, raw LOO MSE is $\bar{u}_{i, \text{MSE}} = \frac{1}{P} \sum_{g=1}^P (x_{i,g} - \hat{x}_{i,g})^2$, and Euclidean centroid distance is $d_{i, \text{Centroid}} = \|\mathbf{x}_i - \boldsymbol{\mu}_k\|_2$. 
+where the Leave-One-Out PCA reconstruction MSE ($\text{MSE}_i$) is computed per sample by excluding patient $i$ from both feature scaling and PCA fitting ($k = 2$ components):
+\begin{equation}
+\text{MSE}_i = \frac{1}{P} \sum_{j=1}^P \left( x_{ij} - \hat{x}_{ij,(-i)} \right)^2
+\end{equation}
 
-\noindent\textbf{Limitations of Baseline CUS:} The baseline formulation suffers from three major mathematical and empirical drawbacks: (i) it ignores leverage diagonal corrections $h_{ii,g}$, underestimating reconstruction error on high-leverage boundary observations; (ii) it assumes isotropic feature variance in Euclidean/Pearson distance calculations, ignoring co-expression modularity; and (iii) it collapses the Luminal A vs. Luminal B uniqueness separation gap to a minimal $\Delta = 0.0187$, providing insufficient resolution between adjacent luminal subtypes.
+\noindent\textbf{Limitations of Baseline CUS:} The baseline formulation possesses key theoretical limitations: (i) it relies on raw unadjusted LOO MSE without accounting for leverage diagonal adjustments $h_{ii,g}$; (ii) it relies on scalar PSN degree centrality without directional eigen-projected weighting; and (iii) it yields a compressed Luminal A vs. Luminal B uniqueness distance gap ($\Delta = 0.0187$).
 
 \subsubsection{Weighted Projected Residual CUS (WPR-CUS) Formulation}
-WPR-CUS addresses these limitations by integrating leverage-corrected analytical LOO residuals with directional eigen-projected residual distances (WPRD) and PSN manifold graph topology:
-\begin{equation}
-u_{i, \text{WPR-CUS}} = w_1 \bar{u}_{i, \text{Attrib}} + w_2 \bar{u}_{i, \text{WPRD}} + w_3 \bar{u}_{i, \text{Manifold}}
-\end{equation}
-where $w_1 = w_2 = w_3 = \frac{1}{3}$. 
-
+Under strict 5-fold cross-fitting with zero preprocessing or model leakage, WPR-CUS combines three orthogonal metric dimensions:
 \begin{enumerate}
-    \item \textbf{Analytical LOO Leverage Correction:} For patient $i \in \{1, \dots, N\}$ and feature $g \in \{1, \dots, P\}$, out-of-column analytical LOO residuals $e_{i,g}$ account for leverage diagonals $h_{ii,g} = \mathbf{x}_{i,-g}^T (\mathbf{X}_{-g}^T \mathbf{X}_{-g} + \lambda \mathbf{I})^{-1} \mathbf{x}_{i,-g}$:
+    \item \textbf{Mean Absolute LOO Residual ($u_{i, \text{Attrib}}$):} Feature-level magnitude deviation across $P$ features:
     \begin{equation}
-    e_{i,g} = \frac{x_{i,g} - \hat{x}_{i,g}^{\setminus g}}{1 - h_{ii,g}}
+    u_{i, \text{Attrib}} = \frac{1}{P} \sum_{g=1}^P |e_{i,g}|
     \end{equation}
-    where $\hat{x}_{i,g}^{\setminus g}$ is the predicted expression value from a Ridge regression model trained strictly on all remaining features $\mathbf{X}_{-g}$. This analytical correction matches brute-force $N \times P$ refitting to machine precision (max error $< 3.05 \times 10^{-13}, r = 1.000000$).
+    where out-of-column analytical LOO residuals account for leverage diagonals $h_{ii,g}$: $e_{i,g} = \frac{x_{i,g} - \hat{x}_{i,g}^{\setminus g}}{1 - h_{ii,g}}$.
 
-    \item \textbf{Weighted Projected Residual Distance (WPRD):} Pairwise directional distance between patients $i$ and $j$ across $L=10$ principal eigen-axes of the residual matrix is defined as:
+    \item \textbf{WPR-Hubness Isolation Score ($u_{i, \text{WPR-Hub}}$):} Manifold topological isolation measured via Pairwise Weighted Projected Residual Distance ($\text{WPRD}(i, j)$) across $L=10$ principal eigen-axes of the residual matrix:
     \begin{equation}
-    D_{\boldsymbol{\Theta}}(i, j) = \sum_{l=1}^L w_l^{\text{Eigen}} \cdot \left| \boldsymbol{\theta}_l^T (\mathbf{e}_i - \mathbf{e}_j) \right|
+    \text{WPRD}(i, j) = \sum_{l=1}^L w_l \left| \boldsymbol{\theta}_l^T (\mathbf{e}_i - \mathbf{e}_j) \right|
     \end{equation}
-    where $\boldsymbol{\theta}_l$ is the $l$-th eigenvector loading vector and $w_l^{\text{Eigen}} = \frac{\lambda_l}{\sum_{k=1}^L \lambda_k}$ represents the normalized eigenvalue variance weight.
-\end{enumerate}
+    where $\boldsymbol{\theta}_l$ represents the $l$-th eigenvector loading vector and $w_l = \frac{\lambda_l}{\sum_{k=1}^L \lambda_k}$ represents the normalized eigenvalue variance weight.
 
-\noindent\textbf{Empirical Advantages over Baseline CUS:} As demonstrated in the TCGA discovery benchmark ($N=784, P=211$), WPR-CUS expands the Luminal A vs. Luminal B out-of-fold gap from $\Delta = 0.0187$ to $\mathbf{\Delta = 0.6798}$ (a 36.3-fold expansion), increases parametric group separation ($F = 95.99, p = 2.13 \times 10^{-66}$ vs. $F = 27.85$), and elevates non-parametric Kruskal-Wallis separation ($H = 259.91, p = 4.78 \times 10^{-55}$ vs. $H = 97.08$), while achieving $0.9745$ AUC in synthetic patient outlier detection.
+    \item \textbf{L2 Residual Vector Norm ($u_{i, \text{LOO-L2}}$):} Total Euclidean residual vector norm:
+    \begin{equation}
+    \|\mathbf{e}_i\|_2 = \sqrt{\sum_{g=1}^P e_{i,g}^2}
+    \end{equation}
+\end{enumerate;
+
+The three standardized components are combined using equal locked weights ($\alpha = \beta = \gamma = \frac{1}{3}$):
+\begin{equation}
+u_i^{\text{WPR-CUS}} = \frac{1}{3} \cdot \frac{u_{i, \text{Attrib}} - \mu_{\text{Attrib}}}{\sigma_{\text{Attrib}}} + \frac{1}{3} \cdot \frac{u_{i, \text{WPR-Hub}} - \mu_{\text{WPR}}}{\sigma_{\text{WPR}}} + \frac{1}{3} \cdot \frac{\|\mathbf{e}_i\|_2 - \mu_{\text{LOO}}}{\sigma_{\text{LOO}}}
+\end{equation}
+
+\noindent\textbf{Empirical Verification:} WPR-CUS expands the Luminal A vs. Luminal B out-of-fold separation gap to $\mathbf{\Delta = 0.6798}$ (a 36.3-fold expansion over baseline CUS $\Delta = 0.0187$), elevates Kruskal-Wallis non-parametric group separation to $H = 259.91$ ($p = 4.78 \times 10^{-55}$), and achieves $0.9745$ AUC in synthetic patient outlier identification.
 
 \subsection{Regularized Mahalanobis Distance Baseline}
 
@@ -799,20 +807,21 @@ Consensus SHAP feature attributions across both linear and non-linear champion a
 
 Conventional cancer classification assigns every patient to a discrete subtype category (e.g., ``Luminal A'') and treats all patients within that category as biologically equivalent. In reality, even patients within the same subtype can have strikingly different transcriptomic profiles; these outlier patients may respond atypically to standard therapies. The \textbf{Weighted Projected Residual Composite Uniqueness Score (WPR-CUS)} is an N-of-1 metric designed to quantify, for every individual patient, how molecularly unusual their tumour is relative to the broader population.
 
-WPR-CUS is constructed by integrating out-of-column feature attribution residuals, eigen-projected directional residual distances (WPRD), and Patient Similarity Network (PSN) manifold topology:
+Under strict 5-fold cross-fitting with zero preprocessing or model leakage, WPR-CUS combines three orthogonal metric dimensions:
 
 \begin{enumerate}
-    \item \textbf{Patient Similarity Network (PSN) mean Euclidean distance ($D_T$).} All patients in the discovery cohort are embedded in the 211-gene consensus feature space. For each patient, the mean Euclidean distance to all other patients is computed directly from the pairwise distance matrix. Patients whose 211-gene profiles are close to many others (low mean distance) are transcriptionally typical; patients with large mean distances are peripheral and transcriptionally unusual.
-
-    \item \textbf{Ridge Leave-One-Out (LOO) regression reconstruction error ($R_E$).} Each patient's 211-gene expression profile is treated as a regression target. A Ridge regression model is trained on all \textit{other} patients in the cohort and used to predict the left-out patient's profile. The reconstruction quality is measured as the coefficient of determination ($R^2$); a high $R^2$ means the patient's profile is well-predicted from the population (typical), while a low $R^2$ means the profile is unusual and hard to reconstruct. The reconstruction error score is defined as $R_E = 1 - R^2_{\text{LOO}}$, so that higher values indicate greater uniqueness. Null models using randomised predictors and population-mean predictions confirm that the Ridge LOO reconstruction provides significant information beyond chance.
+    \item \textbf{Mean Absolute LOO Residual ($u_{i, \text{Attrib}}$):} Feature-level magnitude deviation measuring mean absolute leverage-corrected residual error: $u_{i, \text{Attrib}} = \frac{1}{P} \sum_{g=1}^P |e_{i,g}|$.
+    \item \textbf{WPR-Hubness Isolation Score ($u_{i, \text{WPR-Hub}}$):} Pairwise Weighted Projected Residual Distance $\text{WPRD}(i, j) = \sum_{l=1}^L w_l \left| \boldsymbol{\theta}_l^T (\mathbf{e}_i - \mathbf{e}_j) \right|$, measuring manifold topological isolation relative to reference training cohorts.
+    \item \textbf{L2 Residual Vector Norm ($u_{i, \text{LOO-L2}}$):} Euclidean residual vector magnitude $\|\mathbf{e}_i\|_2 = \sqrt{\sum_{g=1}^P e_{i,g}^2}$.
 \end{enumerate}
 
-The composite score integrates feature attribution residuals, eigen-projected residual distances (WPRD), and manifold topology: $u_{i, \text{WPR-CUS}} = \frac{1}{3}\bar{u}_{i, \text{Attrib}} + \frac{1}{3}\bar{u}_{i, \text{WPRD}} + \frac{1}{3}\bar{u}_{i, \text{Manifold}}$. A CUS near 1 identifies the most transcriptomically unique N-of-1 patients; a CUS near 0 identifies typical centroid-like tumors.
+The three standardized components are combined using equal locked weights ($\alpha = \beta = \gamma = \frac{1}{3}$):
+\begin{equation}
+u_i^{\text{WPR-CUS}} = \frac{1}{3} \cdot \frac{u_{i, \text{Attrib}} - \mu_{\text{Attrib}}}{\sigma_{\text{Attrib}}} + \frac{1}{3} \cdot \frac{u_{i, \text{WPR-Hub}} - \mu_{\text{WPR}}}{\sigma_{\text{WPR}}} + \frac{1}{3} \cdot \frac{\|\mathbf{e}_i\|_2 - \mu_{\text{LOO}}}{\sigma_{\text{LOO}}}
+\end{equation}
 
-Strict fold-safe empirical benchmarking on the TCGA discovery cohort ($N=784$, $P=211$) demonstrates that WPR-CUS substantially outperforms legacy baseline CUS across all parametric and non-parametric statistical metrics (Table~\ref{tab:wpr_cus_benchmark}). Specifically, WPR-CUS expands the Luminal A vs. Luminal B out-of-fold separation gap by 36.3-fold ($\Delta = 0.6798$ vs. $0.0187$), increases the parametric ANOVA $F$-statistic to $F = 95.99$ ($p = 2.13 \times 10^{-66}$, empirical permutation $p_{\text{perm}} < 0.001$), and increases the non-parametric Kruskal-Wallis $H$-statistic to $H = 259.91$ ($p = 4.78 \times 10^{-55}$, $p_{\text{perm}} < 0.001$). Furthermore, WPR-CUS yields a statistically significant overall survival hazard ($\text{HR} = 1.1601$, $95\%\text{ CI: } [1.0084, 1.3346]$, $p = 0.0378$, Cox $C$-index $= 0.6285$), while achieving near-perfect synthetic patient outlier identification (AUC $= 0.9745$) and 100\% spike feature recovery (AUC $= 1.0000$).
+Strict fold-safe empirical benchmarking on the TCGA discovery cohort ($N=784$, $P=211$) demonstrates that WPR-CUS resolves the baseline limitation of subtype gap compression, expanding Luminal A vs. Luminal B separation by 36.3-fold ($\Delta = 0.6798$ vs. $0.0187$).
 
-\begin{table*}[t!]
-\centering
 \caption{\textbf{Leakage-Safe Empirical Benchmark Comparison}: Baseline CUS (Pearson PSN + LOO MSE) vs. \textbf{WPR-CUS (Strict Fold-Safe OOF)} on TCGA-BRCA Discovery Cohort ($N=784$, $P=211$). All metrics computed out-of-fold with zero target leakage.}
 \label{tab:wpr_cus_benchmark}
 \small

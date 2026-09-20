@@ -151,19 +151,19 @@ We audit the evolution from the **Baseline CUS** formulation to the advanced **W
 ### Mathematical Formulation Comparison
 
 #### 1. Baseline (Standard) CUS Formulation
-$$\text{Baseline CUS: } u_{i, \text{Baseline}} = \frac{1}{3}\bar{u}_{i, \text{MSE}} + \frac{1}{3}\bar{u}_{i, \text{PSN Isolation}} + \frac{1}{3}\bar{u}_{i, \text{Centroid Distance}}$$
-where raw LOO MSE is $\bar{u}_{i, \text{MSE}} = \frac{1}{P} \sum_{g=1}^P (x_{i,g} - \hat{x}_{i,g})^2$ and centroid distance is $d_{i, \text{Centroid}} = \|\mathbf{x}_i - \boldsymbol{\mu}_k\|_2$.
-- *Drawback*: Fails to adjust for leverage diagonals $h_{ii,g}$, assumes isotropic Euclidean variance, and collapses LumA vs LumB distance gap to $\Delta = 0.0187$.
+$$\text{CUS}_i = 0.5 \cdot \text{Norm}(\text{Isolation})_i + 0.5 \cdot \text{Norm}(\text{MSE})_i$$
+where PSN degree isolation is $\text{Isolation}_i = 1 - \text{degree\_centrality}_i$ and Leave-One-Out PCA reconstruction MSE ($k=2$ components) is:
+$$\text{MSE}_i = \frac{1}{P} \sum_{j=1}^P \left( x_{ij} - \hat{x}_{ij,(-i)} \right)^2$$
+- *Drawbacks*: Fails to adjust for leverage diagonals $h_{ii,g}$, relies on unweighted 2D PCA MSE, and collapses the LumA vs LumB distance gap to $\Delta = 0.0187$.
 
 #### 2. Weighted Projected Residual CUS (WPR-CUS) Formulation
-$$\text{WPR-CUS: } u_{i, \text{WPR-CUS}} = \frac{1}{3}\bar{u}_{i, \text{Attrib}} + \frac{1}{3}\bar{u}_{i, \text{WPRD}} + \frac{1}{3}\bar{u}_{i, \text{Manifold}}$$
+For patient $i$, WPR-CUS combines three orthogonal metric dimensions:
+1. **Mean Absolute LOO Residual ($u_{i, \text{Attrib}}$)**: $u_{i, \text{Attrib}} = \frac{1}{P} \sum_{g=1}^P |e_{i,g}|$ (Feature-level magnitude deviation)
+2. **WPR-Hubness Isolation Score ($u_{i, \text{WPR-Hub}}$)**: Pairwise Weighted Projected Residual Distance $\text{WPRD}(i, j) = \sum_{l=1}^L w_l \left| \boldsymbol{\theta}_l^T (\mathbf{e}_i - \mathbf{e}_j) \right|$ measuring manifold topological isolation relative to reference training cohorts.
+3. **L2 Residual Vector Norm ($u_{i, \text{LOO-L2}}$)**: $\|\mathbf{e}_i\|_2 = \sqrt{\sum_{g=1}^P e_{i,g}^2}$
 
-Where:
-- **Leverage-Corrected Analytical LOO Residuals**:
-  $$e_{i,g} = \frac{x_{i,g} - \hat{x}_{i,g}^{\setminus g}}{1 - h_{ii,g}}$$
-  (Matches brute-force $N \times P$ refitting with max error $< 3.05 \times 10^{-13}, r = 1.000000$).
-- **Weighted Projected Residual Distance (WPRD)**:
-  $$D_{\boldsymbol{\Theta}}(i, j) = \sum_{l=1}^L w_l^{\text{Eigen}} \cdot \left| \boldsymbol{\theta}_l^T (\mathbf{e}_i - \mathbf{e}_j) \right|$$
+The three standardized components are combined using equal locked weights ($\alpha = \beta = \gamma = \frac{1}{3}$):
+$$u_i^{\text{WPR-CUS}} = \frac{1}{3} \cdot \frac{u_{i, \text{Attrib}} - \mu_{\text{Attrib}}}{\sigma_{\text{Attrib}}} + \frac{1}{3} \cdot \frac{u_{i, \text{WPR-Hub}} - \mu_{\text{WPR}}}{\sigma_{\text{WPR}}} + \frac{1}{3} \cdot \frac{\|\mathbf{e}_i\|_2 - \mu_{\text{LOO}}}{\sigma_{\text{LOO}}}$$
 
 ### Empirical Benchmark Summary: Baseline CUS vs. WPR-CUS
 
