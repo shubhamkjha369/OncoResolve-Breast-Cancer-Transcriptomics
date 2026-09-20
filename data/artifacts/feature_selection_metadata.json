@@ -1,0 +1,21 @@
+{
+  "top_k": 2000,
+  "methods": [
+    "DGE (Welch t-test)",
+    "ANOVA F-test",
+    "Variance Thresholding"
+  ],
+  "consensus_rule": "Borda Count Rank Aggregation",
+  "feature_names": [
+    "10002",
+    "1001",
+    "100128927",
+    "100129583",
+    "100129842",
+    "100132994",
+    "10017",
+    "100170841",
+    "100191040",
+    "10024"
+  ]
+}

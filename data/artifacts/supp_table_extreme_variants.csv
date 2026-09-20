@@ -1,14 +1,3 @@
 Patient_Barcode,PAM50_Subtype
-TCGA-OL-A66O-01,luminal_A
-TCGA-LL-A6FR-01,basal
-TCGA-E2-A576-01,luminal_A
-TCGA-LL-A5YM-01,luminal_B
-TCGA-E9-A3X8-01,luminal_A
-TCGA-WT-AB41-01,luminal_A
-TCGA-AC-A3QQ-01,luminal_A
-TCGA-A7-A56D-01,luminal_A
+TCGA-B6-A0RL-01,luminal_B
 TCGA-E9-A54Y-01,luminal_B
-TCGA-LL-A7SZ-01,luminal_A
-TCGA-A2-A3XV-01,her2
-TCGA-LL-A6FQ-01,luminal_A
-TCGA-V7-A7HQ-01,luminal_A

@@ -1,0 +1,9 @@
+{
+  "dataset_source": "UCSC Xena TCGA-BRCA RNAseq",
+  "expression_scale": "log2_RSEM_plus_1",
+  "log2_transformed": true,
+  "count_scale_available": true,
+  "discovery_samples": 784,
+  "holdout_samples": 197,
+  "top_k_features": 2000
+}
