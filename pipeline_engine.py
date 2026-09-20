@@ -141,7 +141,7 @@ def preprocess(X, y, var_threshold=0.1, test_size=0.2, random_state=42, log=_noo
             "variance_selector": var_sel, "shape_before": X_train.shape, "shape_after": X_train_var.shape}
 
 # ── 4. FEATURE SELECTION ────────────────────────────────────────────
-def run_feature_selection(X_train, y_train, feature_names, top_k=50, log=_noop):
+def run_feature_selection(X_train, y_train, feature_names, top_k=18, log=_noop):
     n_features = X_train.shape[1]; safe_k = min(top_k, n_features)
     working_X, working_names, pre_filtered = X_train, feature_names, False
     if n_features > _MAX_FEATURES_FOR_EXPENSIVE:

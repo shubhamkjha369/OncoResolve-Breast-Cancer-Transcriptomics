@@ -1,7 +1,7 @@
 """
 automl_page.py - Premium Clinical Subtype Predictor & Benchmarking Interface
 =============================================================================
-Deploys locked v3.3 pre-trained models (Linear SVM + Support Vector Machine)
+Deploys locked v3.5 pre-trained models (LightGBM + Linear SVM)
 on user-uploaded transcriptomics datasets.
 """
 import time
@@ -71,7 +71,7 @@ def _prediction_color_map(labels):
 # =============================================================================
 # DATA PREPARATION & ALIGNMENT
 # =============================================================================
-def _load_and_align_features(df, top_deg_genes, entrez_to_hugo):
+def _load_and_align_features(df, consensus_genes, entrez_to_hugo):
     """
     Transposes, filters, and aligns the uploaded dataframe to match the consensus
     biomarker signature, applying log2 scaling if linear expected counts are detected.
@@ -96,7 +96,7 @@ def _load_and_align_features(df, top_deg_genes, entrez_to_hugo):
     raw_df.columns = raw_df.columns.astype(str).str.strip()
 
     # Pre-allocate array for aligned feature values
-    correct_genes_order = sorted([str(g) for g in top_deg_genes])
+    correct_genes_order = sorted([str(g) for g in consensus_genes])
     X_aligned = np.zeros((raw_df.shape[0], len(correct_genes_order)))
     mapped_features = []
     missing_features = []
@@ -215,7 +215,7 @@ div[data-testid="stFileUploader"] {
 
     st.markdown('<div class="main-title">Clinical Subtype Predictor & <span class="main-title-accent">Benchmark Tool</span></div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="sub-title">Evaluate locked v3.3 pre-trained breast cancer transcriptomic classifiers on custom cohort datasets.</div>',
+        '<div class="sub-title">Evaluate locked v3.5 pre-trained breast cancer transcriptomic classifiers on custom cohort datasets.</div>',
         unsafe_allow_html=True,
     )
 
@@ -231,7 +231,8 @@ div[data-testid="stFileUploader"] {
         except Exception:
             lgbm_pipeline = joblib.load(ARTIFACT_DIR / "finalized_pam50_LGBM_model.pkl")
 
-        top_deg_genes = joblib.load(ARTIFACT_DIR / "top_deg_genes.pkl")
+        consensus_df = pd.read_csv(BASE_DIR / "results" / "consensus_gene_list.csv")
+        consensus_genes = consensus_df["gene"].tolist()
         entrez_to_hugo = joblib.load(ARTIFACT_DIR / "tcga_entrez_to_hugo.pkl")
         label_encoder = joblib.load(ARTIFACT_DIR / "label_encoder_cohort.pkl")
     except Exception as exc:
@@ -247,7 +248,7 @@ div[data-testid="stFileUploader"] {
             model_choice = st.selectbox(
                 "Select Pre-trained Model",
                 [PRETRAINED_LR_KEY, PRETRAINED_LGBM_KEY],
-                format_func=lambda x: "Linear SVM (Linear Classifier — Holdout ACC: 86.29%, F1: 82.17%)" if x == PRETRAINED_LR_KEY else "LightGBM (Non-Linear Classifier — Holdout ACC: 88.32%, F1: 85.27%)"
+                format_func=lambda x: "Linear SVM (Linear Classifier — Holdout ACC: 86.80%, Macro-F1: 0.8359)" if x == PRETRAINED_LR_KEY else "LightGBM (Primary Classifier — Holdout ACC: 88.32%, Macro-F1: 0.8527)"
             )
         with col_scaling:
             scaling_choice = st.selectbox(
@@ -308,7 +309,7 @@ div[data-testid="stFileUploader"] {
 
                 # Align features to consensus signature
                 X_aligned, patient_ids, mapped_features, missing_features = _load_and_align_features(
-                    raw_df, top_deg_genes, entrez_to_hugo
+                    raw_df, consensus_genes, entrez_to_hugo
                 )
 
                 if len(mapped_features) == 0:
@@ -355,7 +356,7 @@ div[data-testid="stFileUploader"] {
                 # Render metrics
                 st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
                 st.markdown(
-                    f'<div class="success-box"><b>Prediction Complete!</b> Successfully aligned <b>{len(mapped_features)}/{len(top_deg_genes)}</b> signature genes.</div>',
+                    f'<div class="success-box"><b>Prediction Complete!</b> Successfully aligned <b>{len(mapped_features)}/{len(consensus_genes)}</b> signature genes.</div>',
                     unsafe_allow_html=True
                 )
 
@@ -395,7 +396,7 @@ div[data-testid="stFileUploader"] {
                         st.markdown(custom_card(f"{weighted_f1:.2%}", "Weighted F1-Score", True), unsafe_allow_html=True)
                 else:
                     with c_stats[2]:
-                        st.markdown(custom_card("Locked v3.3", "Model Version", True), unsafe_allow_html=True)
+                        st.markdown(custom_card("Locked v3.5", "Model Version", True), unsafe_allow_html=True)
 
                 col_chart, col_stats = st.columns([3, 2] if not bench_eval else [1, 1])
                 dist = results_df["Predicted Subtype"].value_counts().reset_index()
@@ -517,19 +518,19 @@ def _render_clinical_interpretations():
         """
         <div class="diag-card diag-card-basal">
             <div class="diag-title diag-title-basal">Basal-like (basal)</div>
-            <div class="diag-desc">Typically corresponds to Triple-Negative Breast Cancer (TNBC). Characterized by high expression of cytokeratins (KRT5, KRT14, KRT17) and absence of hormone receptors/ERBB2. Management is centered around aggressive systemic chemotherapy and immune checkpoint inhibitors.</div>
+            <div class="diag-desc">Typically corresponds to Triple-Negative Breast Cancer (TNBC). Characterized by elevated expression of master transcriptomic drivers (e.g., FOXC1) and reduced hormone receptor signaling. Management is centered around aggressive systemic chemotherapy and immune checkpoint inhibitors.</div>
         </div>
         <div class="diag-card diag-card-her">
             <div class="diag-title diag-title-her">HER2-Enriched (her2)</div>
-            <div class="diag-desc">Driven primarily by the amplification and over-expression of the <i>ERBB2</i> (<i>HER2</i>) gene on chromosome 17q12. Aggressive subtype but highly responsive to anti-HER2 targeted monoclonal antibodies (e.g., Trastuzumab/Herceptin).</div>
+            <div class="diag-desc">Driven by unique transcriptomic programs and amplicon regulatory networks. Aggressive subtype but highly responsive to anti-HER2 targeted monoclonal antibodies (e.g., Trastuzumab/Herceptin).</div>
         </div>
         <div class="diag-card diag-card-luma">
             <div class="diag-title diag-title-luma">Luminal A (luminal_A)</div>
-            <div class="diag-desc">The most common and low-grade molecular subtype. High expression of estrogen receptor pathway genes (ESR1, PGR, GATA3) and low cell proliferation index. Highly responsive to hormonal/endocrine therapies (e.g., Tamoxifen).</div>
+            <div class="diag-desc">The most common and low-grade molecular subtype. High expression of estrogen receptor pathway genes (ESR1, AGR2, AGR3, MLPH, NAT1, TFF1, XBP1) and low cell proliferation index. Highly responsive to hormonal/endocrine therapies (e.g., Tamoxifen).</div>
         </div>
         <div class="diag-card diag-card-lumb">
             <div class="diag-title diag-title-lumb">Luminal B (luminal_B)</div>
-            <div class="diag-desc">Hormone-receptor positive but exhibits higher proliferation markers (e.g., MKI67, TOP2A) and faster growth. More aggressive than Luminal A, often managed with combined endocrine therapy and chemotherapy.</div>
+            <div class="diag-desc">Hormone-receptor positive but exhibits higher proliferation markers and faster growth. More aggressive than Luminal A, often managed with combined endocrine therapy and targeted regimens.</div>
         </div>
         <div class="diag-card diag-card-norm">
             <div class="diag-title diag-title-norm">Normal-like (normal)</div>

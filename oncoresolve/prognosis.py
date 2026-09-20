@@ -74,7 +74,11 @@ class OncoPrognosis:
             feature_names = self.model_.summary.index.tolist()
             X_df = pd.DataFrame(X, columns=feature_names)
         else:
-            X_df = X
+            feature_names = list(self.model_.params_.index)
+            missing = [f for f in feature_names if f not in X.columns]
+            if missing:
+                raise ValueError(f"OncoPrognosis.predict_risk: Missing {len(missing)} required feature(s): {missing[:5]}")
+            X_df = X[feature_names]
             
         # Get partial hazard scores
         crs_scores = self.model_.predict_partial_hazard(X_df)

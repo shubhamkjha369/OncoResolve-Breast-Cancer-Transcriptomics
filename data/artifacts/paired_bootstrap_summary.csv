@@ -1,4 +1,4 @@
 Model / Metric,Observed Base F1,Bootstrap Mean,Bootstrap Median,Bootstrap SD,95% Confidence Interval
-LightGBM (LGBM),0.8527,0.8474,0.8503,0.0405,"[0.7598, 0.9182]"
-Linear SVM (Linear),0.8217,0.8163,0.8190,0.0407,"[0.7306, 0.8899]"
-Paired Difference (LGBM - SVM),+0.0310,+0.0310,+0.0296,0.0279,"[-0.0205, +0.0894]"
+LightGBM (LGBM),0.8520,0.8458,0.8501,0.0448,"[0.7432, 0.9219]"
+Linear SVM (Linear),0.8182,0.8118,0.8143,0.0444,"[0.7139, 0.8910]"
+Paired Difference (LGBM - SVM),+0.0338,+0.0340,+0.0336,0.0459,"[-0.0559, +0.1261]"

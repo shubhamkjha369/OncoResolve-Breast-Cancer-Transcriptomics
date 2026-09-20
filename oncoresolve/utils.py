@@ -1,98 +1,365 @@
-import pandas as pd
-import numpy as np
-import joblib
+"""
+oncoresolve/utils.py
+=====================
+Shared utilities for the OncoResolve pipeline:
+
+  - harmonize_namespaces : Entrez → HUGO gene symbol mapping
+  - scale_cohort         : Z-score normalization (supports frozen reference scaler)
+  - save_reference_scaler / load_reference_scaler : persist TCGA reference normalization
+  - align_features       : Align expression DataFrame to a required gene set
+
+Normalization protocol
+----------------------
+Two modes are supported and serve different purposes:
+
+  ``reference_scaler=None`` (fit-on-incoming)
+      Fits a new StandardScaler on the supplied DataFrame.
+      Used for the TRAINING cohort preprocessing step.
+      Must not be used for external validation (would be cohort-relative).
+
+  ``reference_scaler=<fitted StandardScaler>`` (frozen reference)
+      Applies a pre-fitted scaler — typically fitted on the 784-sample
+      TCGA discovery cohort — to any incoming DataFrame.
+      Used for external cohort validation (SCAN-B, SMC, METABRIC) and
+      for any future deployment inference.
+      Guarantees: no .fit() call touches external cohort data.
+
+  Both are cohort-level operations; neither is an N-of-1 normalization.
+  "Single-patient prospective" normalization is NOT implemented here.
+"""
+
+from __future__ import annotations
+
 import os
 from pathlib import Path
+from typing import List, Optional, Tuple, Union
 
-def harmonize_namespaces(df, mapping_path):
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+# Gene namespace harmonization
+
+def harmonize_namespaces(
+    df: pd.DataFrame,
+    mapping_path: Union[str, Path],
+) -> pd.DataFrame:
     """
-    Maps Entrez gene IDs in column names to HUGO gene symbols.
-    
-    Parameters:
-    -----------
+    Map Entrez gene IDs (or other identifiers) in column names to HUGO gene symbols.
+
+    Parameters
+    ----------
     df : pd.DataFrame
-        Input dataframe with genes as columns.
+        Input DataFrame with genes as columns.
     mapping_path : str or Path
-        Path to the tcga_entrez_to_hugo.pkl mapping file.
-        
-    Returns:
-    --------
+        Path to the ``tcga_entrez_to_hugo.pkl`` mapping file.
+
+    Returns
+    -------
     pd.DataFrame
-        Dataframe with mapped columns, dropping any unmapped columns.
+        DataFrame with HUGO symbol columns. Unmapped columns are dropped.
+        Duplicate HUGO symbols (from multiple Entrez IDs) are averaged.
     """
-    if not os.path.exists(mapping_path):
-        raise FileNotFoundError(f"Mapping file not found at: {mapping_path}")
-    
+    mapping_path = Path(mapping_path)
+    if not mapping_path.exists():
+        # Check alternative default artifact locations
+        alt_paths = [
+            Path("data/artifacts/tcga_entrez_to_hugo.pkl"),
+            Path("data/processed/tcga_entrez_to_hugo.pkl"),
+            Path("../data/artifacts/tcga_entrez_to_hugo.pkl"),
+            Path("../data/processed/tcga_entrez_to_hugo.pkl"),
+        ]
+        for alt in alt_paths:
+            if alt.exists():
+                mapping_path = alt
+                break
+    if not mapping_path.exists():
+        raise FileNotFoundError(
+            f"Mapping file '{mapping_path}' not found. Please ensure tcga_entrez_to_hugo.pkl artifact exists."
+        )
     entrez_to_hugo = joblib.load(mapping_path)
-    # Ensure keys and values are string
-    mapping_dict = {str(k).strip(): str(v).strip() for k, v in entrez_to_hugo.items()}
-    
-    # Clean whitespace in column names
-    clean_cols = [str(col).strip() for col in df.columns]
+
+    mapping_dict = {str(k).split('.')[0].strip(): str(v).strip() for k, v in entrez_to_hugo.items()}
+    valid_hugo_set = set(mapping_dict.values())
+
     df_clean = df.copy()
-    df_clean.columns = clean_cols
     
-    mapped_cols = df_clean.columns.map(mapping_dict)
-    df_clean.columns = mapped_cols
-    
-    # Drop unmapped columns (NaNs)
+    new_cols = []
+    for c in df_clean.columns:
+        c_str = str(c).strip()
+        c_norm = c_str.split('.')[0] if '.' in c_str else c_str
+        
+        if c_str in valid_hugo_set:
+            new_cols.append(c_str)
+        elif c_norm in mapping_dict:
+            new_cols.append(mapping_dict[c_norm])
+        else:
+            new_cols.append(np.nan)
+            
+    df_clean.columns = new_cols
+
+    # Drop unmapped columns
     df_clean = df_clean.loc[:, df_clean.columns.notna()]
     
-    # Group by mapped name and take mean if there are duplicates
+    if len(df_clean.columns) == 0:
+        raise ValueError("harmonize_namespaces: 0 columns remain after namespace mapping. Check input identifiers.")
+
+    # Average duplicates (multiple Entrez IDs → same HUGO symbol)
     if not df_clean.columns.is_unique:
-        df_clean = df_clean.groupby(df_clean.columns, axis=1).mean()
-        
+        df_clean = df_clean.T.groupby(df_clean.columns).mean().T
+
     return df_clean
 
-def scale_cohort(df):
-    """
-    Performs independent Z-score normalization (StandardScaler) across features.
-    
-    Parameters:
-    -----------
-    df : pd.DataFrame
-        Expression dataframe (samples as rows, genes as columns).
-        
-    Returns:
-    --------
-    pd.DataFrame
-        Z-score normalized expression dataframe.
-    """
-    from sklearn.preprocessing import StandardScaler
-    scaler = StandardScaler()
-    scaled_data = scaler.fit_transform(df)
-    return pd.DataFrame(scaled_data, index=df.index, columns=df.columns)
 
-def align_features(df, required_features, fill_value=0.0):
+# Z-score normalization
+
+def scale_cohort(
+    df: pd.DataFrame,
+    reference_scaler: Optional[StandardScaler] = None,
+) -> Tuple[pd.DataFrame, StandardScaler]:
     """
-    Aligns dataframe columns to match a set of required features,
-    sorting alphabetically, and filling missing features with a default value.
-    
-    Parameters:
-    -----------
+    Z-score normalization (StandardScaler).
+
+    Parameters
+    ----------
     df : pd.DataFrame
-        Input expression dataframe.
-    required_features : list
-        List of required gene names.
-    fill_value : float, default 0.0
-        Value to fill for missing genes.
-        
-    Returns:
-    --------
-    pd.DataFrame
-        Aligned dataframe with sorted required features.
+        Expression DataFrame (samples × genes).
+    reference_scaler : fitted StandardScaler or None
+        If provided: applies the frozen reference transform.
+            → Use for external cohort validation and deployment.
+            → No .fit() call touches ``df``.
+        If None: fits a new StandardScaler on ``df``.
+            → Use only for training cohort preprocessing.
+            → Save the returned scaler as the reference for future use.
+
+    Returns
+    -------
+    df_scaled : pd.DataFrame
+        Normalized DataFrame with identical index and columns.
+    scaler : StandardScaler
+        The scaler used (frozen reference or newly fitted).
     """
-    df_aligned = df.copy()
-    
-    # Find missing genes
-    missing_genes = list(set(required_features) - set(df_aligned.columns))
-    
-    # Fill missing genes with the default value
-    for gene in missing_genes:
-        df_aligned[gene] = fill_value
-        
-    # Reindex to keep only required features and sort alphabetically
-    sorted_features = sorted(required_features)
-    df_aligned = df_aligned.reindex(columns=sorted_features)
-    
-    return df_aligned
+    if reference_scaler is not None:
+        if hasattr(reference_scaler, "feature_names_in_"):
+            expected = list(reference_scaler.feature_names_in_)
+            actual = list(df.columns)
+            if actual != expected:
+                if set(actual) == set(expected):
+                    df = df.reindex(columns=expected)
+                else:
+                    raise ValueError(
+                        f"scale_cohort: Input columns do not match reference scaler features.\n"
+                        f"  Expected ({len(expected)}): {expected[:5]}...\n"
+                        f"  Actual ({len(actual)}): {actual[:5]}..."
+                    )
+        scaled = reference_scaler.transform(df)
+        return (
+            pd.DataFrame(scaled, index=df.index, columns=df.columns),
+            reference_scaler,
+        )
+    else:
+        scaler = StandardScaler()
+        scaled = scaler.fit_transform(df)
+        return (
+            pd.DataFrame(scaled, index=df.index, columns=df.columns),
+            scaler,
+        )
+
+
+def save_reference_scaler(scaler: StandardScaler, path: Union[str, Path]) -> None:
+    """
+    Serialize a fitted StandardScaler to disk for frozen reference normalization.
+
+    Parameters
+    ----------
+    scaler : fitted StandardScaler
+        The TCGA training scaler to persist.
+    path : str or Path
+        Destination file path (e.g., ``data/artifacts/reference_scaler_tcga784.pkl``).
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(scaler, path)
+
+
+def load_reference_scaler(path: Union[str, Path]) -> StandardScaler:
+    """
+    Load a serialized reference scaler.
+
+    Parameters
+    ----------
+    path : str or Path
+        Path to the pickled StandardScaler.
+
+    Returns
+    -------
+    StandardScaler
+        Fitted reference scaler ready for ``.transform()`` calls.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the file does not exist.
+    """
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Reference scaler not found at: {path}\n"
+            "Fit a scaler on the TCGA discovery cohort and save it with "
+            "save_reference_scaler() before applying to external cohorts."
+        )
+    return joblib.load(path)
+
+
+# Feature alignment
+
+def align_features(
+    df: pd.DataFrame,
+    required_features: List[str],
+    reference_scaler: Optional[StandardScaler] = None,
+    fill_value: Optional[float] = None,
+    warn_missing: bool = True,
+    mapping_path: Optional[Union[str, Path]] = None,
+) -> pd.DataFrame:
+    """
+    Align a DataFrame's columns to a required feature set.
+
+    Supports bidirectional namespace resolution between Entrez IDs and HUGO symbols
+    using `tcga_entrez_to_hugo.pkl`.
+
+    If reference_scaler is provided, missing genes are filled with reference_scaler.mean_[j]
+    in raw space so that post-normalization z = 0.0 (reference cohort mean).
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input expression DataFrame.
+    required_features : list of str
+        Ordered list of required gene names.
+    reference_scaler : Optional[StandardScaler]
+        Fitted reference scaler for extracting gene-specific means for imputation.
+    fill_value : Optional[float]
+        Fill value for missing genes. If None and reference_scaler is provided,
+        uses reference_scaler.mean_[j]. Otherwise defaults to 0.0.
+    warn_missing : bool, default True
+        Emit a UserWarning listing missing genes.
+    mapping_path : Optional[str or Path]
+        Path to tcga_entrez_to_hugo.pkl mapping file.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with columns exactly matching ``required_features`` in order.
+    """
+    df_aligned = pd.DataFrame(index=df.index)
+
+    # Load Entrez to HUGO mapping dictionary
+    entrez_to_hugo = {}
+    hugo_to_entrez = {}
+    try:
+        m_path = Path(mapping_path) if mapping_path else Path("data/artifacts/tcga_entrez_to_hugo.pkl")
+        if not m_path.exists():
+            for alt in [
+                Path("data/processed/tcga_entrez_to_hugo.pkl"),
+                Path("../data/artifacts/tcga_entrez_to_hugo.pkl"),
+                Path("../data/processed/tcga_entrez_to_hugo.pkl"),
+            ]:
+                if alt.exists():
+                    m_path = alt
+                    break
+        if m_path.exists():
+            raw_map = joblib.load(m_path)
+            entrez_to_hugo = {str(k).split('.')[0].strip(): str(v).strip() for k, v in raw_map.items()}
+            hugo_to_entrez = {str(v).strip(): str(k).split('.')[0].strip() for k, v in raw_map.items()}
+    except Exception:
+        pass
+
+    col_map = {str(c).split('.')[0].strip(): c for c in df.columns}
+    missing = []
+
+    feat_idx_map = {}
+    if reference_scaler is not None and hasattr(reference_scaler, "feature_names_in_"):
+        feat_idx_map = {name: idx for idx, name in enumerate(reference_scaler.feature_names_in_)}
+
+    for idx, feat in enumerate(required_features):
+        feat_str = str(feat).split('.')[0].strip()
+        hugo = entrez_to_hugo.get(feat_str, None)
+        entrez = hugo_to_entrez.get(feat_str, None)
+
+        target_col = None
+        if feat_str in col_map:
+            target_col = col_map[feat_str]
+        elif hugo and hugo in col_map:
+            target_col = col_map[hugo]
+        elif entrez and entrez in col_map:
+            target_col = col_map[entrez]
+        elif feat_str in df.columns:
+            target_col = feat_str
+
+        if target_col is not None:
+            val = df[target_col]
+            if isinstance(val, pd.DataFrame):
+                val = val.iloc[:, 0]
+            df_aligned[feat] = val.values
+        else:
+            missing.append(feat)
+            if fill_value is not None:
+                df_aligned[feat] = fill_value
+            elif reference_scaler is not None and feat in feat_idx_map:
+                df_aligned[feat] = reference_scaler.mean_[feat_idx_map[feat]]
+            else:
+                df_aligned[feat] = 0.0
+
+    if missing and warn_missing:
+        import warnings
+        warnings.warn(
+            f"align_features: {len(missing)} feature(s) missing from input DataFrame after namespace resolution. "
+            f"Missing: {missing[:5]}{'...' if len(missing) > 5 else ''}",
+            UserWarning,
+        )
+
+    return df_aligned.reindex(columns=required_features)
+
+
+# I/O Helpers
+
+def safe_joblib_dump(value: any, filename: Union[str, Path], **kwargs) -> None:
+    """Safely dump a joblib artifact by writing to a temporary file first."""
+    p = Path(filename).resolve()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    try:
+        joblib.dump(value, str(tmp), **kwargs)
+        os.replace(tmp, p)
+    finally:
+        if tmp.exists():
+            try:
+                tmp.unlink()
+            except Exception:
+                pass
+
+
+def safe_to_parquet(df: pd.DataFrame, filename: Union[str, Path], **kwargs) -> None:
+    """Safely write a DataFrame to Parquet format, creating directories if needed."""
+    p = Path(filename).resolve()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    if p.exists():
+        try:
+            p.unlink()
+        except Exception:
+            pass
+    return df.to_parquet(str(p), **kwargs)
+
+
+def safe_to_csv(df: pd.DataFrame, filename: Union[str, Path], **kwargs) -> None:
+    """Safely write a DataFrame to CSV format, creating directories if needed."""
+    p = Path(filename).resolve()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    if p.exists():
+        try:
+            p.unlink()
+        except Exception:
+            pass
+    return df.to_csv(str(p), **kwargs)
+

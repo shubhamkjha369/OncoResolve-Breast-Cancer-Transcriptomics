@@ -42,7 +42,7 @@ data/external_cohort/SCANB_GSE96058_expression_subset.csv
 data/external_cohort/SCANB_GSE96058_clinical.csv
 data/external_cohort/METABRIC_expression.csv
 data/external_cohort/METABRIC_clinical.csv
-data/data/external_cohort/
+data/brca_metabric/
 
 # Large raw and processed datasets
 data/raw/

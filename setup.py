@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="oncoresolve",
-    version="3.4.0",
+    version="3.5.0",
     author="Shubham Jha",
     author_email="shubhamkjha369@gmail.com",
     description="A High-Hygiene Explainable AI and Patient-Centric Uniqueness Framework for Breast Cancer Subtyping",
@@ -24,5 +24,19 @@ setup(
         "scikit-learn>=1.3.0",
         "joblib>=1.3.0",
         "lifelines>=0.27.0",
+        "lightgbm>=3.3.0",
+        "xgboost>=1.7.0",
+        "shap>=0.42.0",
+        "scipy>=1.10.0",
+        "seaborn>=0.12.0",
+        "matplotlib>=3.7.0",
+        "networkx>=3.0",
+        "umap-learn>=0.5.3",
+        "streamlit>=1.35.0",
+        "plotly>=5.18.0",
+        "pyarrow>=12.0.0",
+        "statsmodels>=0.14.0",
+        "mygene>=3.2.2",
+        "gseapy>=1.1.0",
     ],
 )

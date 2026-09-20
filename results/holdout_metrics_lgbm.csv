@@ -1,0 +1,2 @@
+cohort,holdout_n,accuracy,macro_f1,roc_auc
+TCGA Holdout,197,0.847716,0.830559,0.971431

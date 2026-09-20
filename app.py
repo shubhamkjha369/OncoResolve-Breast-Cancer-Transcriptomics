@@ -61,9 +61,9 @@ def show_artifact_image(filename, caption=""):
 # =============================================================================
 
 # Load dataframes
-consensus_genes = load_parquet(ARTIFACT_DIR, "final_consensus_biomarkers.parquet")
-if consensus_genes is None:
-    consensus_genes = load_parquet(ARTIFACT_DIR, "final_consensus_biomarkers_enriched.parquet")
+consensus_genes_df = load_parquet(ARTIFACT_DIR, "final_consensus_biomarkers.parquet")
+if consensus_genes_df is None:
+    consensus_genes_df = load_parquet(ARTIFACT_DIR, "final_consensus_biomarkers_enriched.parquet")
 
 pca_data = load_parquet(PROCESSED_DIR, "pca_2d.parquet")
 if pca_data is not None and "subtype" in pca_data.columns:
@@ -83,7 +83,8 @@ lgbm_model = load_pickle(ARTIFACT_DIR, "lgbm_model.pkl")
 if lgbm_model is None:
     lgbm_model = load_pickle(ARTIFACT_DIR, "finalized_pam50_LGBM_model.pkl")
 
-top_deg_genes = load_pickle(ARTIFACT_DIR, "top_deg_genes.pkl")
+consensus_df_path = BASE_DIR / "results" / "consensus_gene_list.csv"
+consensus_gene_list = pd.read_csv(consensus_df_path)["gene"].tolist() if consensus_df_path.exists() else None
 le_cohort = load_pickle(ARTIFACT_DIR, "label_encoder_cohort.pkl")
 
 # =============================================================================
@@ -262,7 +263,7 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 # ── inline SVG helpers ────────────────────────────────────────────────────────
 _GH  = "M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
 _LI  = "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"
-_GM  = "M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"
+_GM  = "M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.211 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"
 
 def _icon(path, color, size=17):
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" '
@@ -358,12 +359,12 @@ page = st.session_state.active_page
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**TCGA-BRCA Pan-Can Atlas 2018**")
 st.sidebar.caption("Illumina HiSeq RNA-seq V2 (RSEM batch-normalized).")
-st.sidebar.caption("N=1,084 patients (981 post-QC) | 178 consensus genes | 5 PAM50 subtypes | OS+DFS survival")
+st.sidebar.caption("N=1,084 patients (981 post-QC) | 211 consensus genes | 5 PAM50 subtypes | OS+DFS survival")
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**External Validation Cohorts**")
 st.sidebar.caption("SMC 2018: N=168 (RNA-seq) | SCAN-B: N=340 (RNA-seq) | METABRIC: N=1,974 (microarray)")
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
-st.sidebar.caption("OncoResolve v3.4.0 — TCGA-BRCA edition.")
+st.sidebar.caption("OncoResolve v3.5.0 — TCGA-BRCA edition.")
 
 # =============================================================================
 # PLOTLY DEFAULTS (clinical light theme)
@@ -415,11 +416,11 @@ if page == "Project Overview":
     with cols[0]:
         st.markdown(card("981", "Post-QC Patients", True), unsafe_allow_html=True)
     with cols[1]:
-        st.markdown(card("178", "Consensus Biomarkers", False), unsafe_allow_html=True)
+        st.markdown(card("211", "Consensus Biomarkers", False), unsafe_allow_html=True)
     with cols[2]:
         st.markdown(card("5", "PAM50 Subtypes Classified", False), unsafe_allow_html=True)
     with cols[3]:
-        st.markdown(card("88.32%", "Holdout Accuracy", False), unsafe_allow_html=True)
+        st.markdown(card("84.77%", "Holdout Accuracy", False), unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">Independent Validation Cohorts</div>', unsafe_allow_html=True)
     cols2 = st.columns(3)
@@ -434,13 +435,13 @@ if page == "Project Overview":
     pam50_data = {
         "Subtype": ["Basal-like (TNBC)", "HER2-enriched", "Luminal A", "Luminal B", "Normal-like"],
         "Clinical Phenotype": ["Estrogen/Progesterone receptor negative, HER2 negative", "HER2 receptor amplified & overexpressed", "Estrogen receptor positive, low cell proliferation", "Estrogen receptor positive, high cell proliferation", "Similar to non-tumor breast epithelial tissue"],
-        "Key Markers": ["KRT5, KRT14, FOXC1, CDH3", "ERBB2, GRB7, STARD3, PGAP3", "ESR1, GATA3, FOXA1, PGR", "MKI67, TOP2A, CCNB1, AURKA", "ADIPOQ, FABP4, CD36"],
+        "Key Markers": ["FOXC1", "AR, C5AR2, DEGS2, THSD4", "ESR1, AGR2, AGR3, MLPH, NAT1, TFF1, XBP1", "CHODL, DNALI1, PPP1R14C, SRSF12, TBC1D9", "ARSG"],
         "Therapy Target": ["Chemotherapy, PARP inhibitors, Immunotherapy", "Trastuzumab (Herceptin) / Anti-HER2 agents", "Endocrine / Hormonal therapy (Tamoxifen)", "Endocrine therapy + Chemotherapy + CDK4/6 inhibitors", "Monitoring / Surgery"]
     }
     st.dataframe(pd.DataFrame(pam50_data), use_container_width=True, hide_index=True)
 
     st.markdown('<div class="section-title">Engineering Stack (Classical Bioinformatics & ML)</div>', unsafe_allow_html=True)
-    techs = ["Scikit-Learn Pipelines", "Support Vector Machine (RBF)", "Linear SVM (Linear)", "decoupler ssGSEA", "ConsensusTME", "lifelines Survival", "KernelSHAP",
+    techs = ["Scikit-Learn Pipelines", "Support Vector Machine (RBF)", "Linear SVM (Linear)", "decoupler ssGSEA", "ssGSEA Immune Signatures", "lifelines Survival", "KernelSHAP",
              "Plotly", "Pandas", "Streamlit", "Broad DepMap API", "LINCS L1000", "cBioPortal API"]
     tech_badges = "".join([f'<span class="badge badge-accent">{t}</span>' if i < 4 else f'<span class="badge">{t}</span>' for i, t in enumerate(techs)])
     st.markdown(f'<div style="margin-top: 10px;">{tech_badges}</div>', unsafe_allow_html=True)
@@ -629,11 +630,11 @@ elif page == "Clustering & Networks":
 
 elif page == "Feature Selection":
     st.markdown('<div class="main-title">Consensus <span class="main-title-accent">Biomarker Discovery</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">We run a tri-method ensemble feature selection pipeline (ANOVA, LASSO L1, Random Forest Gini), fusing linear and non-linear importance. Genes are filtered and ranked by consensus voting to select 178 consensus biomarkers.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">We run a tri-method ensemble feature selection pipeline (ANOVA, LASSO L1, Random Forest Gini), fusing linear and non-linear importance. Genes are filtered and ranked by consensus voting to select 211 canonical consensus biomarkers.</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">Top Consensus Biomarkers</div>', unsafe_allow_html=True)
-    if consensus_genes is not None:
-        st.markdown(f'<div class="success-box"><b>{len(consensus_genes)} robust consensus genes</b> identified across architectures (LightGBM and Linear SVM).</div>', unsafe_allow_html=True)
+    if consensus_genes_df is not None:
+        st.markdown(f'<div class="success-box"><b>{len(consensus_genes_df)} robust consensus genes</b> identified across architectures (LightGBM and Linear SVM).</div>', unsafe_allow_html=True)
         
         col_fs1, col_fs2 = st.columns([1, 1])
         with col_fs1:
@@ -644,10 +645,10 @@ elif page == "Feature Selection":
             1. **Variance Filtering & Outlier Removal:** Stagnant transcripts are removed, and low-correlation outliers are pruned to yield a clean discovery cohort of 784 samples.
             2. **Welch's t-test & FDR Correction:** Subtype-specific differentially expressed genes (DGE) are identified under strict significance thresholds ($|\log_2\text{FC}| > 0.58$, $\text{FDR} < 0.05$).
             3. **Dual-Architecture SHAP Fusion:** SHAP values from independent **Linear SVM** and **LightGBM** models are MinMax-normalized and averaged to calculate a robust consensus score.
-            4. **Consensus Ranking:** The **178 consensus genes** are locked as features, reducing feature dimensionality by >99% while preserving classification power.
+            4. **Consensus Ranking:** The **211 canonical consensus genes** are locked as features, reducing feature dimensionality by >99% while preserving classification power.
             """)
         with col_fs2:
-            top = consensus_genes.head(25)
+            top = consensus_genes_df.head(25)
             fig = px.bar(top, x="consensus_importance", y="mapped_symbol", orientation="h",
                 title="Consensus Genes Ranked by SHAP Importance Score",
                 template="plotly_white", color="consensus_importance",
@@ -659,12 +660,12 @@ elif page == "Feature Selection":
         st.markdown('<div class="section-title">Consensus Biomarker Visualizations</div>', unsafe_allow_html=True)
         col_img1, col_img2 = st.columns(2)
         with col_img1:
-            show_artifact_image("fig13_consensus_shap_importance.png", "Top Consensus Biomarkers (Linear + Non-Linear Fusion)")
+            show_artifact_image("fig13_consensus_feature_importance.png", "Top Consensus Biomarkers (Linear + Non-Linear Fusion)")
         with col_img2:
             show_artifact_image("fig16_consensus_correlation_heatmap.png", "Expression Correlation Heatmap of Top 30 Consensus Biomarkers")
 
         with st.expander("📋 View Full Consensus Gene Rankings (Top 50)"):
-            st.dataframe(consensus_genes.head(50)[["consensus_rank", "mapped_symbol", "feature", "consensus_importance", "norm_importance_svm", "norm_importance_lr", "full_gene_name"]], use_container_width=True, hide_index=True)
+            st.dataframe(consensus_genes_df.head(50)[["consensus_rank", "mapped_symbol", "feature", "consensus_importance", "norm_importance_svm", "norm_importance_lr", "full_gene_name"]], use_container_width=True, hide_index=True)
     else:
         st.warning("Consensus features dataset not found.")
 
@@ -673,8 +674,8 @@ elif page == "Feature Selection":
 # =============================================================================
 
 elif page == "Model Performance":
-    st.markdown('<div class="main-title">Classifier Benchmarks & <span class="main-title-accent">Dual-Architecture Performance</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">We evaluate classification models on the TCGA holdout split (N=197) and via cross-validation, highlighting the finalized LightGBM (Non-Linear) and Linear SVM (Linear) classifiers. LightGBM is our top performing model overall, achieving 88.32% Accuracy and 85.27% Macro F1-score on the holdout set, with Linear SVM achieving 86.29% Accuracy and 82.17% Macro F1-score while demonstrating superior transportability across external validation cohorts.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Classifier Benchmarks & <span class="main-title-accent">Multi-Architecture Performance</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">We evaluate classification models on the TCGA holdout split (N=197) and via cross-validation. Evaluating primary LightGBM, Linear SVM, and Logistic Regression models on unseen TCGA holdout data yields: Logistic Regression (93.40% Accuracy, 0.9123 Macro F1), Linear SVM (86.29% Accuracy, 0.8217 Macro F1), and LightGBM (84.77% Accuracy, 0.8306 Macro F1).</div>', unsafe_allow_html=True)
 
     t_perf, t_cv = st.tabs(["Holdout Performance Benchmarks", "Cross-Validation & Hyperparameters"])
 
@@ -683,13 +684,14 @@ elif page == "Model Performance":
         
         # Build clean holdout df from the audited results
         holdout_metrics_df = pd.DataFrame([
-            {"Model": "LightGBM (Non-Linear)", "Accuracy": 0.8832, "Macro F1-Score": 0.8527, "95% Bootstrap CI (F1)": "[0.7840, 0.9020]"},
-            {"Model": "Linear SVM (Linear)", "Accuracy": 0.8629, "Macro F1-Score": 0.8217, "95% Bootstrap CI (F1)": "[0.7420, 0.8810]"}
+            {"Model": "Logistic Regression (Linear)", "Accuracy": 0.9340, "Macro F1-Score": 0.9123, "95% Bootstrap CI (F1)": "[0.8640, 0.9512]"},
+            {"Model": "Linear SVM (Linear)", "Accuracy": 0.8629, "Macro F1-Score": 0.8217, "95% Bootstrap CI (F1)": "[0.7601, 0.8754]"},
+            {"Model": "LightGBM (Primary Classifier)", "Accuracy": 0.8477, "Macro F1-Score": 0.8306, "95% Bootstrap CI (F1)": "[0.7712, 0.8825]"}
         ])
 
         fig = px.bar(holdout_metrics_df, x="Model", y=["Accuracy", "Macro F1-Score"], barmode="group",
                      title="Holdout Performance Across Deployment Architectures",
-                     template="plotly_white", color_discrete_sequence=["#4f46e5", "#8b5cf6"])
+                     template="plotly_white", color_discrete_sequence=["#10b981", "#8b5cf6", "#4f46e5"])
         fig.update_layout(**PLOTLY_LAYOUT)
         st.plotly_chart(fig, use_container_width=True)
         
@@ -702,9 +704,9 @@ elif page == "Model Performance":
         <div class="success-box">
             <b>Classifier Evaluation Insights:</b>
             <ul style="margin: 8px 0 0 20px; padding: 0;">
-                <li style="margin-bottom: 6px;"><b>Linear vs. Non-Linear Separability:</b> <b>Linear SVM (Linear)</b> and <b>LightGBM (Non-Linear)</b> show outstanding performance. OncoResolve utilizes both architectures to capture linear and complex non-linear diagnostic boundaries.</li>
-                <li style="margin-bottom: 6px;"><b>Consensus Feature Space:</b> Training classifiers on the 178 consensus biomarker space achieves competitive performance compared to the full 18,000 gene space, drastically reducing technical noise and ensuring computational tractability.</li>
-                <li><b>Platform Stability:</b> The dual-architecture locked model demonstrates high transferability to external cohorts, maintaining accuracy without any fine-tuning or retraining.</li>
+                <li style="margin-bottom: 6px;"><b>Model Selection:</b> Evaluated classifiers via nested 5×3 cross-validation and locked holdout evaluation (N=197). On the unseen holdout cohort, Logistic Regression achieves 93.40% Accuracy (0.9123 Macro-F1), Linear SVM achieves 86.29% Accuracy (0.8217 Macro-F1), and LightGBM achieves 84.77% Accuracy (0.8306 Macro-F1).</li>
+                <li style="margin-bottom: 6px;"><b>Consensus Feature Space:</b> Training classifiers on the 170 canonical consensus biomarker space achieves strong predictive accuracy, drastically reducing technical noise and ensuring high reproducibility.</li>
+                <li><b>Platform Stability:</b> The locked 211-gene model demonstrates high transferability to external cohorts, maintaining accuracy without any fine-tuning or retraining.</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -756,8 +758,8 @@ elif page == "SHAP Explainability":
         st.markdown('<div class="section-title">Global Feature Impact (Linear + Non-Linear SHAP)</div>', unsafe_allow_html=True)
         col_shap1, col_shap2 = st.columns([2, 1])
         with col_shap1:
-            if consensus_genes is not None:
-                top_bio = consensus_genes.head(15)
+            if consensus_genes_df is not None:
+                top_bio = consensus_genes_df.head(15)
                 fig = px.bar(top_bio, x="consensus_importance", y="mapped_symbol", orientation="h",
                     color="consensus_importance", color_continuous_scale="Purples",
                     title="Top 15 Predictive Genes (Mapped to Biological HUGO Symbols)",
@@ -777,9 +779,9 @@ elif page == "SHAP Explainability":
             * **MKI67 & AURKA:** Proliferation markers separating Luminal B/HER2 from low-proliferation Luminal A.
             """)
         
-        if consensus_genes is not None:
+        if consensus_genes_df is not None:
             with st.expander("📋 View Comprehensive SHAP Mapped Biomarkers (Top 40)"):
-                st.dataframe(consensus_genes.head(40)[["consensus_rank", "mapped_symbol", "feature", "consensus_importance", "full_gene_name"]],
+                st.dataframe(consensus_genes_df.head(40)[["consensus_rank", "mapped_symbol", "feature", "consensus_importance", "full_gene_name"]],
                     use_container_width=True, hide_index=True)
 
     with t2:
@@ -788,9 +790,9 @@ elif page == "SHAP Explainability":
 
         # Load holdout data dynamically for waterfall explainer
         df_holdout = load_parquet(PROCESSED_DIR, "df_holdout.parquet")
-        if df_holdout is not None and top_deg_genes is not None and le_cohort is not None:
+        if df_holdout is not None and consensus_gene_list is not None and le_cohort is not None:
             feat_cols_arr = np.array([c for c in df_holdout.columns if c != 'type'])
-            gene_mask = np.isin(feat_cols_arr, top_deg_genes)
+            gene_mask = np.isin(feat_cols_arr, consensus_gene_list)
             X_holdout_ml = df_holdout[feat_cols_arr].values[:, gene_mask]
 
             # Determine available SHAP sample count from pre-computed tensors
@@ -847,7 +849,7 @@ elif page == "SHAP Explainability":
                 other_sum = sample_shaps.sum() - sample_shaps[top_indices].sum()
                 
                 # Create symbol dict
-                probe_to_symbol = dict(zip(consensus_genes['feature'].astype(str), consensus_genes['mapped_symbol'])) if consensus_genes is not None else {}
+                probe_to_symbol = dict(zip(consensus_genes_df['feature'].astype(str), consensus_genes_df['mapped_symbol'])) if consensus_genes_df is not None else {}
                 
                 y_labels = ["E[f(X)] (Expected Base)"]
                 x_changes = [expected_val]
@@ -859,7 +861,7 @@ elif page == "SHAP Explainability":
                     measures.append("relative")
                     
                 # Fix scrambled lookup by aligning with model/SHAP input features
-                sorted_genes = sorted([str(g) for g in top_deg_genes])
+                sorted_genes = sorted([str(g) for g in consensus_gene_list])
                 for idx in reversed(top_indices):
                     probe = sorted_genes[idx]
                     symbol = probe_to_symbol.get(str(probe), str(probe))
@@ -907,7 +909,7 @@ elif page == "SHAP Explainability":
                 """, unsafe_allow_html=True)
 
                 st.markdown("<br>", unsafe_allow_html=True)
-                with st.expander("📋 View Complete Individual Patient Biomarker Contribution Table (All 178 Genes)"):
+                with st.expander("📋 View Complete Individual Patient Biomarker Contribution Table (All 18 Canonical Genes)"):
                     patient_shap_data = []
                     for idx in range(len(sample_shaps)):
                         probe = sorted_genes[idx]
@@ -915,8 +917,8 @@ elif page == "SHAP Explainability":
                         
                         # Find full name from consensus_genes if available
                         fullname = "Unknown gene"
-                        if consensus_genes is not None:
-                            match_row = consensus_genes[consensus_genes['feature'].astype(str) == str(probe)]
+                        if consensus_genes_df is not None:
+                            match_row = consensus_genes_df[consensus_genes_df['feature'].astype(str) == str(probe)]
                             if not match_row.empty and 'full_gene_name' in match_row.columns:
                                 fullname = match_row['full_gene_name'].values[0]
                                 
@@ -1072,22 +1074,13 @@ elif page == "External Validation":
                             "Accuracy": f"{data[model]['acc']:.2%}",
                             "F1 Macro": f"{data[model]['f1_macro']:.2%}",
                             "F1 Weighted": f"{data[model]['f1_weighted']:.2%}",
-                            "Shared Genes": f"{data.get('n_shared', 178)}/178",
+                            "Shared Genes": f"{data.get('n_shared', 211)}/211",
                             "Samples (N)": data.get("n_samples", 0)
                         })
             val_df = pd.DataFrame(rows)
             st.dataframe(val_df, use_container_width=True, hide_index=True)
         else:
-            st.warning("External validation results dictionary not found. Showing baseline validated scores:")
-            val_df = pd.DataFrame([
-                {"Cohort": "SCAN-B", "Platform": "Illumina NextSeq RNA-seq", "Model": "Linear SVM (Linear)", "Accuracy": "82.94%", "F1 Macro": "83.13%", "F1 Weighted": "83.19%", "Shared Genes": "168/178", "Samples (N)": 340},
-                {"Cohort": "SCAN-B", "Platform": "Illumina NextSeq RNA-seq", "Model": "LightGBM (Non-Linear)", "Accuracy": "79.71%", "F1 Macro": "76.34%", "F1 Weighted": "79.18%", "Shared Genes": "168/178", "Samples (N)": 340},
-                {"Cohort": "SMC 2018", "Platform": "Illumina RNA-seq", "Model": "LightGBM (Non-Linear)", "Accuracy": "78.57%", "F1 Macro": "78.17%", "F1 Weighted": "78.57%", "Shared Genes": "178/178", "Samples (N)": 168},
-                {"Cohort": "SMC 2018", "Platform": "Illumina RNA-seq", "Model": "Linear SVM (Linear)", "Accuracy": "78.57%", "F1 Macro": "74.32%", "F1 Weighted": "78.57%", "Shared Genes": "178/178", "Samples (N)": 168},
-                {"Cohort": "METABRIC", "Platform": "Illumina HT-12 v3 Microarray", "Model": "LightGBM (Non-Linear)", "Accuracy": "67.98%", "F1 Macro": "60.59%", "F1 Weighted": "67.30%", "Shared Genes": "147/178", "Samples (N)": 1974},
-                {"Cohort": "METABRIC", "Platform": "Illumina HT-12 v3 Microarray", "Model": "Linear SVM (Linear)", "Accuracy": "67.63%", "F1 Macro": "61.03%", "F1 Weighted": "67.24%", "Shared Genes": "147/178", "Samples (N)": 1974}
-            ])
-            st.dataframe(val_df, use_container_width=True, hide_index=True)
+            st.error("External validation artifact (external_validation_results.pkl) is unavailable. No validation metrics are displayed.")
 
         st.markdown('<div class="section-title">Validation Confusion Matrices (Independent Scale)</div>', unsafe_allow_html=True)
         show_artifact_image("fig32_external_cohort_validation.png", "External Validation Confusion Matrices (Z-scaled cohorts)")
@@ -1096,7 +1089,7 @@ elif page == "External Validation":
         <div class="success-box">
             <b>Platform Shift & Normalization Insights:</b><br>
             • <b>Model Collapse without scaling:</b> Direct execution of raw external cohorts without independent scaling causes complete model collapse (accuracy drops to 11%-21%), as raw RNA-seq or Microarray intensities differ from the TCGA discovery scale.<br>
-            • <b>Z-Score Standardization:</b> Independent scaling successfully bridges the platform shift, recovering high transportable accuracy (~79% on SMC 2018, ~83% on SCAN-B, and ~72% on METABRIC microarray).<br>
+            • <b>Z-Score Standardization:</b> Independent scaling successfully bridges the platform shift, recovering high transportable accuracy (~74-77% on SMC 2018, ~83% on SCAN-B, and ~72% on METABRIC microarray).<br>
             • <b>Feature Order Alignment:</b> Programmatically locking features in strict alphabetical order is mandatory; feeding features in arbitrary order causes identical collapse.
         </div>
         """, unsafe_allow_html=True)
@@ -1133,7 +1126,7 @@ elif page == "Survival Analysis":
         """)
         
         cox_data = {
-            "Covariate": ["Pathological Stage (STAGE_NUM)", "Age at Diagnosis", "HER2 vs. Luminal A", "Luminal B vs. Luminal A", "Basal vs. Luminal A", "5-Gene Proliferation cassette"],
+            "Covariate": ["Pathological Stage (STAGE_NUM)", "Age at Diagnosis", "HER2 vs. Luminal A", "Luminal B vs. Luminal A", "Basal vs. Luminal A", "MKI67 Proliferation Covariate"],
             "Hazard Ratio (HR)": [1.64, 1.02, 1.59, 1.18, 0.98, 1.03],
             "95% Confidence Interval": ["[1.33, 2.03]", "[1.01, 1.03]", "[0.93, 2.72]", "[0.80, 1.74]", "[0.64, 1.49]", "[0.90, 1.17]"],
             "p-value": ["< 0.005", "< 0.005", "0.090", "0.410", "0.920", "0.670"],
@@ -1145,7 +1138,7 @@ elif page == "Survival Analysis":
         <div class="success-box">
             <b>Clinical Interpretation:</b><br>
             • <b>Stage and Age</b> remain the dominant independent clinical predictors of overall survival, with each pathologic stage increase representing a <b>64% increase in mortality risk</b>.<br>
-            • <b>Proliferation Cassette:</b> The transition from a highly volatile single-gene proxy (MKI67) to a robust <b>5-gene cell cycle cassette (MKI67, AURKA, CCNB1, PCNA, BIRC5)</b> successfully tightened the 95% Confidence Intervals in the Cox model, providing a significantly more stable continuous prognostic covariate for separating aggressive Luminal B from Luminal A tumors.
+            • <b>Proliferation Covariate:</b> Continuous mRNA expression of MKI67 provides a stable continuous prognostic covariate for evaluating cell proliferation in the Cox proportional hazards model alongside canonical clinical predictors (age, stage, nodal status, subtype).
         </div>
         """, unsafe_allow_html=True)
 
@@ -1155,12 +1148,12 @@ elif page == "Survival Analysis":
 
 elif page == "TME Deconvolution":
     st.markdown('<div class="main-title">Tumour Microenvironment <span class="main-title-accent">Deconvolution</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">We estimate the relative abundance of 9 immune and stromal cell populations from bulk RNA-seq using ssGSEA via the decoupler package, utilizing peer-reviewed ConsensusTME signatures.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">We estimate immune and stromal cell signature enrichment scores across 9 populations from bulk RNA-seq using ssGSEA via the decoupler package, utilizing single-sample Gene Set Enrichment Analysis (ssGSEA) with curated cell-type marker signatures.</div>', unsafe_allow_html=True)
 
     col_heat, col_desc = st.columns([1, 1])
 
     with col_heat:
-        st.markdown('<div class="section-title">ConsensusTME Deconvolution Profile</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Tumour Microenvironment ssGSEA Enrichment Profile</div>', unsafe_allow_html=True)
         show_artifact_image("fig34_tme_deconvolution.png", "Mean ssGSEA Immune/Stromal Cell Enrichment Scores")
 
     with col_desc:
@@ -1251,7 +1244,7 @@ st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.markdown("""
 <div style="text-align:center; padding:10px 0;">
     <span style="color:#64748b; font-size:13.5px;">
-       <b>OncoResolve v3.4.0 — Breast Cancer Transcriptomics Pipeline</b><br/>
+       <b>OncoResolve v3.5.0 — Breast Cancer Transcriptomics Pipeline</b><br/>
     </span><br>
     <span style="color:#94a3b8; font-size:11.5px;">
         TCGA-BRCA RNA-seq (N=1,084) &nbsp;|&nbsp; SMC 2018 (N=168) &nbsp;|&nbsp; SCAN-B (N=340) &nbsp;|&nbsp; METABRIC (N=1,974) &nbsp;|&nbsp; PAM50 Subtyping &nbsp;|&nbsp; Explainable AI

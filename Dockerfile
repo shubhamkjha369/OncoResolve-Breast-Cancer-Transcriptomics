@@ -1,5 +1,5 @@
 # ==============================================================================
-# OncoResolve v3.4.0 — Multi-stage Docker Build
+# OncoResolve v3.5.0 — Multi-stage Docker Build
 # Primary dataset: TCGA-BRCA Pan-Can Atlas 2018 (RNA-seq)
 # External cohorts: METABRIC, SCAN-B (mount at runtime — too large to bundle)
 # ==============================================================================
@@ -26,7 +26,7 @@ FROM python:3.13-slim AS runner
 
 LABEL org.opencontainers.image.title="OncoResolve" \
     org.opencontainers.image.description="Breast Cancer Transcriptomics ML Pipeline — TCGA-BRCA RNA-seq" \
-    org.opencontainers.image.version="3.4.0" \
+    org.opencontainers.image.version="3.5.0" \
     org.opencontainers.image.source="https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics"
 
 WORKDIR /app
@@ -39,8 +39,9 @@ ENV PYTHONUNBUFFERED=1
 # Streamlit config
 COPY .streamlit/ ./.streamlit/
 
-# Source module
+# Source module & python package
 COPY src/ ./src/
+COPY oncoresolve/ ./oncoresolve/
 
 # Core application files
 COPY app.py automl_page.py pipeline_engine.py ./
