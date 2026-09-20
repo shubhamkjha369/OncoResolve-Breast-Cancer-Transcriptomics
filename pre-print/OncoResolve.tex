@@ -358,14 +358,41 @@ We optimized two complementary classifiers using a Stratified 5-Fold Nested Cros
 
 We applied SHAP (SHapley Additive exPlanations)~\cite{lundberg2017} to interpret model predictions using \texttt{LinearExplainer} for SVM and \texttt{KernelExplainer} for LightGBM.
 
-\subsection{Weighted Projected Residual Composite Uniqueness Score (WPR-CUS)}
+\subsection{Composite Uniqueness Score: Baseline CUS vs. Weighted Projected Residual CUS (WPR-CUS)}
 
-WPR-CUS quantifies N-of-1 transcriptomic uniqueness by combining feature attribution residuals, eigen-projected directional residual distance (WPRD), and Patient Similarity Network (PSN) manifold topology. For patient $ and feature  \in \{1, \dots, P\}$, the analytical Leave-One-Out (LOO) residual is computed as:
-e_{i,g} = \frac{x_{i,g} - \hat{x}_{i,g}^{\setminus g}}{1 - h_{ii,g}}
-where $\hat{x}_{i,g}^{\setminus g}$ is the predicted expression value from a Ridge regression model trained on all remaining features $\mathbf{X}_{-g}$, and {ii,g}$ is the leverage diagonal for feature $. Pairwise WPRD distance between patients $ and $ across $ principal eigen-axes is defined as:
-D_{\boldsymbol{\Theta}}(i, j) = \sum_{l=1}^L w_l^{\text{Eigen}} \cdot \left| \boldsymbol{\theta}_l^T (\mathbf{e}_i - \mathbf{e}_j) \right|
-where $\boldsymbol{\theta}_l$ is the $-th eigenvector loading vector and ^{\text{Eigen}}$ represents the variance-weighting parameter. The unified composite uniqueness score combines normalized attribution magnitude ($\bar{u}_{i, \text{Attrib}}$), projected residual distance ($\bar{u}_{i, \text{WPRD}}$), and graph topological distance ($\bar{u}_{i, \text{Manifold}}$):
-u_{i, \text{WPR-CUS}} = \frac{1}{3}\bar{u}_{i, \text{Attrib}} + \frac{1}{3}\bar{u}_{i, \text{WPRD}} + \frac{1}{3}\bar{u}_{i, \text{Manifold}}
+To quantify N-of-1 transcriptomic uniqueness for individual patients, we compare the baseline formulation of the Composite Uniqueness Score (Baseline CUS) against the advanced Weighted Projected Residual Composite Uniqueness Score (WPR-CUS).
+
+\subsubsection{Baseline (Standard) CUS Formulation}
+The baseline CUS metric evaluates individual patient transcriptomic atypicality by computing unweighted, isotropic scalar averages across raw Leave-One-Out (LOO) reconstruction Mean Squared Error (MSE), Patient Similarity Network (PSN) degree isolation, and subtype centroid distance:
+\begin{equation}
+u_{i, \text{Baseline CUS}} = \alpha \bar{u}_{i, \text{MSE}} + \beta \bar{u}_{i, \text{PSN Isolation}} + \gamma \bar{u}_{i, \text{Centroid Distance}}
+\end{equation}
+where $\alpha = \beta = \gamma = \frac{1}{3}$, raw LOO MSE is $\bar{u}_{i, \text{MSE}} = \frac{1}{P} \sum_{g=1}^P (x_{i,g} - \hat{x}_{i,g})^2$, and Euclidean centroid distance is $d_{i, \text{Centroid}} = \|\mathbf{x}_i - \boldsymbol{\mu}_k\|_2$. 
+
+\noindent\textbf{Limitations of Baseline CUS:} The baseline formulation suffers from three major mathematical and empirical drawbacks: (i) it ignores leverage diagonal corrections $h_{ii,g}$, underestimating reconstruction error on high-leverage boundary observations; (ii) it assumes isotropic feature variance in Euclidean/Pearson distance calculations, ignoring co-expression modularity; and (iii) it collapses the Luminal A vs. Luminal B uniqueness separation gap to a minimal $\Delta = 0.0187$, providing insufficient resolution between adjacent luminal subtypes.
+
+\subsubsection{Weighted Projected Residual CUS (WPR-CUS) Formulation}
+WPR-CUS addresses these limitations by integrating leverage-corrected analytical LOO residuals with directional eigen-projected residual distances (WPRD) and PSN manifold graph topology:
+\begin{equation}
+u_{i, \text{WPR-CUS}} = w_1 \bar{u}_{i, \text{Attrib}} + w_2 \bar{u}_{i, \text{WPRD}} + w_3 \bar{u}_{i, \text{Manifold}}
+\end{equation}
+where $w_1 = w_2 = w_3 = \frac{1}{3}$. 
+
+\begin{enumerate}
+    \item \textbf{Analytical LOO Leverage Correction:} For patient $i \in \{1, \dots, N\}$ and feature $g \in \{1, \dots, P\}$, out-of-column analytical LOO residuals $e_{i,g}$ account for leverage diagonals $h_{ii,g} = \mathbf{x}_{i,-g}^T (\mathbf{X}_{-g}^T \mathbf{X}_{-g} + \lambda \mathbf{I})^{-1} \mathbf{x}_{i,-g}$:
+    \begin{equation}
+    e_{i,g} = \frac{x_{i,g} - \hat{x}_{i,g}^{\setminus g}}{1 - h_{ii,g}}
+    \end{equation}
+    where $\hat{x}_{i,g}^{\setminus g}$ is the predicted expression value from a Ridge regression model trained strictly on all remaining features $\mathbf{X}_{-g}$. This analytical correction matches brute-force $N \times P$ refitting to machine precision (max error $< 3.05 \times 10^{-13}, r = 1.000000$).
+
+    \item \textbf{Weighted Projected Residual Distance (WPRD):} Pairwise directional distance between patients $i$ and $j$ across $L=10$ principal eigen-axes of the residual matrix is defined as:
+    \begin{equation}
+    D_{\boldsymbol{\Theta}}(i, j) = \sum_{l=1}^L w_l^{\text{Eigen}} \cdot \left| \boldsymbol{\theta}_l^T (\mathbf{e}_i - \mathbf{e}_j) \right|
+    \end{equation}
+    where $\boldsymbol{\theta}_l$ is the $l$-th eigenvector loading vector and $w_l^{\text{Eigen}} = \frac{\lambda_l}{\sum_{k=1}^L \lambda_k}$ represents the normalized eigenvalue variance weight.
+\end{enumerate}
+
+\noindent\textbf{Empirical Advantages over Baseline CUS:} As demonstrated in the TCGA discovery benchmark ($N=784, P=211$), WPR-CUS expands the Luminal A vs. Luminal B out-of-fold gap from $\Delta = 0.0187$ to $\mathbf{\Delta = 0.6798}$ (a 36.3-fold expansion), increases parametric group separation ($F = 95.99, p = 2.13 \times 10^{-66}$ vs. $F = 27.85$), and elevates non-parametric Kruskal-Wallis separation ($H = 259.91, p = 4.78 \times 10^{-55}$ vs. $H = 97.08$), while achieving $0.9745$ AUC in synthetic patient outlier detection.
 
 \subsection{Regularized Mahalanobis Distance Baseline}
 
