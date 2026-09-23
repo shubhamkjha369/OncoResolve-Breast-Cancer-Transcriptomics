@@ -1,0 +1,30 @@
+{
+  "analysis": "Clinical association of PAM50 subtype with OOF WPR-CUS",
+  "score_column": "WPR_CUS_OOF",
+  "analysis_score": "OOF_WPR_CUS",
+  "n_patients": 981,
+  "n_subtypes": 5,
+  "subtypes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ],
+  "omnibus_test": "Classical one-way ANOVA",
+  "robust_omnibus_test": "Welch ANOVA when supported by installed SciPy",
+  "effect_size_eta_squared": 0.32232019877247353,
+  "effect_size_omega_squared": 0.3193211038266957,
+  "pairwise_test": "Welch independent-samples t-test",
+  "pairwise_effect_sizes": [
+    "Cohen_d",
+    "Hedges_g",
+    "Cliff_Delta"
+  ],
+  "multiple_testing": "Benjamini-Hochberg FDR",
+  "fdr_alpha": 0.05,
+  "input_artifact": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\patient_uniqueness_scores.parquet",
+  "group_statistics": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\subtype_uniqueness_group_statistics.parquet",
+  "pairwise_statistics": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\subtype_uniqueness_pairwise.parquet",
+  "omnibus_statistics": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\subtype_uniqueness_omnibus_statistics.parquet"
+}

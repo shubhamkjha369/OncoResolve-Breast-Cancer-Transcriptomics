@@ -1,0 +1,32 @@
+{
+  "analysis": "N-of-1 patient heterogeneity in consensus biomarker space",
+  "source_cohort": "breast_cancer.parquet",
+  "sample_count": 981,
+  "consensus_feature_count": 211,
+  "maximum_consensus_features": 211,
+  "feature_ranking_source": "consensus_importance descending",
+  "subtypes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ],
+  "subtype_counts": {
+    "basal": 171,
+    "her2": 78,
+    "luminal_A": 499,
+    "luminal_B": 197,
+    "normal": 36
+  },
+  "normal_subtype_included": true,
+  "patient_identifier_source": "master cohort index",
+  "expression_matrix_dtype": "float32",
+  "expression_matrix_shape": [
+    981,
+    211
+  ],
+  "matrix_file": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\n_of_1_consensus_expression.parquet",
+  "patient_metadata_file": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\n_of_1_patient_metadata.parquet",
+  "feature_map_file": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\n_of_1_consensus_feature_map.csv"
+}

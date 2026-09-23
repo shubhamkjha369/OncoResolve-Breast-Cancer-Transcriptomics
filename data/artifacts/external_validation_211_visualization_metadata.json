@@ -1,0 +1,32 @@
+{
+  "analysis": "211-gene consensus cross-platform tri-architecture external validation visualization",
+  "source_metrics": "data\\artifacts\\external_validation_211_performance.parquet",
+  "consensus_gene_count": 211,
+  "models": [
+    "Logistic_Regression",
+    "Random_Forest",
+    "MLP_Neural_Net"
+  ],
+  "cohorts": [
+    "SMC_2018",
+    "METABRIC",
+    "GSE96058"
+  ],
+  "primary_metric": "Macro_F1",
+  "secondary_metrics": [
+    "Accuracy",
+    "Balanced_Accuracy",
+    "Macro_Precision",
+    "Macro_Recall",
+    "Weighted_F1",
+    "MCC",
+    "Cohen_Kappa",
+    "ROC_AUC_OVR_MACRO",
+    "Log_Loss",
+    "Macro_F1_Generalization_Gap",
+    "Accuracy_Generalization_Gap",
+    "Consensus_Coverage_Percent"
+  ],
+  "figures_prefix": "fig18",
+  "visualization_outputs": "data\\artifacts\\external_validation_211_visualization_table.parquet"
+}

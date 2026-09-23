@@ -1,0 +1,24 @@
+{
+  "analysis": "Tri-architecture decision curve analysis",
+  "target_class": "basal",
+  "target_definition": "basal versus all other PAM50 subtypes",
+  "holdout_samples": 197,
+  "positive_samples": 34,
+  "negative_samples": 163,
+  "prevalence": 0.17258883248730963,
+  "candidate_features": 2000,
+  "threshold_min": 0.01,
+  "threshold_max": 0.99,
+  "number_of_thresholds": 100,
+  "publication_zoom_threshold_max": 0.5,
+  "candidate_models": [
+    "Logistic Regression",
+    "Random Forest",
+    "MLP"
+  ],
+  "net_benefit_definition": "TP/N - FP/N * pt/(1-pt)",
+  "treat_all_definition": "prevalence - (1-prevalence)*pt/(1-pt)",
+  "treat_none_definition": "0",
+  "plotting_note": "Numerical DCA is retained over 0.01-0.99. The primary publication panel is restricted to 0.01-0.50 because the Treat-All net-benefit curve diverges negatively as threshold probability approaches 1, which otherwise compresses the model curves near zero.",
+  "model_selection": "No model was selected or designated as final."
+}

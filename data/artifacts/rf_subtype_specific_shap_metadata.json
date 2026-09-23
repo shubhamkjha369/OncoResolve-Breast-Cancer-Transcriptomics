@@ -1,0 +1,29 @@
+{
+  "analysis": "Subtype-specific Random Forest SHAP feature importance",
+  "model": "Random Forest candidate",
+  "model_artifact": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\candidate_models\\random_forest_candidate.pkl",
+  "pipeline_steps": [
+    "model"
+  ],
+  "final_estimator_step": "model",
+  "final_estimator_type": "RandomForestClassifier",
+  "discovery_samples": 784,
+  "candidate_features": 2000,
+  "subtypes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ],
+  "n_classes": 5,
+  "rf_estimators": 200,
+  "shap_method": "TreeExplainer",
+  "importance_metric": "mean absolute SHAP value",
+  "tree_explainer_input": "exact matrix supplied to the fitted final Random Forest estimator after any preceding pipeline transformations",
+  "pipeline_prediction_consistency_verified": true,
+  "hugo_mapping_available": true,
+  "mapped_identifier_count": 2000,
+  "top_genes_per_subtype": 10,
+  "note": "This cell explains the Random Forest candidate. It does not designate a final model and does not represent SHAP explanations for Logistic Regression or MLP."
+}

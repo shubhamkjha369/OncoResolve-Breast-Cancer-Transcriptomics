@@ -1,0 +1,21 @@
+{
+  "analysis": "Subtype-specific one-vs-rest calibration and Brier score audit",
+  "holdout_samples": 197,
+  "candidate_genes": 2000,
+  "subtypes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ],
+  "candidate_models": [
+    "Logistic Regression",
+    "Random Forest",
+    "MLP"
+  ],
+  "calibration_bins": 5,
+  "calibration_strategy": "quantile",
+  "metric_definition": "Per-subtype one-vs-rest Brier score; macro average across subtypes",
+  "note": "No model is designated as final or champion in this audit."
+}

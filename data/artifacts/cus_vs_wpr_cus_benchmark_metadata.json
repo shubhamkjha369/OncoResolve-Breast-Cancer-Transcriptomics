@@ -1,0 +1,45 @@
+{
+  "analysis": "Empirical benchmark of legacy CUS versus leakage-safe WPR-CUS",
+  "feature_space": "211 consensus biomarkers from Section 10.1",
+  "n_patients": 981,
+  "n_genes": 211,
+  "n_oof_folds": 5,
+  "random_state": 42,
+  "legacy_cus": {
+    "definition": "Subtype-centroid distance plus within-subtype LOO reconstruction MSE",
+    "normalization": "Fold-fitted MinMaxScaler",
+    "weighting": "0.5 topology + 0.5 reconstruction",
+    "clinical_labels_used": true
+  },
+  "wpr_cus": {
+    "definition": "Weighted projected residual composite uniqueness",
+    "pca_components": 10,
+    "ridge_alpha": 1.0,
+    "weights": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "clinical_labels_used_in_score": false
+  },
+  "fold_strategy": "Identical stratified OOF partitions used for both methods",
+  "ranking_metrics": {
+    "pearson_r": 0.5751603473546529,
+    "spearman_rho": 0.5552384918166897,
+    "kendall_tau": 0.39109197195697853
+  },
+  "legacy_pam50_association": {
+    "kruskal_H": 102.28344938147075,
+    "p_value": 3.2108244692653632e-21,
+    "eta_squared": 0.08309659605349998
+  },
+  "wpr_cus_pam50_association": {
+    "kruskal_H": 309.85058594768907,
+    "p_value": 8.12300504474925e-66,
+    "eta_squared": 0.31842017889543656
+  },
+  "patient_scores": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\cus_vs_wpr_cus_patient_benchmark.parquet",
+  "top_k_overlap": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\cus_vs_wpr_cus_top_k_overlap.parquet",
+  "subtype_association": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\cus_vs_wpr_cus_subtype_association.parquet",
+  "summary": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\cus_vs_wpr_cus_benchmark_summary.parquet"
+}

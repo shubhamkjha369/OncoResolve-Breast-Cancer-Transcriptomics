@@ -1,0 +1,48 @@
+{
+  "analysis": "Consensus biomarker co-occurrence and subtype mapping network",
+  "candidate_models": [
+    "Random Forest",
+    "Logistic Regression"
+  ],
+  "candidate_feature_count": 2000,
+  "selected_network_gene_count": 36,
+  "active_network_gene_count": 30,
+  "isolated_selected_gene_count": 6,
+  "edge_count": 184,
+  "correlation_method": "Pearson",
+  "correlation_threshold": 0.5,
+  "consensus_method": "Subtype-wise MinMax normalization of RF and Logistic Regression mean absolute SHAP importance, followed by equal-weight averaging",
+  "primary_subtype_definition": "Subtype with highest consensus SHAP importance",
+  "network_expression_cohort": "Discovery cohort",
+  "top_consensus_genes": 30,
+  "elite_signature": [
+    "ESR1",
+    "MIEN1",
+    "ERBB2",
+    "PGAP3",
+    "MLPH",
+    "GRB7",
+    "HORMAD1",
+    "AGR3",
+    "UBE2T"
+  ],
+  "elite_genes_added": [
+    "ESR1",
+    "ERBB2",
+    "PGAP3",
+    "MLPH",
+    "HORMAD1",
+    "UBE2T"
+  ],
+  "hub_labels": 12,
+  "rf_pipeline_steps": [
+    "model"
+  ],
+  "rf_final_estimator_step": "model",
+  "lr_pipeline_steps": [
+    "scaler",
+    "model"
+  ],
+  "lr_final_estimator_step": "model",
+  "no_final_model_selected": true
+}

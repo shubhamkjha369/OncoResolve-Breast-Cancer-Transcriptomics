@@ -1,0 +1,29 @@
+{
+  "analysis": "N-of-1 Composite Uniqueness Score",
+  "input_matrix": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\n_of_1_consensus_expression.parquet",
+  "sample_count": 981,
+  "consensus_feature_count": 211,
+  "subtypes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ],
+  "subtype_counts": {
+    "basal": 171,
+    "her2": 78,
+    "luminal_A": 499,
+    "luminal_B": 197,
+    "normal": 36
+  },
+  "component_1": "Euclidean distance to patient's own PAM50 subtype centroid",
+  "component_2": "Leave-one-out within-subtype mean-profile reconstruction MSE",
+  "component_1_normalization": "MinMaxScaler across all patients",
+  "component_2_normalization": "MinMaxScaler across all patients",
+  "cus_formula": "0.5 * normalized_topological_distance + 0.5 * normalized_reconstruction_error",
+  "normal_subtype_included": true,
+  "reconstruction_is_leave_one_out": true,
+  "reconstruction_reference": "Other patients in the same PAM50 subtype",
+  "holdout_data_used": false
+}

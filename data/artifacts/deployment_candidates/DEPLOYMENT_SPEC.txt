@@ -1,0 +1,77 @@
+OncoResolve candidate deployment bundle
+
+Artifact type:
+- Tri-architecture candidate deployment set
+
+Candidate architectures:
+- Logistic Regression
+- Random Forest
+- MLP
+
+Candidate feature count:
+- 2000
+
+Candidate feature schema:
+- candidate_2000_gene_features.pkl
+- candidate_2000_gene_features.csv
+
+Encoded class order:
+- 0, 1, 2, 3, 4
+
+Decoded class order:
+- basal, her2, luminal_A, luminal_B, normal
+
+Label encoder:
+- label_encoder_cohort.pkl
+
+Model artifacts:
+- Logistic Regression: logistic_regression_candidate.pkl
+- Random Forest: random_forest_candidate.pkl
+- MLP: mlp_candidate.pkl
+
+Consensus biomarkers:
+- consensus_biomarkers.parquet
+- Count: 211
+
+SHAP artifacts:
+- Random Forest: available
+- Logistic Regression: available
+- MLP: not defined in the current SHAP pipeline
+
+Unified candidate bundle:
+- oncoresolve_candidate_bundle.pkl
+
+Manifest:
+- deployment_manifest.json
+
+Inference contract:
+- Exactly 2000 candidate features
+- Exact candidate feature ordering must be preserved
+- Duplicate features are not permitted
+- Missing features are not permitted
+- NaN values are not permitted
+- Infinite values are not permitted
+- Model class encoding must remain:
+  0 -> basal
+  1 -> her2
+  2 -> luminal_A
+  3 -> luminal_B
+  4 -> normal
+- Pipeline preprocessing is embedded inside each serialized model
+
+Serialization integrity:
+- Original and reloaded predictions are compared
+- Original and reloaded probability matrices are compared
+- Maximum absolute probability difference must be <= 1e-12
+- Candidate model feature count is validated
+- Candidate model encoded class ordering is validated
+- LabelEncoder decoded class ordering is validated
+
+Model selection:
+- No candidate architecture has been designated as the final model.
+
+Important:
+- The deployment bundle contains candidate models and metadata only.
+- Large SHAP tensors are stored as separate explainability artifacts.
+- MLP remains a candidate architecture but has no SHAP artifact
+  in the current explainability pipeline.

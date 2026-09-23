@@ -1,0 +1,334 @@
+{
+  "project": "OncoResolve",
+  "artifact_type": "tri-architecture candidate deployment bundle",
+  "model_selection_status": "No candidate model finalized",
+  "candidate_architectures": [
+    "Logistic Regression",
+    "Random Forest",
+    "MLP"
+  ],
+  "candidate_feature_count": 2000,
+  "candidate_feature_schema": {
+    "pickle": "candidate_2000_gene_features.pkl",
+    "csv": "candidate_2000_gene_features.csv",
+    "ordering_preserved": true,
+    "duplicate_features": false
+  },
+  "cohort_classes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ],
+  "encoded_class_order": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "label_encoder_file": "label_encoder_cohort.pkl",
+  "consensus_biomarkers": {
+    "file": "consensus_biomarkers.parquet",
+    "count": 211,
+    "feature_column": "feature",
+    "rank_column": "consensus_rank"
+  },
+  "models": {
+    "logistic_regression": {
+      "artifact_name": "logistic_regression_candidate.pkl",
+      "python_class": "Pipeline",
+      "final_estimator_class": "LogisticRegression",
+      "has_predict": true,
+      "has_predict_proba": true,
+      "candidate_feature_count": 2000,
+      "encoded_class_order": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decoded_class_order": [
+        "basal",
+        "her2",
+        "luminal_A",
+        "luminal_B",
+        "normal"
+      ],
+      "serialization_integrity": {
+        "status": "passed",
+        "serialized_file": "logistic_regression_candidate.pkl",
+        "feature_count": 2000,
+        "encoded_class_order": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "decoded_class_order": [
+          "basal",
+          "her2",
+          "luminal_A",
+          "luminal_B",
+          "normal"
+        ],
+        "validation_sample_count": 8,
+        "max_probability_difference": 0.0,
+        "serialized_sha256": "6432503faf8111b76a21fbfe2c2d947af77188943256a09952c9de146f39d12b"
+      },
+      "pipeline_steps": [
+        "scaler",
+        "model"
+      ]
+    },
+    "random_forest": {
+      "artifact_name": "random_forest_candidate.pkl",
+      "python_class": "Pipeline",
+      "final_estimator_class": "RandomForestClassifier",
+      "has_predict": true,
+      "has_predict_proba": true,
+      "candidate_feature_count": 2000,
+      "encoded_class_order": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decoded_class_order": [
+        "basal",
+        "her2",
+        "luminal_A",
+        "luminal_B",
+        "normal"
+      ],
+      "serialization_integrity": {
+        "status": "passed",
+        "serialized_file": "random_forest_candidate.pkl",
+        "feature_count": 2000,
+        "encoded_class_order": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "decoded_class_order": [
+          "basal",
+          "her2",
+          "luminal_A",
+          "luminal_B",
+          "normal"
+        ],
+        "validation_sample_count": 8,
+        "max_probability_difference": 1.6653345369377348e-16,
+        "serialized_sha256": "5699a96e490cd5c5202dfe8776deb5dbefcb8b44a040722310cdf4f3deccc10b"
+      },
+      "pipeline_steps": [
+        "model"
+      ]
+    },
+    "mlp": {
+      "artifact_name": "mlp_candidate.pkl",
+      "python_class": "Pipeline",
+      "final_estimator_class": "PyTorchMLPClassifier",
+      "has_predict": true,
+      "has_predict_proba": true,
+      "candidate_feature_count": 2000,
+      "encoded_class_order": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decoded_class_order": [
+        "basal",
+        "her2",
+        "luminal_A",
+        "luminal_B",
+        "normal"
+      ],
+      "serialization_integrity": {
+        "status": "passed",
+        "serialized_file": "mlp_candidate.pkl",
+        "feature_count": 2000,
+        "encoded_class_order": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "decoded_class_order": [
+          "basal",
+          "her2",
+          "luminal_A",
+          "luminal_B",
+          "normal"
+        ],
+        "validation_sample_count": 8,
+        "max_probability_difference": 0.0,
+        "serialized_sha256": "379698eac4935b6dbeb1baa078e8859cd36a510b239ae17d2a268b5f52802939"
+      },
+      "pipeline_steps": [
+        "scaler",
+        "model"
+      ]
+    }
+  },
+  "shap_artifacts": {
+    "random_forest": {
+      "status": "available",
+      "pickle": "random_forest_shap_values.pkl",
+      "npy": "random_forest_shap_values.npy",
+      "shape": [
+        784,
+        2000,
+        5
+      ],
+      "feature_order_file": "candidate_2000_gene_features.pkl",
+      "encoded_class_order": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decoded_class_order": [
+        "basal",
+        "her2",
+        "luminal_A",
+        "luminal_B",
+        "normal"
+      ]
+    },
+    "logistic_regression": {
+      "status": "available",
+      "pickle": "logistic_regression_shap_values.pkl",
+      "npy": "logistic_regression_shap_values.npy",
+      "shape": [
+        784,
+        2000,
+        5
+      ],
+      "feature_order_file": "candidate_2000_gene_features.pkl",
+      "encoded_class_order": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "decoded_class_order": [
+        "basal",
+        "her2",
+        "luminal_A",
+        "luminal_B",
+        "normal"
+      ]
+    },
+    "mlp": {
+      "status": "not_defined_in_current_shap_pipeline",
+      "explainability_note": "MLP is serialized as a candidate architecture but is not assigned a SHAP tensor by the current explainability pipeline."
+    }
+  },
+  "serialization_integrity": {
+    "validation_matrix_source": "X_discover",
+    "validation_sample_count": 8,
+    "prediction_equivalence": {
+      "logistic_regression": {
+        "status": "passed",
+        "serialized_file": "logistic_regression_candidate.pkl",
+        "feature_count": 2000,
+        "encoded_class_order": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "decoded_class_order": [
+          "basal",
+          "her2",
+          "luminal_A",
+          "luminal_B",
+          "normal"
+        ],
+        "validation_sample_count": 8,
+        "max_probability_difference": 0.0,
+        "serialized_sha256": "6432503faf8111b76a21fbfe2c2d947af77188943256a09952c9de146f39d12b"
+      },
+      "random_forest": {
+        "status": "passed",
+        "serialized_file": "random_forest_candidate.pkl",
+        "feature_count": 2000,
+        "encoded_class_order": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "decoded_class_order": [
+          "basal",
+          "her2",
+          "luminal_A",
+          "luminal_B",
+          "normal"
+        ],
+        "validation_sample_count": 8,
+        "max_probability_difference": 1.6653345369377348e-16,
+        "serialized_sha256": "5699a96e490cd5c5202dfe8776deb5dbefcb8b44a040722310cdf4f3deccc10b"
+      },
+      "mlp": {
+        "status": "passed",
+        "serialized_file": "mlp_candidate.pkl",
+        "feature_count": 2000,
+        "encoded_class_order": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "decoded_class_order": [
+          "basal",
+          "her2",
+          "luminal_A",
+          "luminal_B",
+          "normal"
+        ],
+        "validation_sample_count": 8,
+        "max_probability_difference": 0.0,
+        "serialized_sha256": "379698eac4935b6dbeb1baa078e8859cd36a510b239ae17d2a268b5f52802939"
+      }
+    }
+  },
+  "inference_contract": {
+    "feature_count": 2000,
+    "feature_order_file": "candidate_2000_gene_features.pkl",
+    "encoded_class_order": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "decoded_class_order": [
+      "basal",
+      "her2",
+      "luminal_A",
+      "luminal_B",
+      "normal"
+    ],
+    "missing_features_allowed": false,
+    "duplicate_features_allowed": false,
+    "nan_values_allowed": false,
+    "infinite_values_allowed": false,
+    "pipeline_preprocessing_embedded": true
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "analysis": "Patient Similarity Network",
+  "input_matrix": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\n_of_1_consensus_expression.parquet",
+  "patient_count": 981,
+  "consensus_feature_count": 211,
+  "similarity_metric": "Pearson correlation",
+  "threshold_percentile": 85.0,
+  "threshold_value": 0.6808868044295774,
+  "threshold_definition": "Unique off-diagonal patient-pair Pearson similarities",
+  "threshold_qualified_edges": 72104,
+  "visualization_edge_count": 15000,
+  "visualization_edge_cap": 15000,
+  "visualization_edge_cap_applied": true,
+  "subtypes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ],
+  "full_edge_table": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\patient_similarity_network_edges_full.csv",
+  "visualization_edge_table": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\patient_similarity_network_edges_visualization.csv",
+  "pearson_matrix": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\patient_similarity_matrix_pearson.parquet",
+  "cosine_matrix": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\patient_similarity_matrix_cosine.parquet",
+  "graphml": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\patient_similarity_network.graphml"
+}

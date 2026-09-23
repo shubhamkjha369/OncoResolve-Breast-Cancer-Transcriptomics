@@ -1,0 +1,10 @@
+{
+  "analysis": "Patient-patient similarity in N-of-1 consensus space",
+  "sample_count": 981,
+  "consensus_feature_count": 211,
+  "pearson_definition": "Pearson correlation across consensus biomarkers between patients",
+  "cosine_definition": "Cosine similarity across consensus biomarkers between patients",
+  "patient_identifier_source": "n_of_1_patient_metadata.parquet",
+  "pearson_matrix": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\patient_similarity_matrix_pearson.parquet",
+  "cosine_matrix": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\patient_similarity_matrix_cosine.parquet"
+}

@@ -1,0 +1,22 @@
+{
+  "analysis": "Independent TCGA holdout comparative benchmark",
+  "evaluation_cohort": "TCGA-BRCA holdout",
+  "n_holdout_samples": 197,
+  "n_candidate_features": 2000,
+  "feature_source": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\candidate_models\\candidate_2000_gene_features.pkl",
+  "models": [
+    "Logistic Regression",
+    "Random Forest",
+    "MLP Neural Net"
+  ],
+  "metrics": [
+    "Accuracy",
+    "Balanced Accuracy",
+    "Macro F1",
+    "Weighted F1",
+    "Matthews Correlation Coefficient",
+    "Macro ROC-AUC OVR",
+    "Log Loss"
+  ],
+  "note": "This analysis compares candidate architectures on the independent holdout. It does not constitute a benchmark against a clinical gold standard and does not finalize a model."
+}

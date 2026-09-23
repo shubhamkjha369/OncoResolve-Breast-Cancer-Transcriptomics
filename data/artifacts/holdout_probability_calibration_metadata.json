@@ -1,0 +1,29 @@
+{
+  "analysis": "Tri-architecture probability calibration and reliability analysis",
+  "evaluation_cohort": "Independent TCGA holdout",
+  "n_holdout_samples": 197,
+  "n_candidate_features": 2000,
+  "candidate_feature_source": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\candidate_models\\candidate_2000_gene_features.pkl",
+  "models": [
+    "Logistic Regression",
+    "Random Forest",
+    "MLP Neural Net"
+  ],
+  "classes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ],
+  "one_vs_rest_bins": 6,
+  "ece_bins": 10,
+  "metrics": [
+    "One-vs-rest Brier score",
+    "Top-label Expected Calibration Error"
+  ],
+  "figures": {
+    "classwise_calibration": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\fig20_tri_architecture_calibration_reliability.pdf",
+    "top_label_reliability": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\fig20b_top_label_reliability.pdf"
+  }
+}

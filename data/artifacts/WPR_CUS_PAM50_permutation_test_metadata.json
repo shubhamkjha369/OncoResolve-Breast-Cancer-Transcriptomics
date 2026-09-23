@@ -1,0 +1,31 @@
+{
+  "analysis": "Empirical permutation testing of PAM50 subtype association with OOF WPR-CUS",
+  "test_statistic": "Kruskal-Wallis H",
+  "permutation_scheme": "Random permutation of PAM50 subtype labels while keeping the fixed OOF WPR-CUS score vector unchanged",
+  "n_patients": 981,
+  "n_subtypes": 5,
+  "subtypes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ],
+  "subtype_counts": {
+    "basal": 171,
+    "her2": 78,
+    "luminal_A": 499,
+    "luminal_B": 197,
+    "normal": 36
+  },
+  "n_permutations": 1000,
+  "random_state": 42,
+  "observed_h": 316.0942978924536,
+  "empirical_p": 0.000999000999000999,
+  "null_statistics_ge_observed": 0,
+  "minimum_nonzero_empirical_p": 0.000999000999000999,
+  "interpretation": "Tests whether the observed association between OOF WPR-CUS scores and PAM50 subtype labels exceeds the label-permutation null distribution.",
+  "wpr_cus_source": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\patient_uniqueness_scores.parquet",
+  "null_distribution": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\WPR_CUS_PAM50_permutation_null.parquet",
+  "summary": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\WPR_CUS_PAM50_permutation_test_summary.parquet"
+}

@@ -1,7 +1,7 @@
-Model / Metric,Observed Base F1,Bootstrap Mean,Bootstrap Median,Bootstrap SD,95% Confidence Interval
-Logistic Regression,0.8927,0.8893,0.8923,0.0329,"[0.8178, 0.9450]"
-Random Forest,0.8642,0.8579,0.8620,0.0459,"[0.7522, 0.9362]"
-MLP Neural Net,0.8461,0.8405,0.8434,0.0434,"[0.7434, 0.9189]"
-Paired Delta (RF - LogReg),-0.0285,-0.0314,-0.0304,0.0581,"[-0.1502, +0.0805]"
-Paired Delta (MLP - LogReg),-0.0466,-0.0488,-0.0466,0.0424,"[-0.1380, +0.0269]"
-Paired Delta (MLP - RF),-0.0181,-0.0174,-0.0173,0.0466,"[-0.1089, +0.0769]"
+Model / Metric,Observed,Bootstrap Mean,Bootstrap Median,Bootstrap SD,95% CI
+Logistic Regression,+0.9503,+0.9495,+0.9508,0.0175,"[+0.9120, +0.9792]"
+Random Forest,+0.8965,+0.8926,+0.8964,0.0372,"[+0.8085, +0.9535]"
+MLP,+0.8358,+0.8292,+0.8331,0.0458,"[+0.7226, +0.9066]"
+Paired Delta (RF - LogReg),-0.0538,-0.0569,-0.0539,0.0399,"[-0.1427, +0.0122]"
+Paired Delta (MLP - LogReg),-0.1145,-0.1203,-0.1158,0.0456,"[-0.2253, -0.0424]"
+Paired Delta (MLP - RF),-0.0607,-0.0634,-0.0603,0.0371,"[-0.1442, -0.0006]"

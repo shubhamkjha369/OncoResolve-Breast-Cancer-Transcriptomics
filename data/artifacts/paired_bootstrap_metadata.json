@@ -1,0 +1,17 @@
+{
+  "n_bootstrap": 10000,
+  "confidence_level": 0.95,
+  "random_seed": 42,
+  "holdout_samples": 197,
+  "feature_count": 2000,
+  "observed_macro_f1": {
+    "Logistic Regression": 0.9503213389309713,
+    "Random Forest": 0.8964950419527078,
+    "MLP": 0.8358178675010357
+  },
+  "paired_observed_differences": {
+    "RF_minus_LogReg": -0.053826296978263466,
+    "MLP_minus_LogReg": -0.11450347142993555,
+    "MLP_minus_RF": -0.06067717445167209
+  }
+}

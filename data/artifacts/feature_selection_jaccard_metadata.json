@@ -1,0 +1,19 @@
+{
+  "analysis": "Feature selection stability benchmarking using Jaccard Stability Index",
+  "feature_space": "Current 2,000-gene candidate feature space",
+  "n_candidate_features": 2000,
+  "n_discovery_samples": 784,
+  "n_subsamples": 20,
+  "subsample_fraction": 0.8,
+  "k_top": 50,
+  "random_seed": 42,
+  "pairwise_comparisons": 190,
+  "methods": [
+    "Logistic Regression",
+    "Random Forest",
+    "LR-RF Consensus"
+  ],
+  "lr_weight": 0.8927,
+  "rf_weight": 0.8642,
+  "interpretation": "JSI quantifies pairwise overlap among the top-K selected features across stratified subsamples. Higher values indicate greater selection stability."
+}

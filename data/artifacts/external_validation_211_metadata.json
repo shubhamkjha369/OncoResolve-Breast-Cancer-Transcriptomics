@@ -1,0 +1,46 @@
+{
+  "analysis": "External validation of pretrained tri-architecture models using the 211-gene consensus biomarker subset",
+  "models": [
+    "Logistic_Regression",
+    "Random_Forest",
+    "MLP_Neural_Net"
+  ],
+  "candidate_model_feature_count": 2000,
+  "consensus_gene_count": 211,
+  "external_missing_consensus_feature_strategy": "Zero-fill corresponding positions in the original 2,000-feature model vector",
+  "retraining": false,
+  "external_tuning": false,
+  "feature_selection": false,
+  "performance_metrics": [
+    "Accuracy",
+    "Balanced Accuracy",
+    "Macro Precision",
+    "Macro Recall",
+    "Macro F1",
+    "Weighted F1",
+    "MCC",
+    "Cohen Kappa",
+    "Macro ROC-AUC OvR",
+    "Log Loss",
+    "Macro-F1 Generalization Gap",
+    "Accuracy Generalization Gap"
+  ],
+  "mapping_metric": "Mapped consensus genes / 211",
+  "overfitting_gap_definition": "Discovery training metric minus external cohort metric",
+  "cohorts_evaluated": [
+    "SMC_2018",
+    "METABRIC",
+    "GSE96058"
+  ],
+  "cohorts_skipped": {},
+  "outputs": {
+    "performance": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\external_validation_211_performance.parquet",
+    "performance_csv": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\external_validation_211_performance.csv",
+    "per_class": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\external_validation_211_per_class.parquet",
+    "gene_mapping": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\external_validation_211_gene_mapping.parquet",
+    "gene_mapping_csv": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\external_validation_211_gene_mapping.csv",
+    "consensus_candidate_mapping": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\external_validation_211_consensus_to_candidate_mapping.csv",
+    "results_pickle": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\external_validation_211_results.pkl",
+    "results_json": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\external_validation_211_results.json"
+  }
+}

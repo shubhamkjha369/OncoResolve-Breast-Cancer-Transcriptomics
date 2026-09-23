@@ -1,0 +1,62 @@
+{
+  "stage": "candidate_model_training_for_independent_holdout_evaluation",
+  "model_selection_status": "NOT_FINAL",
+  "discovery_samples": 784,
+  "feature_count": 2000,
+  "feature_selection_artifact": "top_deg_genes.pkl",
+  "feature_order_saved": true,
+  "models": {
+    "Logistic Regression": {
+      "family": "linear_classical_ml",
+      "C": 0.01,
+      "solver": "lbfgs",
+      "max_iter": 1000,
+      "class_weight": "balanced"
+    },
+    "Random Forest": {
+      "family": "nonlinear_classical_ml",
+      "n_estimators": 200,
+      "max_depth": 6,
+      "max_features": "sqrt",
+      "class_weight": "balanced"
+    },
+    "MLP": {
+      "family": "neural_network",
+      "hidden_layer_sizes": [
+        128,
+        64
+      ],
+      "lr": 0.001,
+      "weight_decay": 0.0001,
+      "dropout": 0.2,
+      "batch_size": 64,
+      "max_epochs": 100,
+      "device": "cpu"
+    }
+  },
+  "training_diagnostics": {
+    "Logistic Regression": {
+      "train_macro_f1": 0.9963592284626672,
+      "train_accuracy": 0.9987244897959183
+    },
+    "Random Forest": {
+      "train_macro_f1": 0.9793692780337941,
+      "train_accuracy": 0.9706632653061225
+    },
+    "MLP": {
+      "train_macro_f1": 0.9955433455433456,
+      "train_accuracy": 0.9974489795918368
+    }
+  },
+  "evaluation_policy": {
+    "independent_holdout_required": true,
+    "final_model_selection_deferred": true,
+    "selection_basis": [
+      "holdout performance",
+      "generalization gap",
+      "overfitting diagnostics",
+      "class-wise performance",
+      "external validation"
+    ]
+  }
+}
