@@ -26,7 +26,7 @@
     981,
     211
   ],
-  "matrix_file": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\n_of_1_consensus_expression.parquet",
-  "patient_metadata_file": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\n_of_1_patient_metadata.parquet",
-  "feature_map_file": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\n_of_1_consensus_feature_map.csv"
+  "matrix_file": "data\\artifacts\\n_of_1_consensus_expression.parquet",
+  "patient_metadata_file": "data\\artifacts\\n_of_1_patient_metadata.parquet",
+  "feature_map_file": "data\\artifacts\\n_of_1_consensus_feature_map.csv"
 }

@@ -23,7 +23,7 @@
     "train_weighted_f1": 0.9711517190977773,
     "train_balanced_accuracy": 0.9884711779448623,
     "train_roc_auc": 0.9993272535296385,
-    "train_log_loss": 0.2701893524781992,
+    "train_log_loss": 0.27018935247819914,
     "holdout_accuracy": 0.9137055837563451,
     "holdout_macro_f1": 0.8964950419527078,
     "holdout_weighted_f1": 0.9156241409084399,
