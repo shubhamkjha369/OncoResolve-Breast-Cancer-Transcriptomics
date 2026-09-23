@@ -1,0 +1,47 @@
+{
+  "section": "Section 14 - Computational Biomarker Validation",
+  "biomarker_source": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\final_consensus_biomarkers_enriched.parquet",
+  "top_n": 15,
+  "top_biomarkers": [
+    "PGR",
+    "IRX1",
+    "MUC15",
+    "LBP",
+    "MAB21L4",
+    "SRARP",
+    "KRT5",
+    "ELOVL2",
+    "BPIFB1",
+    "CAPN8",
+    "KLK6",
+    "KLK7",
+    "KRT6A",
+    "FSIP1",
+    "NXPH1"
+  ],
+  "signed_biomarker_column": null,
+  "depmap": {
+    "source": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\CRISPRGeneEffect.parquet",
+    "executed": true,
+    "interpretation": "More negative gene-effect values indicate stronger loss-of-fitness dependency; dependency is context- and cell-line-specific."
+  },
+  "lincs": {
+    "status": "NOT_EXECUTED_NO_SIGNED_BIOMARKER_DIRECTION",
+    "query_submitted": false,
+    "api_used": false,
+    "n_up_genes": 0,
+    "n_down_genes": 0
+  },
+  "figures": {
+    "png": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\fig38_computational_biomarker_validation.png",
+    "pdf": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\fig38_computational_biomarker_validation.pdf"
+  },
+  "methodological_notes": [
+    "No DepMap gene-effect values are hardcoded.",
+    "No drug connectivity scores are hardcoded.",
+    "LINCS directional queries require genuinely signed biomarker information.",
+    "Absence of an external dataset is reported as unavailable rather than imputed.",
+    "DepMap dependency is a functional cell-line vulnerability association, not clinical treatment evidence.",
+    "CMap/LINCS connectivity identifies transcriptomic signature relationships and does not establish therapeutic efficacy."
+  ]
+}

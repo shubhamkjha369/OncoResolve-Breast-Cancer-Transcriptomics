@@ -15,7 +15,7 @@
     },
     "Random Forest": {
       "family": "nonlinear_classical_ml",
-      "n_estimators": 200,
+      "n_estimators": 300,
       "max_depth": 6,
       "max_features": "sqrt",
       "class_weight": "balanced"
@@ -24,13 +24,14 @@
       "family": "neural_network",
       "hidden_layer_sizes": [
         128,
-        64
+        64,
+        32
       ],
       "lr": 0.001,
-      "weight_decay": 0.0001,
-      "dropout": 0.2,
-      "batch_size": 64,
-      "max_epochs": 100,
+      "weight_decay": 0.001,
+      "dropout": 0.3,
+      "batch_size": 32,
+      "max_epochs": 300,
       "device": "cpu"
     }
   },
@@ -40,12 +41,12 @@
       "train_accuracy": 0.9987244897959183
     },
     "Random Forest": {
-      "train_macro_f1": 0.9793692780337941,
-      "train_accuracy": 0.9706632653061225
+      "train_macro_f1": 0.950504426800576,
+      "train_accuracy": 0.9540816326530612
     },
     "MLP": {
-      "train_macro_f1": 0.9955433455433456,
-      "train_accuracy": 0.9974489795918368
+      "train_macro_f1": 0.9793607520186398,
+      "train_accuracy": 0.985969387755102
     }
   },
   "evaluation_policy": {

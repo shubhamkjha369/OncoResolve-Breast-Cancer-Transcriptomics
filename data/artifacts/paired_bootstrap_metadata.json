@@ -6,12 +6,12 @@
   "feature_count": 2000,
   "observed_macro_f1": {
     "Logistic Regression": 0.9503213389309713,
-    "Random Forest": 0.8964950419527078,
-    "MLP": 0.8358178675010357
+    "Random Forest": 0.8916399598074991,
+    "MLP": 0.8792212024693198
   },
   "paired_observed_differences": {
-    "RF_minus_LogReg": -0.053826296978263466,
-    "MLP_minus_LogReg": -0.11450347142993555,
-    "MLP_minus_RF": -0.06067717445167209
+    "RF_minus_LogReg": -0.058681379123472155,
+    "MLP_minus_LogReg": -0.07110013646165148,
+    "MLP_minus_RF": -0.01241875733817932
   }
 }

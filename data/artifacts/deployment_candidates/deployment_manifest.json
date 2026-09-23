@@ -77,7 +77,7 @@
         ],
         "validation_sample_count": 8,
         "max_probability_difference": 0.0,
-        "serialized_sha256": "6432503faf8111b76a21fbfe2c2d947af77188943256a09952c9de146f39d12b"
+        "serialized_sha256": "fe2e1605ea9d0a7db2eb3330dbbf09f8d3c788100ba56b5bf490fc4cf05083ac"
       },
       "pipeline_steps": [
         "scaler",
@@ -124,8 +124,8 @@
           "normal"
         ],
         "validation_sample_count": 8,
-        "max_probability_difference": 2.220446049250313e-16,
-        "serialized_sha256": "512183e6cd7609c8cff34a5c311a20dc2376465da99abb69b14e835cc1374237"
+        "max_probability_difference": 1.1102230246251565e-16,
+        "serialized_sha256": "96cdd042da17f1c4ed87a07bbdb27a9d309a16cb151f698d564210200e3fbf2d"
       },
       "pipeline_steps": [
         "model"
@@ -172,7 +172,7 @@
         ],
         "validation_sample_count": 8,
         "max_probability_difference": 0.0,
-        "serialized_sha256": "eba26ae96f8bbbadf0313ec3f2dcb0185d154ef70c862b6fd47345e6809b646c"
+        "serialized_sha256": "9ba7c822b6d3733259fde671d5b5d6cdb3991ac5c23b85d0a880db1e7c50e810"
       },
       "pipeline_steps": [
         "scaler",
@@ -260,7 +260,7 @@
         ],
         "validation_sample_count": 8,
         "max_probability_difference": 0.0,
-        "serialized_sha256": "6432503faf8111b76a21fbfe2c2d947af77188943256a09952c9de146f39d12b"
+        "serialized_sha256": "fe2e1605ea9d0a7db2eb3330dbbf09f8d3c788100ba56b5bf490fc4cf05083ac"
       },
       "random_forest": {
         "status": "passed",
@@ -281,8 +281,8 @@
           "normal"
         ],
         "validation_sample_count": 8,
-        "max_probability_difference": 2.220446049250313e-16,
-        "serialized_sha256": "512183e6cd7609c8cff34a5c311a20dc2376465da99abb69b14e835cc1374237"
+        "max_probability_difference": 1.1102230246251565e-16,
+        "serialized_sha256": "96cdd042da17f1c4ed87a07bbdb27a9d309a16cb151f698d564210200e3fbf2d"
       },
       "mlp": {
         "status": "passed",
@@ -304,7 +304,7 @@
         ],
         "validation_sample_count": 8,
         "max_probability_difference": 0.0,
-        "serialized_sha256": "eba26ae96f8bbbadf0313ec3f2dcb0185d154ef70c862b6fd47345e6809b646c"
+        "serialized_sha256": "9ba7c822b6d3733259fde671d5b5d6cdb3991ac5c23b85d0a880db1e7c50e810"
       }
     }
   },

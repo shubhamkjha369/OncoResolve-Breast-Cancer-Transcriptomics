@@ -1,0 +1,66 @@
+{
+  "analysis": "Reference-based TME marker scoring via decoupler ULM",
+  "reference_database": "PanglaoDB",
+  "reference_access": "decoupler OmniPath resource",
+  "organism": "human",
+  "marker_filter": {
+    "canonical_marker": true,
+    "human_sensitivity": ">0.50",
+    "minimum_measured_markers": 5,
+    "minimum_coverage_fraction": 0.2
+  },
+  "expression_preprocessing": {
+    "gene_identifier": "HUGO symbols",
+    "standard_scaling_before_ULM": false,
+    "missing_value_strategy": "gene-wise cohort median",
+    "source_matrix": "discovery cohort"
+  },
+  "method": "decoupler.mt.ulm",
+  "tmin": 5,
+  "n_samples": 784,
+  "n_expression_genes": 17993,
+  "n_tme_signatures": 22,
+  "n_network_edges": 310,
+  "tme_signatures": [
+    "Smooth muscle cells",
+    "Endothelial cells",
+    "Goblet cells",
+    "Luminal epithelial cells",
+    "Macrophages",
+    "Dendritic cells",
+    "B cells naive",
+    "Plasmacytoid dendritic cells",
+    "B cells",
+    "Hepatic stellate cells",
+    "Fibroblasts",
+    "Adipocytes",
+    "NK cells",
+    "Gamma delta T cells",
+    "T cells",
+    "Plasma cells",
+    "Pancreatic stellate cells",
+    "Mast cells",
+    "Neutrophils",
+    "Pericytes",
+    "Monocytes",
+    "Mammary epithelial cells"
+  ],
+  "pam50_subtypes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ],
+  "outputs": {
+    "patient_scores": "tme_ulm_scores.parquet",
+    "adjusted_pvalues": "tme_ulm_adjusted_pvalues.parquet",
+    "network": "tme_panglaodb_ulm_network.parquet",
+    "reference_markers": "tme_panglaodb_reference_markers.parquet",
+    "coverage_qc": "tme_marker_coverage_qc.parquet",
+    "subtype_mean_scores": "tme_ulm_subtype_mean_scores.parquet",
+    "subtype_median_scores": "tme_ulm_subtype_median_scores.parquet",
+    "association_statistics": "tme_pam50_association_statistics.parquet",
+    "figure": "fig37_tme_ulm_pam50_heatmap.pdf"
+  }
+}

@@ -34,7 +34,7 @@
     "HORMAD1",
     "UBE2T"
   ],
-  "hub_labels": 12,
+  "hub_labels": 30,
   "rf_pipeline_steps": [
     "model"
   ],

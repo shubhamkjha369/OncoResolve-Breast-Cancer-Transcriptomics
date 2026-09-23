@@ -149,7 +149,7 @@ class ConsensusSelector(BaseEstimator, TransformerMixin):
 
         # 2. L1 Logistic Regression (SAGA solver, multinomial)
         lasso = LogisticRegression(
-            penalty="l2",
+            penalty="l1",
             solver="saga",
             C=self.lasso_C,
             max_iter=self.lasso_max_iter,

@@ -363,3 +363,80 @@ def safe_to_csv(df: pd.DataFrame, filename: Union[str, Path], **kwargs) -> None:
             pass
     return df.to_csv(str(p), **kwargs)
 
+
+def align_external_cohort(
+    df_expr: pd.DataFrame,
+    tcga_scaler: StandardScaler,
+    candidate_features: List[str],
+    entrez_to_hugo: Optional[dict] = None,
+) -> Tuple[np.ndarray, int]:
+    """
+    Aligns external cohort gene expression to the required candidate feature set
+    and applies cross-platform Z-score normalization matching the TCGA reference scale.
+
+    Parameters
+    ----------
+    df_expr : pd.DataFrame
+        Raw or log-transformed expression matrix for the external cohort (samples x genes).
+    tcga_scaler : StandardScaler
+        Frozen TCGA reference StandardScaler fitted on discovery cohort training features.
+    candidate_features : list of str
+        Ordered list of candidate gene feature identifiers.
+    entrez_to_hugo : dict, optional
+        Dictionary mapping Entrez IDs to HUGO gene symbols.
+
+    Returns
+    -------
+    X_aligned : np.ndarray
+        Aligned and scaled expression array of shape (n_samples, len(candidate_features)).
+    mapped_count : int
+        Number of successfully matched features.
+    """
+    cand_features_str = [str(g).strip() for g in candidate_features]
+    if entrez_to_hugo is None:
+        entrez_to_hugo = {}
+
+    ext_col_dict = {str(c).strip().upper(): c for c in df_expr.columns}
+
+    n_samples = len(df_expr)
+    n_features = len(cand_features_str)
+
+    X_raw = np.zeros((n_samples, n_features), dtype=np.float64)
+
+    # Initialize missing genes with reference scaler mean
+    for j in range(n_features):
+        X_raw[:, j] = tcga_scaler.mean_[j]
+
+    mapped_indices = []
+    for j, gene_str in enumerate(cand_features_str):
+        matched_col = None
+        if gene_str.upper() in ext_col_dict:
+            matched_col = ext_col_dict[gene_str.upper()]
+        else:
+            hugo = entrez_to_hugo.get(gene_str)
+            if hugo and hugo.upper() in ext_col_dict:
+                matched_col = ext_col_dict[hugo.upper()]
+
+        if matched_col is not None:
+            vals = pd.to_numeric(df_expr[matched_col], errors="coerce").to_numpy()
+            m_v = np.nanmean(vals)
+            if np.isnan(m_v):
+                m_v = tcga_scaler.mean_[j]
+            vals = np.nan_to_num(vals, nan=m_v)
+            X_raw[:, j] = vals
+            mapped_indices.append(j)
+
+    # Cross-platform z-score alignment to TCGA training scale
+    X_aligned = X_raw.copy()
+    for j in mapped_indices:
+        vals = X_raw[:, j]
+        m_ext = np.mean(vals)
+        s_ext = np.std(vals)
+        if s_ext < 1e-6:
+            s_ext = 1.0
+        z_ext = (vals - m_ext) / s_ext
+        X_aligned[:, j] = tcga_scaler.mean_[j] + z_ext * tcga_scaler.scale_[j]
+
+    return X_aligned, len(mapped_indices)
+
+

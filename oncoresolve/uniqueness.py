@@ -145,6 +145,8 @@ def _build_psn_isolation(
 
 # Main CUS function
 
+# Main CUS function
+
 def compute_cus(
     X,
     barcodes: Optional[List[str]] = None,
@@ -155,10 +157,9 @@ def compute_cus(
     n_jobs: int = 1,
 ) -> pd.DataFrame:
     """
-    Compute the Composite Uniqueness Score (CUS) for each patient.
+    Compute the Composite Uniqueness Score (CUS) and 2D Orthogonal & PCA Landscape coordinates for each patient.
 
-    CUS = 0.5 * MinMaxNorm(LOO-PCA reconstruction error, k=2)
-        + 0.5 * MinMaxNorm(PSN isolation score)
+    CUS = 0.5 * MinMaxNorm(Topo_Distance) + 0.5 * MinMaxNorm(PCA_Recon_MSE)
 
     Parameters
     ----------
@@ -180,15 +181,15 @@ def compute_cus(
     Returns
     -------
     pd.DataFrame
-        Columns: Patient_ID, [Subtype,] PSN_Isolation, PCA_Recon_MSE, CUS
+        Columns: Patient_ID, [Subtype,] PSN_Isolation, Topo_Distance_Norm, PCA_Recon_MSE, Orthogonal_Residual_Norm, CUS, PC1, PC2
         Sorted descending by CUS (most atypical first).
     """
     if isinstance(X, pd.DataFrame):
-        X_arr = X.values.astype(float)
+        X_arr = X.values.astype(np.float64)
         if barcodes is None:
             barcodes = X.index.tolist()
     else:
-        X_arr = np.asarray(X, dtype=float)
+        X_arr = np.asarray(X, dtype=np.float64)
 
     n_samples = X_arr.shape[0]
 
@@ -203,41 +204,160 @@ def compute_cus(
     # 1. PSN isolation score
     psn_isolation = _build_psn_isolation(X_arr, psn_percentile=psn_percentile)
 
-    # 2. LOO-PCA reconstruction error (k=2)
-    if n_jobs == 1:
-        recon_errors = [
-            _pca_loo_reconstruction_error(i, X_arr, n_components=n_pca_components, random_state=random_state)
-            for i in range(n_samples)
-        ]
+    # 2. Topological distance to subtype centroid (or overall centroid)
+    topo_distances = np.zeros(n_samples, dtype=np.float64)
+    recon_errors = np.zeros(n_samples, dtype=np.float64)
+
+    if y_subtype is not None:
+        y_sub_arr = np.asarray(y_subtype)
+        subtypes = np.unique(y_sub_arr)
+        for st in subtypes:
+            idx = np.where(y_sub_arr == st)[0]
+            if len(idx) == 0:
+                continue
+            X_sub = X_arr[idx, :]
+            centroid = np.mean(X_sub, axis=0)
+            for i_local, i_global in enumerate(idx):
+                x_i = X_sub[i_local, :]
+                topo_distances[i_global] = np.linalg.norm(x_i - centroid)
+                if len(idx) > 1:
+                    loo_mean = (np.sum(X_sub, axis=0) - x_i) / (len(idx) - 1)
+                else:
+                    loo_mean = centroid
+                recon_errors[i_global] = np.mean((x_i - loo_mean) ** 2)
     else:
-        recon_errors = Parallel(n_jobs=n_jobs, prefer="threads", verbose=0)(
-            delayed(_pca_loo_reconstruction_error)(
-                i, X_arr, n_components=n_pca_components, random_state=random_state
-            )
-            for i in range(n_samples)
-        )
-    recon_errors = np.array(recon_errors, dtype=float)
+        centroid = np.mean(X_arr, axis=0)
+        for i in range(n_samples):
+            x_i = X_arr[i, :]
+            topo_distances[i] = np.linalg.norm(x_i - centroid)
+            loo_mean = (np.sum(X_arr, axis=0) - x_i) / (n_samples - 1)
+            recon_errors[i] = np.mean((x_i - loo_mean) ** 2)
 
     # 3. MinMax normalization (cohort-relative)
-    scaler = MinMaxScaler()
-    norm_isolation = scaler.fit_transform(psn_isolation.reshape(-1, 1)).flatten()
-    norm_recon     = scaler.fit_transform(recon_errors.reshape(-1, 1)).flatten()
+    scaler_i = MinMaxScaler()
+    scaler_t = MinMaxScaler()
+    scaler_r = MinMaxScaler()
 
-    # 4. CUS (equal weighting)
-    cus = 0.5 * norm_isolation + 0.5 * norm_recon
+    norm_isolation = scaler_i.fit_transform(psn_isolation.reshape(-1, 1)).flatten()
+    topo_norm = scaler_t.fit_transform(topo_distances.reshape(-1, 1)).flatten()
+    recon_norm = scaler_r.fit_transform(recon_errors.reshape(-1, 1)).flatten()
 
-    df_cus = pd.DataFrame({
-        "Patient_ID":    barcodes,
+    # 4. Composite Uniqueness Score (CUS)
+    cus = (topo_norm + recon_norm) / 2.0
+
+    # 5. Orthogonal Outlier Residual (removes 1D linear collinearity to capture 2D variance)
+    if len(topo_norm) > 2 and np.std(topo_norm) > 1e-6:
+        p_fit = np.polyfit(topo_norm, recon_norm, 1)
+        linear_pred = np.polyval(p_fit, topo_norm)
+        orthogonal_residual = recon_norm - linear_pred
+        orthogonal_residual_norm = MinMaxScaler().fit_transform(orthogonal_residual.reshape(-1, 1)).flatten()
+    else:
+        orthogonal_residual_norm = np.zeros_like(topo_norm)
+
+    # 6. 2D PCA Projection Coordinates
+    pca = PCA(n_components=2, random_state=random_state)
+    pca_coords = pca.fit_transform(X_arr)
+
+    data_dict = {
+        "Patient_ID": barcodes,
         "PSN_Isolation": norm_isolation,
-        "PCA_Recon_MSE": norm_recon,
-        "CUS":           cus,
-    })
+        "Topo_Distance_Norm": topo_norm,
+        "PCA_Recon_MSE": recon_norm,
+        "Orthogonal_Residual_Norm": orthogonal_residual_norm,
+        "CUS": cus,
+        "PC1": pca_coords[:, 0],
+        "PC2": pca_coords[:, 1],
+    }
+
+    df_cus = pd.DataFrame(data_dict)
 
     if y_subtype is not None:
         df_cus.insert(1, "Subtype", list(y_subtype))
 
     df_cus = df_cus.sort_values("CUS", ascending=False).reset_index(drop=True)
     return df_cus
+
+
+def compute_patient_similarity_matrix(
+    X: Union[pd.DataFrame, np.ndarray],
+    y_subtype: Union[pd.Series, np.ndarray, List[str]],
+    class_names: Optional[List[str]] = None,
+    barcodes: Optional[List[str]] = None,
+) -> dict:
+    """
+    Computes PAM50-ordered Patient-Patient Similarity Matrix and subtype block boundary annotations.
+
+    Parameters
+    ----------
+    X : pd.DataFrame or np.ndarray, shape (N, genes)
+        Expression matrix.
+    y_subtype : array-like, shape (N,)
+        PAM50 subtype labels for each sample.
+    class_names : list of str, optional
+        Canonical subtype ordering. Defaults to ['basal', 'her2', 'luminal_A', 'luminal_B', 'normal'].
+    barcodes : list of str, optional
+        Patient IDs.
+
+    Returns
+    -------
+    dict
+        Dictionary with keys:
+          'corr_matrix' : np.ndarray (N, N) pairwise Pearson correlation matrix ordered by subtype
+          'sorted_df' : pd.DataFrame ordered by subtype
+          'block_boundaries' : list of int indices where subtype boundaries occur
+          'block_centers' : list of float coordinates for subtype label placement
+          'subtype_counts' : pd.Series sample count per subtype
+          'y_subtype_sorted' : np.ndarray ordered subtype labels
+    """
+    if class_names is None:
+        class_names = ["basal", "her2", "luminal_A", "luminal_B", "normal"]
+
+    if isinstance(X, pd.DataFrame):
+        X_df = X.copy()
+        if barcodes is None:
+            barcodes = X.index.tolist()
+    else:
+        X_df = pd.DataFrame(X)
+        if barcodes is None:
+            barcodes = [f"Patient_{i}" for i in range(len(X_df))]
+
+    X_df["Subtype"] = list(y_subtype)
+    X_df["Patient_ID"] = list(barcodes)
+
+    feature_cols = [c for c in X_df.columns if c not in ["Patient_ID", "Subtype"]]
+
+    # Order patients grouped strictly by PAM50 subtype
+    X_df["Subtype_Cat"] = pd.Categorical(X_df["Subtype"], categories=class_names, ordered=True)
+    df_sorted = X_df.sort_values("Subtype_Cat").reset_index(drop=True)
+
+    X_sorted = df_sorted[feature_cols].to_numpy(dtype=np.float64)
+    y_subtype_sorted = df_sorted["Subtype"].values
+
+    # Pairwise Pearson correlation matrix
+    corr_pearson = np.corrcoef(X_sorted)
+    corr_pearson = np.nan_to_num(corr_pearson, nan=0.0)
+
+    # Determine block boundaries and centers
+    subtype_counts = df_sorted["Subtype"].value_counts(sort=False)
+    block_boundaries = [0]
+    block_centers = []
+    current = 0
+    for st in class_names:
+        cnt = subtype_counts.get(st, 0)
+        if cnt > 0:
+            block_centers.append(current + cnt / 2.0)
+            current += cnt
+            block_boundaries.append(current)
+
+    return {
+        "corr_matrix": corr_pearson,
+        "sorted_df": df_sorted,
+        "block_boundaries": block_boundaries,
+        "block_centers": block_centers,
+        "subtype_counts": subtype_counts,
+        "y_subtype_sorted": y_subtype_sorted,
+    }
+
 
 
 def compute_snf_psn(

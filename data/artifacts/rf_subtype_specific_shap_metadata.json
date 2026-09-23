@@ -17,7 +17,7 @@
     "normal"
   ],
   "n_classes": 5,
-  "rf_estimators": 200,
+  "rf_estimators": 500,
   "shap_method": "TreeExplainer",
   "importance_metric": "mean absolute SHAP value",
   "tree_explainer_input": "exact matrix supplied to the fitted final Random Forest estimator after any preceding pipeline transformations",

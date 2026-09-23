@@ -97,3 +97,21 @@ notebooks/SYCE1L_Biomarker_Deep_Analysis_and_Novelty_Audit.ipynb
 notebooks/TEKTIP1_Biomarker_Deep_Analysis_and_Novelty_Audit.ipynb
 notebooks/Coexpressed_Biomarker_Analysis_and_Novelty_Audit.ipynb
 OncoResolve_Data_Bundle.zip
+
+# Large data artifacts (>100MB)
+data/artifacts/CRISPRGeneEffect.parquet
+data/artifacts/mlp_shap_values.pkl
+notebooks/data/
+notebooks/results/
+
+# Temporary execution & debug scripts
+execute_*.py
+clean_*.py
+fix_*.py
+audit_*.py
+download_and_format_depmap.py
+test_*.pkl
+*.pdf.tmp
+Comparison*.pdf
+
+
