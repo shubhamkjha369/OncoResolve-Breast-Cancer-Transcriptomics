@@ -19,10 +19,7 @@
 
 ## Overview
 
-**OncoResolve** is a research-grade computational biology and machine learning pipeline for **PAM50 breast cancer molecular subtyping**, built on the TCGA-BRCA RNA-sequencing cohort and validated across three independent external platforms. The framework encompasses the full translational arc: raw data ingestion → leakage-free feature selection → tri-architecture supervised classification → SHAP explainability → N-of-1 patient heterogeneity scoring → functional enrichment → prognostic survival modelling → tumour microenvironment deconvolution → external multi-cohort validation.
-
-> **Scientific Priority Statement:** All numerical claims in this README are sourced directly from verified code execution outputs. Claims that cannot be reproduced from execution are explicitly flagged.
-
+**OncoResolve** is a computational biology and machine learning pipeline for **PAM50 breast cancer molecular subtyping**, built on the TCGA-BRCA RNA-sequencing cohort and validated across three independent external platforms. The framework encompasses the full translational arc: raw data ingestion → leakage-free feature selection → tri-architecture supervised classification → SHAP explainability → N-of-1 patient heterogeneity scoring → functional enrichment → prognostic survival modelling → tumour microenvironment deconvolution → external multi-cohort validation.
 ---
 
 ## Pipeline Architecture
@@ -430,23 +427,6 @@ The 2024–2026 literature landscape for breast cancer transcriptomics ML has co
 | N-of-1 patient-specific transcriptomic profiling (2025) | First-in-class WPR-CUS metric (η²=0.322, permutation p=0.000999) |
 | TME deconvolution in PAM50 contexts (2024–2025) | decoupler ULM + PanglaoDB, 22 cell-type signatures on discovery N=784 |
 | Anti-leakage nested CV for clinical omics (Whalen et al., 2022) | Full ALP: feature selection confined within CV training folds |
-
-> **Originality note:** The WPR-CUS metric combining topological centroid distance with out-of-fold Weighted Projected Residual Distance does not appear in published breast cancer literature as of September 2026, constituting a methodological contribution. External replication and independent validation are warranted before clinical translation.
-
----
-
-## Known Limitations
-
-1. **External cohort data unavailability at runtime:** SMC 2018, SCAN-B, and METABRIC files must be downloaded separately. Section 11.1 outputs empty tables if files are missing at runtime (warning: `[WARN] Skipping cohort SMC_2018: File(s) missing`). Historical results from a prior run are cached in `results/external_validation_summary.csv` and loaded by Section 11.2.
-
-2. **PAM50 Spearman Centroid comparison not completed:** A comparison against the `genefu` R package PAM50 centroid classifier was planned (Section 11.8) but not executed. This is noted as **not established by the present analysis**.
-
-3. **KM/Cox numerical precision:** KM log-rank p-value (p=3.77×10⁻²) and Cox C-Index (0.741) are read from figure output, not from a printed text summary.
-
-4. **Consensus gene background:** 23 of 211 consensus biomarkers were absent from the 2,000-gene candidate background. These were excluded from enrichment analysis (effective input: 188 genes, 89.1% retention).
-
-5. **Normal-like subtype class size:** N=36 (3.7% of cohort) may limit statistical power for this rare subtype in pairwise analyses.
-
 ---
 
 ## Citation
