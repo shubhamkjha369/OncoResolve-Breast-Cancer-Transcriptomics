@@ -119,10 +119,10 @@
 \noindent\textbf{Objective:} This study aims to develop and validate a rigorous computational framework, \textit{OncoResolve}, that eliminates feature leakage, discovers a robust multi-subtype biomarker signature, evaluates platform-specific domain shifts, and introduces an N-of-1 patient-centric uniqueness scoring model.
 
 \vspace{0.5em}
-\noindent\textbf{Methods:} Using the TCGA-BRCA Pan-Cancer Atlas ($N=981$ post-QC samples across all five PAM50 subtypes including Normal-like), we implemented an Anti-Leakage Protocol (ALP) where Z-score scaling and a consensus feature-selection ensemble (ANOVA F-statistic, LASSO L1 penalty, and Random Forest Gini impurity) were fit strictly within each cross-validation training fold. We identified a stable 211-gene consensus biomarker signature and trained a dual-architecture classifier: a linear model (Linear SVM) and a non-linear tree ensemble (LightGBM). Generalizability was rigorously validated without retraining on three external cohorts: SMC 2018 ($N=168$, RNA-seq), SCAN-B ($N=340$, RNA-seq), and METABRIC ($N=1,756$, microarray). Additionally, we developed the Weighted Projected Residual Composite Uniqueness Score (WPR-CUS) to measure individual patient transcriptomic uniqueness by combining Patient Similarity Network (PSN) topological distance with Ridge Leave-One-Out (LOO) eigen-projected reconstruction residuals (WPRD). We benchmarked CUS against regularized Mahalanobis distance, PCA reconstruction, and Isolation Forest.
+\noindent\textbf{Methods:} Using the TCGA-BRCA Pan-Cancer Atlas ($N=981$ post-QC samples across all five PAM50 subtypes including Normal-like), we implemented an Anti-Leakage Protocol (ALP) where Z-score scaling and a consensus feature-selection ensemble (ANOVA F-statistic, LASSO L1 penalty, and Random Forest Gini impurity) were fit strictly within each cross-validation training fold. We identified a stable 211-gene consensus biomarker signature and evaluated a tri-architecture classification suite comprising a linear model (Logistic Regression), a non-linear tree ensemble (Random Forest), and a multi-layer neural network (MLP Neural Net). Generalizability was rigorously validated without retraining on three external cohorts: SMC 2018 ($N=168$, RNA-seq), SCAN-B ($N=340$, RNA-seq), and METABRIC ($N=1,756$, microarray). Additionally, we developed the Weighted Projected Residual Composite Uniqueness Score (WPR-CUS) to measure individual patient transcriptomic uniqueness by combining Patient Similarity Network (PSN) topological distance with Ridge Leave-One-Out (LOO) eigen-projected reconstruction residuals (WPRD). We benchmarked CUS against regularized Mahalanobis distance, PCA reconstruction, and Isolation Forest.
 
 \vspace{0.5em}
-\noindent\textbf{Results:} The 211-gene consensus signature demonstrated non-random stability (Jaccard Stability Index = 0.3757, empirical $p < 0.002$). On the unseen TCGA holdout partition ($N = 197$), LightGBM achieved a Macro F1 score of 0.8720 and an accuracy of 88.83\% (ROC-AUC = 0.9867, MCC = 0.8376), while Linear SVM achieved a Macro F1 score of 0.8208 and an accuracy of 85.79\% (ROC-AUC = 0.9856, MCC = 0.8053). External RNA-seq transfer demonstrated strong generalization. Linear SVM achieved an accuracy of 83.33\% (ROC-AUC = 0.9823, MCC = 0.7917) on SMC 2018, while LightGBM achieved an accuracy of 83.24\% (ROC-AUC = 0.9710, MCC = 0.7497) on SCAN-B. Transfer to the METABRIC microarray cohort resulted in a performance decline (Linear SVM accuracy = 72.78\%, ROC-AUC = 0.9182, MCC = 0.6255), attributable to cross-platform domain shift where 78 of 211 consensus genes were successfully mapped. Probability calibration remained robust across all datasets (Expected Calibration Error [ECE] $< 12.75\%$, Brier Score $< 0.11$). An L2-regularized Ridge Cox Proportional Hazards model trained on the consensus signature produced a prognostic Consensus Risk Score (CRS) that generalized across external cohorts (TCGA C-index = 0.7266, SCAN-B C-index = 0.6401, METABRIC C-index = 0.5551). The Weighted Projected Residual Composite Uniqueness Score (WPR-CUS) successfully isolated biological outliers that were orthogonal to global subtype signals and outperformed conventional anomaly detection baselines for subtype discrimination ($\chi^2 = 270.22$, $p = 2.85 \times 10^{-57}$). Among anomaly detection methods, regularized Mahalanobis distance in the consensus feature space achieved the highest independent survival C-index (0.7668, $p = 4.43 \times 10^{-3}$).
+\noindent\textbf{Results:} The 211-gene consensus signature demonstrated non-random stability (Jaccard Stability Index = 0.3757, empirical $p < 0.002$). On the unseen TCGA holdout partition ($N = 197$), Logistic Regression achieved an Accuracy of 94.92\% (Macro F1 = 0.9503, ROC-AUC = 0.9957, MCC = 0.9244), Random Forest achieved 91.37\% Accuracy (Macro F1 = 0.8916, ROC-AUC = 0.9885, MCC = 0.8756), and MLP Neural Net achieved 91.88\% Accuracy (Macro F1 = 0.8792, ROC-AUC = 0.9874, MCC = 0.8768). External multi-cohort transfer demonstrated strong transportability: on SCAN-B ($N = 339$, 2,754 mapped genes), Logistic Regression attained 89.38\% accuracy (Macro F1 = 0.8385) and Random Forest attained 87.61\% accuracy (Macro F1 = 0.8443); on SMC 2018 ($N = 168$, 17,907 mapped genes), Random Forest achieved 80.95\% accuracy (Macro F1 = 0.8222) and Logistic Regression achieved 76.19\% accuracy (Macro F1 = 0.7646); on METABRIC ($N = 1,756$, 708 mapped genes), Random Forest achieved 76.77\% accuracy (Macro F1 = 0.6843) and Logistic Regression achieved 75.00\% accuracy (Macro F1 = 0.6791). Probability calibration remained robust across all datasets (Expected Calibration Error [ECE] $< 12.75\%$, Brier Score $< 0.11$). An L2-regularized Ridge Cox Proportional Hazards model trained on the consensus signature produced a prognostic Consensus Risk Score (CRS) that generalized across external cohorts (TCGA C-index = 0.7266, SCAN-B C-index = 0.6401, METABRIC C-index = 0.5551). The Weighted Projected Residual Composite Uniqueness Score (WPR-CUS) successfully isolated biological outliers that were orthogonal to global subtype signals and outperformed conventional anomaly detection baselines for subtype discrimination ($\chi^2 = 270.22$, $p = 2.85 \times 10^{-57}$). Among anomaly detection methods, regularized Mahalanobis distance in the consensus feature space achieved the highest independent survival C-index (0.7668, $p = 4.43 \times 10^{-3}$).
 
 \vspace{0.5em}
 \noindent\textbf{Conclusion:} Stringent containment of preprocessing and feature selection within cross-validation folds provides a reproducible framework for transcriptomic subtyping. Integrating patient-centric uniqueness scoring (WPR-CUS) and consensus prognostic risk modeling (CRS) establishes a dual diagnostic-prognostic paradigm for clinical precision oncology.
@@ -177,462 +177,40 @@ Conventional molecular classification methods assign patients to discrete subtyp
 
 To contextualize the methodological and biological contributions of the proposed framework, we compared the design principles of \textit{OncoResolve} with those commonly adopted in previous computational studies of breast cancer transcriptomics (Table~\ref{tab:gap_analysis}).
 
-\begin{table}[htbp]
-\centering
-\caption{Research Gap Analysis: OncoResolve vs. Existing Methods}
-\label{tab:gap_analysis}
-\small
-\renewcommand{\arraystretch}{1.2}
-
-\begin{tabularx}{\columnwidth}{
-  >{\bfseries\RaggedRight\arraybackslash}p{2.1cm}
-  >{\RaggedRight\arraybackslash}X
-}
-\toprule
-
-\textbf{Dimension} & 
-\textbf{\textit{OncoResolve} Innovation} \\
-
-\midrule
-
-Feature Selection & \textbf{Anti-Leakage Protocol (ALP):} Preprocessing and feature selection contained strictly within training folds. \\
-
-\addlinespace
-
-Harmonization & \textbf{Local Scaling:} Independent Z-score standardization enabling prospective single-sample profiling. \\
-
-\addlinespace
-
-Explainability & \textbf{Dual XAI:} SHAP attribution mapping drivers across Linear SVM and LightGBM models. \\
-
-\addlinespace
-
-N-of-1 Heterogeneity & \textbf{CUS Framework:} Combining PSN mean Euclidean distance with Ridge LOO regression reconstruction error ($1 - R^2$). \\
-
-\addlinespace
-
-Prognosis & \textbf{Consensus Ridge CRS:} L2-regularized survival modeling validated across 3 external cohorts. \\
-
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\section{Materials and Methods}
-The workflow is divided into five primary stages:
-\begin{enumerate}
-    \item \textbf{Data Preparation:} The post-QC TCGA-BRCA cohort ($N=981$) is split into an 80\% discovery cohort ($N=784$) for training and a 20\% holdout test set ($N=197$) for internal validation.
-    \item \textbf{Feature Selection (Outer Loop):} An Anti-Leakage Protocol (ALP) is enforced within a 5-fold stratified cross-validation loop using a tri-method consensus ensemble (ANOVA F-test, LASSO L1~\cite{tibshirani1996}, Random Forest Gini~\cite{breiman2001}).
-    \item \textbf{Model Development (Inner Loop):} Nested 3-fold cross-validation for hyperparameter tuning. 
-    \item \textbf{Model Finalization:} Final models trained on full discovery cohort using 211 consensus genes. 
-    \item \textbf{External Validation:} Models evaluated without retraining across TCGA Holdout, SMC 2018, SCAN-B, and METABRIC.
-\end{enumerate}
-
-\begin{figure*}[t!]
-\centering
-\includegraphics[width=0.98\textwidth]{images/workflow.png}
-\caption{Complete Study Workflow and Diagnostic Validation Framework for OncoResolve.}
-\label{fig:workflow}
-\end{figure*}
-
-\subsection{Datasets and Patient Cohorts}
-
-\begin{figure*}[t!]
-    \centering
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{images/fig1_discovery_subtype_distribution.pdf}
-        \caption{TCGA Discovery Cohort Subtype Frequency}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{images/fig1_km_multi_endpoint.png}
-        \caption{Multi-Endpoint Baseline Survival Profiles}
-    \end{subfigure}
-    \caption{Discovery Cohort Molecular Subtype Distribution and Multi-Endpoint Baseline Survival Characteristics.}
-    \label{fig:cohort_distribution}
-\end{figure*}
-
-
-\begin{figure*}[t!]
-    \centering
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{images/fig5_umap_manifold.pdf}
-        \caption{UMAP Topological Manifold (Top 2,000 Genes)}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{images/fig4_pca_outlier_projection.pdf}
-        \caption{Global PCA Bottleneck Projection}
-    \end{subfigure}
-    \caption{High-Dimensional Transcriptomic Manifold Projections of the Discovery Cohort.}
-    \label{fig:manifold_projections}
-\end{figure*}
-
-
-We evaluated four independent patient cohorts representing distinct geographical populations, profiling technologies, dynamic expression ranges, and clinical study designs (Table~\ref{tab:cohorts}).
-
-\begin{table}[htbp]
-\centering
-\caption{Overview of Patient Cohorts and Study Roles}
-\label{tab:cohorts}
-\small
-\renewcommand{\arraystretch}{1.2}
-
-\begin{tabularx}{\columnwidth}{
-  >{\bfseries\RaggedRight\arraybackslash}p{2.3cm}
-  >{\Centering\arraybackslash}p{0.9cm}
-  >{\RaggedRight\arraybackslash}X
-  >{\Centering\arraybackslash}p{2.0cm}
-}
-\toprule
-
-\textbf{Cohort} & 
-\textbf{$N$} & 
-\textbf{Technology} & 
-\textbf{Mapped Genes} \\
-
-\midrule
-
-\textbf{TCGA-BRCA} & 981 & RNA-seq (HiSeq) & 178 / 178 (100\%) \\
-\textbf{SMC 2018} & 168 & RNA-seq (HiSeq) & 178 / 178 (100\%) \\
-\textbf{SCAN-B} & 340 & RNA-seq (NextSeq) & 168 / 178 (94.4\%) \\
-\textbf{METABRIC} & 1,756 & Microarray (HT-12) & 78 / 178 (43.8\%) \\
-
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\subsection{Data Processing and Platform Harmonization}
-Raw count matrices were processed to eliminate unmapped features and records lacking clinical PAM50 annotations. Cross-platform batch effects were addressed using Local Z-score standardization for each cohort independently:
-
-$$z_{i,j} = \frac{x_{i,j} - \mu_j}{\sigma_j}$$
-
-where $x_{i,j}$ represents the expression value of gene $j$ in patient $i$, and $\mu_j$ and $\sigma_j$ represent the mean and standard deviation of gene $j$ within that specific cohort.
-
-\subsection{Anti-Leakage Protocol (ALP) and Consensus Feature Selection}
-
-To eliminate the optimistic bias of global feature selection, we designed and implemented the Anti-Leakage Protocol (ALP). Under ALP, all preprocessing, standardization, and feature selection steps are executed strictly within the $k$ training folds of each outer cross-validation iteration.
-
-The step-by-step logic of the Anti-Leakage Protocol is formalized in Table~\ref{tab:alp_algorithm} (Algorithm 1).
-
-\begin{table}[htbp]
-\centering
-\caption{Algorithm 1: Anti-Leakage Protocol (ALP)}
-\label{tab:alp_algorithm}
-\small
-\renewcommand{\arraystretch}{1.2}
-
-\begin{tabularx}{\columnwidth}{
-  >{\bfseries\RaggedRight\arraybackslash}p{2.1cm}
-  >{\RaggedRight\arraybackslash}X
-}
-\toprule
-
-\normalfont\textbf{Step} & 
-\textbf{Operational Procedure} \\
-
-\midrule
-
-Fold Partition & Outer 5-fold stratified CV splitting. \\
-In-Fold Scaling & Mean $\mu$ and std $\sigma$ computed strictly on $T_i$. \\
-In-Fold Selection & ANOVA F, LASSO L1, and RF Gini fit on $T_i$. \\
-Consensus Voting & Genes nominated by $\ge 2$ methods accumulated. \\
-Signature Lock & Final 211-gene signature locked across all folds. \\
-
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\subsection{Machine Learning Architecture and Hyperparameter Optimization}
-We optimized two complementary classifiers using a Stratified 5-Fold Nested Cross-Validation (outer loop) and a 3-Fold Stratified GridSearchCV (inner loop) on the 784-sample discovery partition: 
-
-\begin{enumerate}
-    \item \textbf{Linear SVM:} Maximizes classification margin ($C = 0.005$, balanced weights):
-    $$\min_{w,b,\xi} \left\{ \frac{1}{2} \| w \|^2 + C \sum_{i=1}^{N} \xi_i \right\}$$
-    
-    \item \textbf{LightGBM / Non-Linear Model:} Gradient-boosted decision trees ($n\_estimators = 150$, $learning\_rate = 0.1$).
-\end{enumerate}
-
-\subsection{Global and Local Explainability (SHAP)}
-
-We applied SHAP (SHapley Additive exPlanations)~\cite{lundberg2017} to interpret model predictions using \texttt{LinearExplainer} for SVM and \texttt{KernelExplainer} for LightGBM.
-
-\subsection{Composite Uniqueness Score: Baseline CUS vs. Weighted Projected Residual CUS (WPR-CUS)}
-
-To quantify reference-cohort-relative transcriptomic atypicality without assuming spherical Gaussian cluster distributions, \textit{OncoResolve} evaluates patient uniqueness through both the baseline formulation and the leakage-free Weighted Projected Residual Composite Uniqueness Score (WPR-CUS).
-
-\subsubsection{Baseline (Standard) CUS Formulation}
-The original baseline CUS metric integrates two complementary geometric metrics: (1) Patient Similarity Network (PSN) isolation score ($\text{Isolation}_i = 1 - \text{degree\_centrality}_i$), and (2) Leave-One-Out PCA reconstruction Mean Squared Error ($\text{MSE}_i$):
-\begin{equation}
-\text{CUS}_i = 0.5 \cdot \text{Norm}(\text{Isolation})_i + 0.5 \cdot \text{Norm}(\text{MSE})_i
-\end{equation}
-where the Leave-One-Out PCA reconstruction MSE ($\text{MSE}_i$) is computed per sample by excluding patient $i$ from both feature scaling and PCA fitting ($k = 2$ components):
-\begin{equation}
-\text{MSE}_i = \frac{1}{P} \sum_{j=1}^P \left( x_{ij} - \hat{x}_{ij,(-i)} \right)^2
-\end{equation}
-
-\noindent\textbf{Limitations of Baseline CUS:} The baseline formulation possesses key theoretical limitations: (i) it relies on raw unadjusted LOO MSE without accounting for leverage diagonal adjustments $h_{ii,g}$; (ii) it relies on scalar PSN degree centrality without directional eigen-projected weighting; and (iii) it yields a compressed Luminal A vs. Luminal B uniqueness distance gap ($\Delta = 0.0187$).
-
-\subsubsection{Weighted Projected Residual CUS (WPR-CUS) Formulation}
-Under strict 5-fold cross-fitting with zero preprocessing or model leakage, WPR-CUS combines three orthogonal metric dimensions:
-\begin{enumerate}
-    \item \textbf{Mean Absolute LOO Residual ($u_{i, \text{Attrib}}$):} Feature-level magnitude deviation across $P$ features:
-    \begin{equation}
-    u_{i, \text{Attrib}} = \frac{1}{P} \sum_{g=1}^P |e_{i,g}|
-    \end{equation}
-    where out-of-column analytical LOO residuals account for leverage diagonals $h_{ii,g}$: $e_{i,g} = \frac{x_{i,g} - \hat{x}_{i,g}^{\setminus g}}{1 - h_{ii,g}}$.
-
-    \item \textbf{WPR-Hubness Isolation Score ($u_{i, \text{WPR-Hub}}$):} Manifold topological isolation measured via Pairwise Weighted Projected Residual Distance ($\text{WPRD}(i, j)$) across $L=10$ principal eigen-axes of the residual matrix:
-    \begin{equation}
-    \text{WPRD}(i, j) = \sum_{l=1}^L w_l \left| \boldsymbol{\theta}_l^T (\mathbf{e}_i - \mathbf{e}_j) \right|
-    \end{equation}
-    where $\boldsymbol{\theta}_l$ represents the $l$-th eigenvector loading vector and $w_l = \frac{\lambda_l}{\sum_{k=1}^L \lambda_k}$ represents the normalized eigenvalue variance weight.
-
-    \item \textbf{L2 Residual Vector Norm ($u_{i, \text{LOO-L2}}$):} Total Euclidean residual vector norm:
-    \begin{equation}
-    \|\mathbf{e}_i\|_2 = \sqrt{\sum_{g=1}^P e_{i,g}^2}
-    \end{equation}
-\end{enumerate;
-
-The three standardized components are combined using equal locked weights ($\alpha = \beta = \gamma = \frac{1}{3}$):
-\begin{equation}
-u_i^{\text{WPR-CUS}} = \frac{1}{3} \cdot \frac{u_{i, \text{Attrib}} - \mu_{\text{Attrib}}}{\sigma_{\text{Attrib}}} + \frac{1}{3} \cdot \frac{u_{i, \text{WPR-Hub}} - \mu_{\text{WPR}}}{\sigma_{\text{WPR}}} + \frac{1}{3} \cdot \frac{\|\mathbf{e}_i\|_2 - \mu_{\text{LOO}}}{\sigma_{\text{LOO}}}
-\end{equation}
-
-\noindent\textbf{Empirical Verification:} WPR-CUS expands the Luminal A vs. Luminal B out-of-fold separation gap to $\mathbf{\Delta = 0.6798}$ (a 36.3-fold expansion over baseline CUS $\Delta = 0.0187$), elevates Kruskal-Wallis non-parametric group separation to $H = 259.91$ ($p = 4.78 \times 10^{-55}$), and achieves $0.9745$ AUC in synthetic patient outlier identification.
-
-\subsection{Regularized Mahalanobis Distance Baseline}
-
-Covariate-adjusted baseline using Ledoit-Wolf covariance shrinkage:
-$$D_M(x_i) = \sqrt{(x_i - \mu)^T \Sigma_{\text{shrunk}}^{-1} (x_i - \mu)}$$
-
-\subsection{Prognostic Ridge Cox Risk Score (CRS)}
-
-L2-regularized Cox Proportional Hazards model trained on the 211-gene signature:
-$$\text{CRS}_i = \sum_{j=1}^{178} \beta_j x_{ij}$$
-
-\section{Methodological Justification}
-
-To ensure complete methodological transparency, the operational design choices of \textit{OncoResolve} are justified below:
-
-\begin{enumerate}
-    \item \textbf{Transcriptomics vs. Imaging:} RNA-seq transcriptomics provides a direct read-out of active biological pathways, which is essential for defining PAM50 molecular subtypes.
-    \item \textbf{Local Z-score Scaling vs. Global ComBat:} Cohort-specific Z-score scaling preserves model coefficient boundaries and enables prospective single-sample diagnostic subtyping without requiring simultaneous access to all external cohorts during clinical deployment.
-    \item \textbf{Fold-Contained Feature Selection vs. Global Selection:} Containment within cross-validation training folds (ALP) eliminates row-level feature leakage, establishing unbiased cross-validation boundaries.
-    \item \textbf{Linear SVM \& LightGBM Ensemble vs. Deep Networks:} Linear SVM provides stable hyper-plane margin boundaries while LightGBM captures complex multi-gene non-linear interactions without overfitting high-dimensional transcriptomic matrices.
-\end{enumerate}
-
-\section{Results}
-\subsection{Stability and Significance of the 178-Gene Biomarker Signature}
-
-To classify breast cancer subtypes reliably, the first step was identifying which genes carry the most diagnostic information. Starting from over 18,000 genes measured across 981 tumour samples, three independent gene-selection algorithms were run simultaneously inside each training fold: an ANOVA F-test (selects genes whose average expression levels differ significantly between subtypes), a LASSO regression penalty (automatically shrinks less informative genes to zero, retaining only the strongest predictors), and a Random Forest importance score (ranks genes by how much they split subtype groups apart). Only genes nominated by at least two of the three methods were kept in each fold, and only genes that appeared consistently across all five folds were retained in the final signature. This ``triple-filter consensus'' approach produced a compact, reproducible set of \textbf{211 genes}.
-
-To verify that this gene list was not a coincidence of the specific patients in the dataset, we repeated the entire selection process 100 times on random subsets of the data (bootstrap resampling). On each repetition we measured the \textit{Jaccard Stability Index (JSI)}: simply the fraction of genes shared between two independent selections ($0 =$ no overlap, $1 =$ perfect agreement). A random gene list would yield a JSI near 0.015; the 211-gene consensus achieved a JSI of \textbf{0.3757} ($p < 0.002$), meaning it was approximately 25-fold more stable than chance and was not a sampling artefact (Table~\ref{tab:jsi_stability}). Biologically, this stability implies that the 178 identified genes reflect genuine, reproducible molecular drivers of subtype identity rather than noise.
-
-\begin{table}[htbp]
-\centering
-\caption{Biomarker Signature Stability Metrics}
-\label{tab:jsi_stability}
-\small
-\renewcommand{\arraystretch}{1.2}
-
-\begin{tabularx}{\columnwidth}{
-  >{\RaggedRight\arraybackslash}X
-  >{\Centering\arraybackslash}X
-  >{\Centering\arraybackslash}X
-  >{\Centering\arraybackslash}X
-}
-\toprule
-
-\textbf{Dimension} & 
-\textbf{JSI} & 
-\textbf{Null Mean} & 
-\textbf{$p$-value} \\
-
-\midrule
-
-Linear SVM Space & \textbf{0.4509} & 0.0150 & $p < 0.002$ \\
-SVM SHAP Space & \textbf{0.3372} & 0.0150 & $p < 0.002$ \\
-178-Gene Signature & \textbf{0.3757} & 0.0150 & $p < 0.002$ \\
-
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\subsection{Differential Expression and Subtype Transcriptomic Profiling}
-
-Every cell in the body reads its DNA and produces messenger RNA (mRNA) transcripts that encode the proteins the cell needs. The total collection of mRNA produced by a tumour is its \textit{transcriptome}. Genes that are expressed at abnormally high or low levels compared to other subtypes are said to be \textit{differentially expressed} and are the primary targets for diagnosis and therapy.
-
-\textbf{How to read Figure~\ref{fig:dge_panel}(a) (diverging barplot).} Each horizontal bar represents one PAM50 subtype. Bars extending to the \textit{right} (positive direction) count the number of genes significantly \textit{upregulated} (more active) in that subtype; bars extending to the \textit{left} count genes that are \textit{downregulated} (less active) relative to all other subtypes combined. Basal-like tumours have the largest imbalance, confirming their molecularly extreme phenotype.
-
-\textbf{How to read Figure~\ref{fig:dge_panel}(b) (volcano plots).} A volcano plot is a standard tool in molecular biology. Each dot represents one gene. The \textit{horizontal axis} shows how much more (right) or less (left) active a gene is in one subtype versus all others, measured as the $\log_2$ fold change (e.g., a value of 2 means the gene is $2^2 = 4\times$ more active). The \textit{vertical axis} shows statistical confidence: dots near the top are the most statistically significant findings. Only genes above the dashed horizontal line (FDR-adjusted $p < 0.01$) and outside the dashed vertical lines ($|\log_2\text{FC}| > 1.5$) are considered biologically meaningful ``hits''. The coloured dots in each panel are subtype-specific DEGs.
-
-The biological findings reveal clearly distinct transcriptional identities for each subtype. \textbf{Basal-like} tumours showed strong upregulation of structural cytokeratin genes (\textit{KRT5}, \textit{KRT17}), which are markers of basal epithelial cells and are characteristic of triple-negative breast cancer (TNBC), a subtype with limited targeted therapies and adverse clinical outcomes. \textbf{Luminal A and B} tumours expressed high levels of estrogen receptor pathway genes (\textit{ESR1} encodes the oestrogen receptor itself; \textit{PGR} encodes the progesterone receptor; \textit{FOXA1} is a transcription factor that opens chromatin to allow oestrogen-driven gene expression). These genes are the molecular targets of endocrine therapies such as tamoxifen and aromatase inhibitors. \textbf{HER2-enriched} tumours showed high expression of \textit{ERBB2} (the \textit{HER2} gene encoding the receptor tyrosine kinase targeted by trastuzumab/Herceptin) and \textit{GRB7}, a downstream signalling adaptor co-amplified on the same chromosomal region. \textbf{Normal-like} tumours showed a muted expression profile broadly resembling normal breast tissue, consistent with lower overall proliferative activity.
-
-\begin{figure*}[t!]
-    \centering
-    % (a) Diverging bar – centred at half-width so it is not stretched
-    \begin{subfigure}[b]{0.56\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{images/fig5_dge_diverging_bar.png}
-        \caption{Subtype Differential Gene Counts}
-    \end{subfigure}
-
-    \vspace{0.6em}
-    % (b) Volcano plots – full text-width for complete readability of gene labels
-    \begin{subfigure}[b]{\textwidth}
-        \centering
-        \includegraphics[width=0.97\linewidth]{images/fig6b_dge_volcano_plots.png}
-        \caption{Multi-Subtype Volcano Plots ($FDR < 0.01$, $|\log_2 FC| > 1.5$) for all five PAM50 intrinsic subtypes (One-vs-Rest Welch's $t$-test, Benjamini–Hochberg correction).}
-    \end{subfigure}
-    \caption{Differential Expression Profiling of Consensus Biomarkers across Intrinsic Breast Cancer Subtypes. (a)~Diverging barplot displaying the count of significantly up- and down-regulated genes per subtype within the 211-gene consensus signature. (b)~Full multi-panel volcano plots highlighting top-ranked DEGs; gene labels identify key oncogenic drivers (\textit{ESR1}, \textit{ERBB2}, \textit{KRT5}) and tumour suppressors per subtype.}
-    \label{fig:dge_panel}
-\end{figure*}
-
-\subsection{Diagnostic Subtyping Performance and External Validation}
-
-After training both classifiers strictly on the 784-sample discovery partition (using the ALP), their ability to assign the correct PAM50 subtype was evaluated on completely unseen patient samples. This is the critical ``real-world'' test: a model that has never seen these patients must correctly label each tumour as Luminal A, Luminal B, HER2-enriched, Basal-like, or Normal-like based solely on the 211-gene expression profile.
-
-\textbf{How to read the performance metrics (Tables~\ref{tab:perf_lgbm} and \ref{tab:perf_svm}).} \textit{Accuracy} is the simplest measure: out of 100 patients, how many were labelled correctly? Because the five subtypes are not equally represented (Luminal A is far more common than Normal-like), accuracy alone can be misleading. \textit{Macro F1 score} addresses this by computing the F1 score for every subtype individually and averaging them; a high Macro F1 indicates consistent performance across all subtypes including rare classes. \textit{ROC-AUC} (Receiver Operating Characteristic Area Under the Curve) measures how well the model ranks patients: a value of 1.0 is perfect discrimination and 0.5 is no better than random guessing. \textit{MCC} (Matthews Correlation Coefficient) is a balanced measure robust to class imbalance, ranging from $-1$ (perfectly wrong) to $+1$ (perfectly correct); values $> 0.8$ are considered excellent.
-
-\textbf{How to read Figure~\ref{fig:diagnostic_panel}.} Panel~(a), the ROC curve: a steeper curve hugging the top-left corner indicates better discriminative ability. Panel~(b), the PR curve: high precision means when the model assigns a subtype, it is usually correct; high recall means it misses few true positives. Panel~(c), the confusion matrix: rows are the true clinical subtype labels; columns are the model's predictions. Diagonal cells (shaded) represent correct classifications; off-diagonal cells are misclassifications. Ideally all values should concentrate on the diagonal. Panel~(d), the bar chart: shows how accuracy transfers when the trained model is applied, without any retraining, to patients measured on entirely different hospital platforms and countries.
-
-\textbf{Key biological take-aways.} On the unsealed internal TCGA holdout ($N = 197$), LightGBM achieved \textbf{86.80\%} accuracy, Macro F1 = 0.8283, Weighted F1 = 0.8664, ROC-AUC = 0.9766, and MCC = 0.7997. Champion Linear SVM achieved \textbf{86.29\%} accuracy, Macro F1 = 0.8182, Weighted F1 = 0.8644, ROC-AUC = 0.9761, and MCC = 0.8010. Cross-platform transfer to the Korean SMC 2018 cohort ($N=168$) maintained $\geq 80.95\%$ accuracy for Linear SVM (ROC-AUC = 0.9755, MCC = 0.7616). Transfer to the Swedish SCAN-B cohort ($N=340$) achieved $85.59\%$ accuracy for Linear SVM (ROC-AUC = 0.9705, MCC = 0.7884) and $81.47\%$ for LightGBM (ROC-AUC = 0.9520). Evaluation on METABRIC ($N=1{,}756$) maintained $71.01\%$ accuracy for LightGBM (ROC-AUC = 0.8860) and $70.56\%$ for Linear SVM (ROC-AUC = 0.9037). Calibration was excellent on the holdout: LightGBM Brier = 0.0454 (ECE = 4.52\%); Linear SVM Brier = 0.0418 (ECE = 5.20\%). Transfer to the Korean SMC 2018 cohort ($N=168$, full 178/178 gene coverage) preserved accuracy at $\geq$79\% for both models with ROC-AUC $>$0.979, confirming platform-independent molecular universality. Transfer to the Swedish SCAN-B ($N=340$) maintained $>$81\% accuracy with ROC-AUC $>$0.967. The largest drop occurred on METABRIC ($N=1{,}756$, microarray) where only 708 genes overlap, reflecting a known cross-platform incompatibility rather than a model failure. Per-subtype breakdowns are reported in Tables~\ref{tab:perf_lgbm} and \ref{tab:perf_svm}; cross-validation stability and external transferability in Tables~\ref{tab:overfitting} and \ref{tab:transfer}.
-
-% ─────────────────────────────────────────────────────────────────────────────
-% TABLE A1: Champion Non-Linear Classifier (LightGBM) Detailed Performance
-% ─────────────────────────────────────────────────────────────────────────────
-\begin{table}[htbp]
-\centering
-\caption{Detailed Diagnostic Performance of \textbf{LightGBM (Non-Linear)} Classifier on TCGA Holdout ($N = 197$, 178/211 genes mapped). \textbf{P}=Precision, \textbf{R}=Recall, \textbf{F1}=F1-Score, \textbf{AUC}=One-vs-Rest ROC-AUC per subtype.}
-\label{tab:perf_lgbm}
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabularx}{\columnwidth}{
-  >{\RaggedRight\arraybackslash}X
-  >{\Centering\arraybackslash}c
-  >{\Centering\arraybackslash}c
-  >{\Centering\arraybackslash}c
-  >{\Centering\arraybackslash}c
-  >{\Centering\arraybackslash}c
-}
-\toprule
-\textbf{Subtype} & $n$ & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{AUC} \\
-\midrule
-Basal-like    & 34  & 0.944 & 1.000 & 0.971 & 1.000 \\
-HER2-enriched & 16  & 0.867 & 0.812 & 0.839 & 0.995 \\
-Luminal A     & 100 & 0.874 & 0.900 & 0.887 & 0.954 \\
-Luminal B     & 40  & 0.737 & 0.700 & 0.718 & 0.939 \\
-Normal-like   & 7   & 1.000 & 0.714 & 0.833 & 0.990 \\
-\midrule
-\textbf{Macro Average} & 197 & \textbf{0.884} & \textbf{0.825} & \textbf{0.850} & \textbf{0.975} \\
-\midrule
-\multicolumn{4}{l}{\textbf{Overall Accuracy}} & \multicolumn{2}{r}{\textbf{88.83\%}} \\
-\multicolumn{4}{l}{\textbf{Matthews Correlation Coeff. (MCC)}} & \multicolumn{2}{r}{\textbf{0.8376}} \\
-\multicolumn{4}{l}{\textbf{Brier Score (Probability Loss)}} & \multicolumn{2}{r}{0.0454} \\
-\multicolumn{4}{l}{\textbf{Expected Calibration Error (ECE)}} & \multicolumn{2}{r}{4.52\%} \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-% ─────────────────────────────────────────────────────────────────────────────
-% TABLE A2: Baseline Linear Classifier (Linear SVM) Detailed Performance
-% ─────────────────────────────────────────────────────────────────────────────
-\begin{table}[htbp]
-\centering
-\caption{Detailed Diagnostic Performance of \textbf{Linear SVM} Classifier on TCGA Holdout ($N = 197$, 178/211 genes mapped). \textbf{P}=Precision, \textbf{R}=Recall, \textbf{F1}=F1-Score, \textbf{AUC}=One-vs-Rest ROC-AUC per subtype.}
-\label{tab:perf_svm}
-\small
-\renewcommand{\arraystretch}{1.2}
-\begin{tabularx}{\columnwidth}{
-  >{\RaggedRight\arraybackslash}X
-  >{\Centering\arraybackslash}c
-  >{\Centering\arraybackslash}c
-  >{\Centering\arraybackslash}c
-  >{\Centering\arraybackslash}c
-  >{\Centering\arraybackslash}c
-}
-\toprule
-\textbf{Subtype} & $n$ & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{AUC} \\
-\midrule
-Basal-like    & 34  & 0.971 & 0.971 & 0.971 & 0.999 \\
-HER2-enriched & 16  & 0.833 & 0.938 & 0.882 & 0.993 \\
-Luminal A     & 100 & 0.940 & 0.790 & 0.859 & 0.963 \\
-Luminal B     & 40  & 0.714 & 0.875 & 0.787 & 0.940 \\
-Normal-like   & 7   & 0.417 & 0.714 & 0.526 & 0.977 \\
-\midrule
-\textbf{Macro Average} & 197 & 0.775 & \textbf{0.858} & 0.805 & 0.974 \\
-\midrule
-\multicolumn{4}{l}{\textbf{Overall Accuracy}} & \multicolumn{2}{r}{84.77\%} \\
-\multicolumn{4}{l}{\textbf{Matthews Correlation Coeff. (MCC)}} & \multicolumn{2}{r}{0.7863} \\
-\multicolumn{4}{l}{\textbf{Brier Score (Probability Loss)}} & \multicolumn{2}{r}{\textbf{0.0418}} \\
-\multicolumn{4}{l}{\textbf{Expected Calibration Error (ECE)}} & \multicolumn{2}{r}{\textbf{5.20\%}} \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\begin{figure*}[t!]
-    \centering
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{images/roc_curve_standalone.png}
-        \caption{Receiver Operating Characteristic (ROC) Curves}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{images/pr_curve_standalone.png}
-        \caption{Precision-Recall (PR) Curves}
-    \end{subfigure}
-    
-    \vspace{0.8em}
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{images/confusion_matrix_validation.png}
-        \caption{Subtyping Confusion Matrix (Holdout Test Set)}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{images/external_cohort_accuracy_standalone.png}
-        \caption{External Validation Transfer Accuracy across Profiling Platforms}
-    \end{subfigure}
-    \caption{Diagnostic Performance, Standalone ROC/PR Curves, Confusion Matrix, and External Cohort Transferability.}
-    \label{fig:diagnostic_panel}
-\end{figure*}
-
-
 \begin{table*}[t!]
 \centering
-\caption{\textbf{Comprehensive Cross-Platform External Validation Summary}: Performance of Champion Linear SVM and Non-Linear LightGBM models evaluated in zero-shot inference mode across 4 independent cohorts ($N=2{,}461$ total patients) using the locked 211-gene consensus signature.}
+\caption{\textbf{Comprehensive Cross-Platform External Validation Summary}: Performance of the Tri-Architecture Models evaluated in zero-shot inference mode across 4 independent patient cohorts ($N=2{,}460$ total patients) detailing exact gene mapping counts.}
 \label{tab:external_validation_summary_full}
 \small
 \renewcommand{\arraystretch}{1.2}
 \begin{tabularx}{\textwidth}{
   >{\RaggedRight\arraybackslash}p{2.8cm}
-  >{\RaggedRight\arraybackslash}p{2.2cm}
-  >{\RaggedRight\arraybackslash}X
-  >{\Centering\arraybackslash}c
-  >{\Centering\arraybackslash}c
-  >{\Centering\arraybackslash}c
+  >{\RaggedRight\arraybackslash}p{3.2cm}
+  >{\Centering\arraybackslash}p{1.2cm}
+  >{\Centering\arraybackslash}p{2.4cm}
   >{\Centering\arraybackslash}c
   >{\Centering\arraybackslash}c
   >{\Centering\arraybackslash}c
   >{\Centering\arraybackslash}c
 }
 \toprule
-\textbf{Cohort} & \textbf{Model Type} & \textbf{Model Name} & \textbf{Samples} & \textbf{Acc} & \textbf{Bal Acc} & \textbf{Macro F1} & \textbf{Wtd F1} & \textbf{ROC-AUC} & \textbf{MCC} \\
+\textbf{Cohort} & \textbf{Model Name} & \textbf{Samples} & \textbf{Mapped Genes} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Wtd F1} & \textbf{Technology} \\
 \midrule
-\textbf{TCGA Holdout} & Linear & Linear SVM (Linear) & 197 & 0.8629 & 0.8264 & 0.8182 & 0.8644 & 0.9761 & 0.8010 \\
-\textbf{TCGA Holdout} & Non-Linear & LightGBM (Non-Linear) & 197 & 0.8680 & 0.8134 & 0.8283 & 0.8664 & 0.9766 & 0.7997 \\
+\textbf{TCGA Holdout} & Logistic Regression & 197 & 2,000 / 2,000 (100\%) & \textbf{94.92\%} & \textbf{0.9503} & \textbf{0.9498} & RNA-seq (HiSeq) \\
+\textbf{TCGA Holdout} & Random Forest       & 197 & 2,000 / 2,000 (100\%) & 91.37\% & 0.8916 & 0.9156 & RNA-seq (HiSeq) \\
+\textbf{TCGA Holdout} & MLP Neural Net      & 197 & 2,000 / 2,000 (100\%) & 91.88\% & 0.8792 & 0.9172 & RNA-seq (HiSeq) \\
 \midrule
-\textbf{SMC 2018} & Linear & Linear SVM (Linear) & 168 & 0.8095 & 0.8831 & 0.8175 & 0.8028 & 0.9755 & 0.7616 \\
-\textbf{SMC 2018} & Non-Linear & LightGBM (Non-Linear) & 168 & 0.7619 & 0.7616 & 0.7098 & 0.7500 & 0.9717 & 0.7126 \\
+\textbf{SMC 2018} & Logistic Regression & 168 & 17,907 / 17,993 (100\%) & 76.19\% & 0.7646 & 0.7470 & RNA-seq (HiSeq) \\
+\textbf{SMC 2018} & Random Forest       & 168 & 17,907 / 17,993 (100\%) & \textbf{80.95\%} & \textbf{0.8222} & \textbf{0.8044} & RNA-seq (HiSeq) \\
+\textbf{SMC 2018} & MLP Neural Net      & 168 & 17,907 / 17,993 (100\%) & 75.60\% & 0.7794 & 0.7380 & RNA-seq (HiSeq) \\
 \midrule
-\textbf{SCAN-B} & Linear & Linear SVM (Linear) & 340 & 0.8559 & 0.8430 & 0.8484 & 0.8567 & 0.9705 & 0.7884 \\
-\textbf{SCAN-B} & Non-Linear & LightGBM (Non-Linear) & 340 & 0.8147 & 0.7523 & 0.7839 & 0.8078 & 0.9520 & 0.7215 \\
+\textbf{SCAN-B} & Logistic Regression & 339 & 2,754 / 5,000 (100\%) & \textbf{89.38\%} & 0.8385 & \textbf{0.8878} & RNA-seq (NextSeq) \\
+\textbf{SCAN-B} & Random Forest       & 339 & 2,754 / 5,000 (100\%) & 87.61\% & \textbf{0.8443} & 0.8730 & RNA-seq (NextSeq) \\
+\textbf{SCAN-B} & MLP Neural Net      & 339 & 2,754 / 5,000 (100\%) & 84.66\% & 0.7768 & 0.8353 & RNA-seq (NextSeq) \\
 \midrule
-\textbf{METABRIC} & Linear & Linear SVM (Linear) & 1,756 & 0.7056 & 0.6332 & 0.6693 & 0.6978 & 0.9037 & 0.5867 \\
-\textbf{METABRIC} & Non-Linear & LightGBM (Non-Linear) & 1,756 & 0.7101 & 0.6377 & 0.6653 & 0.7003 & 0.8860 & 0.5942 \\
+\textbf{METABRIC} & Logistic Regression & 1,756 & 708 / 2,000 (35.4\%) & 75.00\% & 0.6791 & 0.7329 & Microarray (HT-12) \\
+\textbf{METABRIC} & Random Forest       & 1,756 & 708 / 2,000 (35.4\%) & \textbf{76.77\%} & \textbf{0.6843} & \textbf{0.7491} & Microarray (HT-12) \\
+\textbf{METABRIC} & MLP Neural Net      & 1,756 & 708 / 2,000 (35.4\%) & 72.21\% & 0.6319 & 0.6962 & Microarray (HT-12) \\
 \bottomrule
 \end{tabularx}
 \end{table*}
@@ -684,60 +262,22 @@ Under 100\% leak-free 5-fold cross-validation (where Welch's $t$-test feature se
 % ─────────────────────────────────────────────────────────────────────────────
 \begin{table}[htbp]
 \centering
-\caption{Model Generalisation and Overfitting Analysis. CV Macro F1 = leak-free cross-validation estimate with in-fold feature selection; Holdout Macro F1 = out-of-sample score on the locked 197-patient partition. Gap = Holdout $-$ CV. Bootstrap 95\% CI computed over 10,000 resamples.}
-\label{tab:overfitting}
-\small
-\renewcommand{\arraystretch}{1.25}
-\begin{tabularx}{\columnwidth}{
-  >{\RaggedRight\arraybackslash}p{2.0cm}
-  >{\Centering\arraybackslash}X
-  >{\Centering\arraybackslash}X
-  >{\Centering\arraybackslash}X
-  >{\RaggedRight\arraybackslash}X
-}
-\toprule
-\textbf{Model} & \textbf{CV F1\textsuperscript{a}} & \textbf{Hold. F1} & \textbf{Gap} & \textbf{Bootstrap 95\% CI} \\
-\midrule
-LightGBM     & 0.7540 & \textbf{0.8496} & $+$0.096 & [0.755, 0.912] \\
-Linear SVM   & 0.7577 & 0.8049           & $+$0.047 & [0.721, 0.872] \\
-\midrule
-\multicolumn{5}{l}{\small\textsuperscript{a}5-fold stratified CV with in-fold Welch $t$-test feature selection (zero leakage).} \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\subsection{Clinical Calibration and Confidence Reliability}
-
-A clinically trustworthy diagnostic model must not only be accurate; it must also express \textit{calibrated uncertainty}. When a model says ``I am 80\% confident this patient is Luminal A'', exactly 80\% of such patients should indeed be Luminal A. Calibration was assessed using two complementary metrics: the \textit{Expected Calibration Error} (ECE) and the \textit{Brier Score}. Both are computed and reported in Table~\ref{tab:calibration}.
-
-Across all four cohorts, ECE remained below 12.75\%. On the TCGA holdout the LightGBM achieved ECE = 4.52\% and the Linear SVM 5.20\%, both demonstrating high calibration fidelity. The highest ECE (12.75\% Linear SVM on METABRIC) reflects cross-platform domain shift where 63\% of consensus genes are missing from the microarray platform.
-
-\begin{table}[htbp]
-\centering
-\caption{Model Probability Calibration (ECE and Brier Score). ECE = Expected Calibration Error (15 bins); lower is better. Brier Score = mean squared probability error; lower is better. All values live-computed from held-out prediction probabilities.}
+\caption{Model Probability Calibration Audit on the TCGA Holdout ($N = 197$). ECE = Expected Calibration Error (top-label); Brier Score = Macro One-vs-Rest probability loss (lower is better).}
 \label{tab:calibration}
 \small
 \renewcommand{\arraystretch}{1.25}
 \begin{tabularx}{\columnwidth}{
   >{\RaggedRight\arraybackslash}X
-  >{\RaggedRight\arraybackslash}X
-  >{\Centering\arraybackslash}X
-  >{\Centering\arraybackslash}X
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
+  >{\Centering\arraybackslash}c
 }
 \toprule
-\textbf{Cohort} & \textbf{Model} & \textbf{ECE} & \textbf{Brier} \\
+\textbf{Model Architecture} & \textbf{OVR Brier Score} & \textbf{Brier Std} & \textbf{Top-Label ECE} \\
 \midrule
-\multirow{2}{*}{TCGA Holdout} & LightGBM   & 4.52\%  & 0.0454 \\
-                              & Linear SVM & \textbf{5.20\%}  & \textbf{0.0418} \\
-\midrule
-\multirow{2}{*}{SMC 2018}     & LightGBM   & \textbf{8.16\%}  & \textbf{0.0699} \\
-                              & Linear SVM & 10.78\% & 0.0753 \\
-\midrule
-\multirow{2}{*}{SCAN-B}       & LightGBM   & \textbf{4.40\%}  & \textbf{0.0550} \\
-                              & Linear SVM & 6.61\%  & 0.0556 \\
-\midrule
-\multirow{2}{*}{METABRIC}     & LightGBM   & \textbf{6.32\%}  & \textbf{0.0944} \\
-                              & Linear SVM & 12.75\% & 0.1068 \\
+\textbf{Logistic Regression} & \textbf{0.0192} & 0.0168 & 6.18\% \\
+\textbf{Random Forest}       & 0.0450 & 0.0364 & 24.47\% \\
+\textbf{MLP Neural Net}      & 0.0263 & 0.0214 & \textbf{4.30\%} \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -748,39 +288,37 @@ Across all four cohorts, ECE remained below 12.75\%. On the TCGA holdout the Lig
 % ─────────────────────────────────────────────────────────────────────────────
 \begin{table*}[htbp]
 \centering
-\caption{Cross-Platform Transferability of Both Classifiers across Three Independent External Cohorts. Genes = number of consensus genes mappable on each platform (out of 178). Bal.Acc = balanced accuracy (accounts for class imbalance). MCC = Matthews Correlation Coefficient. ROC-AUC = macro one-vs-rest. All values live-computed from locked models; no retraining was performed. Bold = better model per metric per cohort.}
+\caption{Cross-Platform Transferability of the Tri-Architecture Classifiers across Three Independent External Cohorts ($N = 2{,}263$ external patients total). Mapped Genes = number of overlapping gene features available on each profiling platform.}
 \label{tab:transfer}
 \small
 \renewcommand{\arraystretch}{1.25}
 \setlength{\tabcolsep}{4pt}
 \begin{tabularx}{\textwidth}{
   >{\RaggedRight\arraybackslash}p{2.8cm}
-  >{\RaggedRight\arraybackslash}p{3.2cm}
-  >{\Centering\arraybackslash}p{1.4cm}
-  >{\RaggedRight\arraybackslash}p{2.2cm}
-  >{\Centering\arraybackslash}X
-  >{\Centering\arraybackslash}X
+  >{\RaggedRight\arraybackslash}p{3.0cm}
+  >{\Centering\arraybackslash}p{2.0cm}
+  >{\RaggedRight\arraybackslash}p{2.6cm}
   >{\Centering\arraybackslash}X
   >{\Centering\arraybackslash}X
   >{\Centering\arraybackslash}X
 }
 \toprule
-\textbf{Cohort ($N$)} & \textbf{Platform} & \textbf{Genes} & \textbf{Model} & \textbf{Acc.} & \textbf{Bal.Acc} & \textbf{Macro F1} & \textbf{MCC} & \textbf{ROC-AUC} \\
+\textbf{Cohort ($N$)} & \textbf{Platform} & \textbf{Mapped Genes} & \textbf{Model} & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Wtd F1} \\
 \midrule
-\multirow{2}{*}{\textbf{SMC 2018} (168)} & \multirow{2}{*}{Illumina RNA-seq} & \multirow{2}{*}{178/178} &
-LightGBM   & 79.17\% & \textbf{88.19\%} & 76.47\% & 0.747 & 0.980 \\
-& & & Linear SVM & \textbf{83.33\%} & 88.86\% & \textbf{76.73\%} & \textbf{0.792} & \textbf{0.982} \\
+\multirow{3}{*}{\textbf{SMC 2018} (168)} & \multirow{3}{*}{Illumina RNA-seq} & \multirow{3}{*}{17,907 / 17,993} &
+Logistic Regression & 76.19\% & 76.46\% & 74.70\% \\
+& & & Random Forest & \textbf{80.95\%} & \textbf{82.22\%} & \textbf{80.44\%} \\
+& & & MLP Neural Net & 75.60\% & 77.94\% & 73.80\% \\
 \midrule
-\multirow{2}{*}{\textbf{SCAN-B} (340)} & \multirow{2}{*}{Illumina NextSeq RNA-seq} & \multirow{2}{*}{93/178\textsuperscript{a}} &
-LightGBM   & \textbf{83.24\%} & 77.72\% & \textbf{79.77\%} & \textbf{0.750} & \textbf{0.971} \\
-& & & Linear SVM & 81.18\% & \textbf{82.38\%} & 79.68\% & 0.733 & 0.968 \\
+\multirow{3}{*}{\textbf{SCAN-B} (339)} & \multirow{3}{*}{Illumina NextSeq} & \multirow{3}{*}{2,754 / 5,000} &
+Logistic Regression & \textbf{89.38\%} & 83.85\% & \textbf{88.78\%} \\
+& & & Random Forest & 87.61\% & \textbf{84.43\%} & 87.30\% \\
+& & & MLP Neural Net & 84.66\% & 77.68\% & 83.53\% \\
 \midrule
-\multirow{2}{*}{\textbf{METABRIC} (1,756)} & \multirow{2}{*}{Illumina HT-12 Microarray} & \multirow{2}{*}{78/178\textsuperscript{b}} &
-LightGBM   & 71.41\% & 62.75\% & 65.13\% & 0.602 & 0.901 \\
-& & & Linear SVM & \textbf{72.78\%} & \textbf{68.04\%} & \textbf{69.02\%} & \textbf{0.625} & \textbf{0.918} \\
-\midrule
-\multicolumn{9}{l}{\small\textsuperscript{a}\,SCAN-B shares 2,757 overlapping gene identifiers; 93 consensus genes are available after probe-to-HUGO mapping.} \\
-\multicolumn{9}{l}{\small\textsuperscript{b}\,METABRIC (microarray) maps 708 probe IDs; 78 of 211 consensus genes are present after gene-symbol alignment.} \\
+\multirow{3}{*}{\textbf{METABRIC} (1,756)} & \multirow{3}{*}{Illumina HT-12 Array} & \multirow{3}{*}{708 / 2,000} &
+Logistic Regression & 75.00\% & 67.91\% & 73.29\% \\
+& & & Random Forest & \textbf{76.77\%} & \textbf{68.43\%} & \textbf{74.91\%} \\
+& & & MLP Neural Net & 72.21\% & 63.19\% & 69.62\% \\
 \bottomrule
 \end{tabularx}
 \end{table*}
@@ -822,6 +360,8 @@ u_i^{\text{WPR-CUS}} = \frac{1}{3} \cdot \frac{u_{i, \text{Attrib}} - \mu_{\text
 
 Strict fold-safe empirical benchmarking on the TCGA discovery cohort ($N=784$, $P=211$) demonstrates that WPR-CUS resolves the baseline limitation of subtype gap compression, expanding Luminal A vs. Luminal B separation by 36.3-fold ($\Delta = 0.6798$ vs. $0.0187$).
 
+\begin{table*}[t!]
+\centering
 \caption{\textbf{Leakage-Safe Empirical Benchmark Comparison}: Baseline CUS (Pearson PSN + LOO MSE) vs. \textbf{WPR-CUS (Strict Fold-Safe OOF)} on TCGA-BRCA Discovery Cohort ($N=784$, $P=211$). All metrics computed out-of-fold with zero target leakage.}
 \label{tab:wpr_cus_benchmark}
 \small
@@ -1017,14 +557,14 @@ Having demonstrated that the OncoResolve framework achieves high diagnostic and 
     \centering
     \begin{subfigure}[b]{0.95\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{data/artifacts/fig10_4a_feature_importances_top_drivers.png}
+        \includegraphics[width=\linewidth]{images/fig10_4a_feature_importances_top_drivers.png}
         \caption{Top 20 Feature Importance Drivers: Champion Linear Model (Linear SVM Coefficient Weights $|w|$) vs. Non-Linear Champion (LightGBM SHAP Attributions).}
     \end{subfigure}
     
     \vspace{0.8em}
     \begin{subfigure}[b]{0.95\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{data/artifacts/fig10_4b_subtype_coefficients_and_concordance.png}
+        \includegraphics[width=\linewidth]{images/fig10_4b_subtype_coefficients_and_concordance.png}
         \caption{Subtype-Disaggregated Coefficient Weights Heatmap across PAM50 Molecular Subtypes and Consensus Biomarker Importance Concordance Scatter Plot.}
     \end{subfigure}
     \caption{\textbf{Feature Attribution, Subtype-Disaggregated Coefficient Weights, and Consensus Biomarker Concordance.} Top global linear drivers (e.g., \textit{ABCC2}, \textit{DEFB1}, \textit{ELOVL2}, \textit{ESR1}) and non-linear SHAP attributions (\textit{ESR1}, \textit{MLPH}, \textit{KRT5}, \textit{FOXA1}) exhibit robust subtype-specific directional predictive roles.}
@@ -1136,7 +676,7 @@ The Anti-Leakage Protocol (ALP) prevents this by ensuring that every data transf
 
 The most striking performance difference in our results is between the RNA-seq cohorts (83--89\% accuracy) and the METABRIC microarray cohort (72.78\%). It is critical to understand that this drop does not imply that the underlying biological divergence; rather, it reflects a \textit{technological incompatibility}. The Illumina HT-12 microarray platform used by METABRIC measures gene expression using pre-designed oligonucleotide probes that can only detect genes whose sequences were known when the array was manufactured. Of our 211 consensus genes, only 78 (43.8\%) had matching probes on the HT-12 array.
 
-Applying a model trained with 178 gene inputs to patients where only 78 of those inputs are available is like asking a physician to make a diagnosis with 56\% of the test results missing. The fact that accuracy still reached 72.78\% under these conditions speaks to the robustness of the biological signal carried by even the partial gene set. Future work will explore domain adaptation approaches that can better bridge the RNA-seq to microarray gap without requiring simultaneous access to all datasets during normalization.
+Applying a model trained with 211 gene inputs to patients where only 78 of those inputs are available is like asking a physician to make a diagnosis with 56\% of the test results missing. The fact that accuracy still reached 72.78\% under these conditions speaks to the robustness of the biological signal carried by even the partial gene set. Future work will explore domain adaptation approaches that can better bridge the RNA-seq to microarray gap without requiring simultaneous access to all datasets during normalization.
 
 \subsection{Patient-Level Uniqueness as a Prognostic Signal}
 
@@ -1168,6 +708,7 @@ A clinically important finding emerged from Schoenfeld residual testing: Basal-l
 
 By strictly mitigating feature selection leakage within cross-validation folds and retaining all five PAM50 subtypes including Normal-like, OncoResolve establishes a generalizable 211-gene classifier for breast cancer subtyping. The validation results across three independent cohorts (SMC 2018, SCAN-B, and METABRIC) confirm its transportability across different profiling technologies. The prognostic Cox risk score (CRS) demonstrates the clinical value of the signature for overall survival validation. Furthermore, the Weighted Projected Residual Composite Uniqueness Score (WPR-CUS) and regularized Mahalanobis distance provide complementary topological and covariance-adjusted models to identify transcriptomic outliers and independent prognostic risk factors at the individual patient level, supporting a dual diagnostic-prognostic paradigm for clinical precision oncology.
 
+\clearpage
 \section{Data and Code Availability Statement}
 
 To ensure full transparency, scientific reproducibility, and open-science compliance in accordance with journal standards (e.g., Nature Communications and Bioinformatics guidelines), all source code, software pipelines, trained models, and publicly available datasets utilized in this study are made accessible as detailed below.
@@ -1217,6 +758,7 @@ All transcriptomic count matrices, microarray gene expression matrices, clinical
 \vspace{0.5em}
 \noindent\textbf{Funding:} This research received no external funding.
 
+\clearpage
 \begin{thebibliography}{99}
 
 \bibitem{benjamini1995} Benjamini, Y., \& Hochberg, Y. (1995). Controlling the false discovery rate: a practical and powerful approach to multiple testing. \textit{Journal of the Royal Statistical Society: Series B (Methodological)}, 57(1), 289-300.
