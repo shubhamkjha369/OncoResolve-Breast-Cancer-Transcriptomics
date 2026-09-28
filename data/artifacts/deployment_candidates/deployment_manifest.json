@@ -124,8 +124,8 @@
           "normal"
         ],
         "validation_sample_count": 8,
-        "max_probability_difference": 1.1102230246251565e-16,
-        "serialized_sha256": "96cdd042da17f1c4ed87a07bbdb27a9d309a16cb151f698d564210200e3fbf2d"
+        "max_probability_difference": 1.6653345369377348e-16,
+        "serialized_sha256": "1711f24aa48480a9896a6788fa6363eed261f435c24cd9d0194fa177fb84581a"
       },
       "pipeline_steps": [
         "model"
@@ -172,7 +172,7 @@
         ],
         "validation_sample_count": 8,
         "max_probability_difference": 0.0,
-        "serialized_sha256": "9ba7c822b6d3733259fde671d5b5d6cdb3991ac5c23b85d0a880db1e7c50e810"
+        "serialized_sha256": "d96d76de2f3258d6bdc49717f49b5afdcecc138728fb2904ccc597a592a6cffa"
       },
       "pipeline_steps": [
         "scaler",
@@ -281,8 +281,8 @@
           "normal"
         ],
         "validation_sample_count": 8,
-        "max_probability_difference": 1.1102230246251565e-16,
-        "serialized_sha256": "96cdd042da17f1c4ed87a07bbdb27a9d309a16cb151f698d564210200e3fbf2d"
+        "max_probability_difference": 1.6653345369377348e-16,
+        "serialized_sha256": "1711f24aa48480a9896a6788fa6363eed261f435c24cd9d0194fa177fb84581a"
       },
       "mlp": {
         "status": "passed",
@@ -304,7 +304,7 @@
         ],
         "validation_sample_count": 8,
         "max_probability_difference": 0.0,
-        "serialized_sha256": "9ba7c822b6d3733259fde671d5b5d6cdb3991ac5c23b85d0a880db1e7c50e810"
+        "serialized_sha256": "d96d76de2f3258d6bdc49717f49b5afdcecc138728fb2904ccc597a592a6cffa"
       }
     }
   },

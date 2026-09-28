@@ -101,26 +101,29 @@ def _load_and_align_features(df, consensus_genes, entrez_to_hugo):
     mapped_features = []
     missing_features = []
 
-    # Map TCGA Entrez IDs to HUGO symbols for alignment
-    for idx, entrez_id in enumerate(correct_genes_order):
-        hugo_symbol = entrez_to_hugo.get(str(entrez_id), None)
-        if hugo_symbol is not None and hugo_symbol in raw_df.columns:
-            val = raw_df[hugo_symbol].astype(float).fillna(0.0).values
-            # Dynamic log2 scaling for linear expected counts / RSEM values
+    # Map genes to raw_df columns
+    for idx, target_gene in enumerate(correct_genes_order):
+        found_col = None
+        target_str = str(target_gene)
+        
+        if target_str in raw_df.columns:
+            found_col = target_str
+        elif entrez_to_hugo.get(target_str) in raw_df.columns:
+            found_col = entrez_to_hugo.get(target_str)
+        else:
+            # Reverse lookup if entrez_to_hugo is mapping HUGO -> Entrez
+            rev_match = [k for k, v in entrez_to_hugo.items() if str(v) == target_str]
+            if rev_match and rev_match[0] in raw_df.columns:
+                found_col = rev_match[0]
+
+        if found_col is not None:
+            val = raw_df[found_col].astype(float).fillna(0.0).values
             if val.max() > 50:
                 val = np.log2(np.clip(val, 0, None) + 1.0)
             X_aligned[:, idx] = val
-            mapped_features.append(hugo_symbol)
+            mapped_features.append(found_col)
         else:
-            # Check if Entrez ID itself is in raw_df columns
-            if str(entrez_id) in raw_df.columns:
-                val = raw_df[str(entrez_id)].astype(float).fillna(0.0).values
-                if val.max() > 50:
-                    val = np.log2(np.clip(val, 0, None) + 1.0)
-                X_aligned[:, idx] = val
-                mapped_features.append(str(entrez_id))
-            else:
-                missing_features.append(hugo_symbol if hugo_symbol else str(entrez_id))
+            missing_features.append(target_str)
 
     return X_aligned, patient_ids, mapped_features, missing_features
 
@@ -231,9 +234,20 @@ div[data-testid="stFileUploader"] {
         except Exception:
             lgbm_pipeline = joblib.load(ARTIFACT_DIR / "finalized_pam50_LGBM_model.pkl")
 
-        consensus_df = pd.read_csv(BASE_DIR / "results" / "consensus_gene_list.csv")
-        consensus_genes = consensus_df["gene"].tolist()
-        entrez_to_hugo = joblib.load(ARTIFACT_DIR / "tcga_entrez_to_hugo.pkl")
+        if (ARTIFACT_DIR / "final_consensus_biomarkers.parquet").exists():
+            consensus_df = pd.read_parquet(ARTIFACT_DIR / "final_consensus_biomarkers.parquet")
+            consensus_genes = (
+                consensus_df["mapped_symbol"].tolist()
+                if "mapped_symbol" in consensus_df.columns
+                else (consensus_df["feature"].tolist() if "feature" in consensus_df.columns else consensus_df["gene"].tolist())
+            )
+        elif (BASE_DIR / "results" / "consensus_gene_list.csv").exists():
+            consensus_df = pd.read_csv(BASE_DIR / "results" / "consensus_gene_list.csv")
+            consensus_genes = consensus_df["gene"].tolist()
+        else:
+            consensus_genes = []
+
+        entrez_to_hugo = joblib.load(ARTIFACT_DIR / "tcga_entrez_to_hugo.pkl") if (ARTIFACT_DIR / "tcga_entrez_to_hugo.pkl").exists() else {}
         label_encoder = joblib.load(ARTIFACT_DIR / "label_encoder_cohort.pkl")
     except Exception as exc:
         st.error(f"Critical Error: Failed to load pre-trained OncoResolve model artifacts: {exc}")
