@@ -29,7 +29,7 @@
     "holdout_weighted_f1": 0.9156374922048508,
     "holdout_balanced_accuracy": 0.8858571428571429,
     "holdout_roc_auc": 0.9885161672701506,
-    "holdout_log_loss": 0.47079087184864626,
+    "holdout_log_loss": 0.4707908718486462,
     "macro_f1_gap": 0.0588644669930769,
     "accuracy_gap": 0.04037604889671609,
     "weighted_f1_gap": 0.0390158499860076,

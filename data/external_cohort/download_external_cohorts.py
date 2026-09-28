@@ -141,6 +141,15 @@ try:
         TCGA_CLIN_OUT,
         label="TCGA-BRCA clinical"
     )
+    # Download raw un-normalized GDC STAR integer read counts for DESeq2/edgeR DGE
+    try:
+        from download_gdc_raw_counts import main as download_gdc_main
+        download_gdc_main()
+    except ImportError:
+        import sys
+        sys.path.append(str(Path(__file__).resolve().parent))
+        from download_gdc_raw_counts import main as download_gdc_main
+        download_gdc_main()
 except Exception as e:
     print(f"  ERROR downloading TCGA-BRCA: {e}")
     import traceback
