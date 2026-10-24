@@ -167,6 +167,68 @@ print(f"SCAN-B duplicate sample IDs in index: {df_scan.index.duplicated().sum()}
 assert df_met.index.duplicated().sum() == 0, "METABRIC has duplicate sample IDs!"
 assert df_scan.index.duplicated().sum() == 0, "SCAN-B has duplicate sample IDs!"
 
+# Validate that all available signature genes are retained in SCAN-B.
+
+signature_path = (
+    art_dir / "candidate_models"
+    / "generated_consensus_211_gene_features.pkl"
+)
+mapping_path = art_dir / "tcga_entrez_to_hugo.pkl"
+
+if not signature_path.exists():
+    raise FileNotFoundError(
+        f"Signature artifact not found: {signature_path}"
+    )
+
+if not mapping_path.exists():
+    raise FileNotFoundError(
+        f"Gene annotation artifact not found: {mapping_path}"
+    )
+
+signature_ids = joblib.load(signature_path)
+entrez_to_hugo = joblib.load(mapping_path)
+
+if isinstance(signature_ids, dict):
+    raise TypeError(
+        "The signature artifact is a dictionary. "
+        "Extract its actual gene-ID list before continuing."
+    )
+
+signature_ids = [str(g).strip() for g in signature_ids]
+
+if len(signature_ids) != 211:
+    raise ValueError(
+        f"Expected 211 signature genes, found {len(signature_ids)}."
+    )
+
+signature_symbols = {
+    str(entrez_to_hugo[gene]).strip().upper()
+    for gene in signature_ids
+    if gene in entrez_to_hugo
+    and pd.notna(entrez_to_hugo[gene])
+    and str(entrez_to_hugo[gene]).strip()
+}
+
+scanb_lookup = {
+    str(gene).strip().upper(): gene
+    for gene in df_scan.columns
+}
+
+matched_symbols = signature_symbols.intersection(scanb_lookup)
+
+print("\nSCAN-B signature retention audit")
+print("Signature IDs:", len(signature_ids))
+print("Signature symbols mapped:", len(signature_symbols))
+print("Signature symbols present in SCAN-B:", len(matched_symbols))
+print("Signature symbols absent from SCAN-B:",
+      len(signature_symbols - matched_symbols))
+
+if len(matched_symbols) < len(signature_symbols):
+    print(
+        "Missing symbols:",
+        sorted(signature_symbols - matched_symbols)[:50]
+    )
+
 # -------------------------------------------------------------
 # Step 8.5: Gene Harmonization Audit
 # -------------------------------------------------------------

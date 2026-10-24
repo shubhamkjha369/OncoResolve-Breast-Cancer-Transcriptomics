@@ -1,0 +1,20 @@
+cell_type,reference_markers,measured_markers,coverage_fraction
+Adipocytes,13,13,1.0
+B cells,10,8,0.8
+B cells naive,20,16,0.8
+Dendritic cells,20,20,1.0
+Endothelial cells,36,34,0.9444444444444444
+Fibroblasts,25,25,1.0
+Gamma delta T cells,16,15,0.9375
+Luminal epithelial cells,20,20,1.0
+Macrophages,22,22,1.0
+Mammary epithelial cells,5,5,1.0
+Mast cells,7,6,0.8571428571428571
+Monocytes,9,9,1.0
+NK cells,16,16,1.0
+Neutrophils,8,8,1.0
+Pericytes,6,6,1.0
+Plasma cells,20,11,0.55
+Plasmacytoid dendritic cells,15,15,1.0
+Smooth muscle cells,13,13,1.0
+T cells,16,14,0.875

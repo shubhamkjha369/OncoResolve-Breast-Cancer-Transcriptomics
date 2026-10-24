@@ -103,6 +103,9 @@ data/artifacts/CRISPRGeneEffect.parquet
 data/artifacts/mlp_shap_values.pkl
 notebooks/data/
 notebooks/results/
+data/data/external_cohort/_tmp/
+data/data/external_cohort/SCANB_GSE96058_expression_subset.csv
+**/_tmp/
 
 # Temporary execution & debug scripts
 execute_*.py

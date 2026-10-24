@@ -7,7 +7,11 @@ from .utils import (
     save_reference_scaler,
     load_reference_scaler,
 )
-from .feature_selection import ConsensusSelector, VariancePreFilter
+from .feature_selection import (
+    ConsensusSelector,
+    StabilityWeightedConsensusSelector,
+    VariancePreFilter,
+)
 from .classifier import OncoClassifier, PyTorchMLPClassifier, DGEInFoldFeatureSelector
 from .uniqueness import compute_cus, compute_patient_similarity_matrix
 from .prognosis import OncoPrognosis
@@ -25,6 +29,7 @@ __all__ = [
     "load_reference_scaler",
     "VariancePreFilter",
     "ConsensusSelector",
+    "StabilityWeightedConsensusSelector",
     "OncoClassifier",
     "PyTorchMLPClassifier",
     "DGEInFoldFeatureSelector",

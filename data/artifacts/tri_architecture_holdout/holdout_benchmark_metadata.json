@@ -1,0 +1,32 @@
+{
+  "analysis": "Independent TCGA holdout tri-architecture benchmark",
+  "repository_root": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics",
+  "holdout_file": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\processed\\df_holdout.parquet",
+  "feature_file": "C:\\Users\\SAM\\Documents\\GitHub\\OncoResolve-Breast-Cancer-Transcriptomics\\data\\artifacts\\candidate_models\\generated_consensus_211_gene_features.pkl",
+  "n_holdout_samples": 197,
+  "n_features": 211,
+  "classes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ],
+  "models": [
+    "Logistic Regression",
+    "Random Forest",
+    "MLP Neural Net"
+  ],
+  "metrics": [
+    "Accuracy",
+    "Balanced_Accuracy",
+    "Macro_Precision",
+    "Macro_Recall",
+    "Macro_F1",
+    "Weighted_F1",
+    "MCC",
+    "Macro_ROC_AUC_OVR",
+    "Log_Loss"
+  ],
+  "note": "Models were evaluated using their saved predict and predict_proba methods. No external scaling or transformation was added in this benchmark. Confirm that the holdout feature representation matches the model training representation before interpreting results."
+}

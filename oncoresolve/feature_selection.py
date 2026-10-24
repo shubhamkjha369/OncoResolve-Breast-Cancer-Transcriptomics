@@ -27,6 +27,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.preprocessing import StandardScaler
 from sklearn.utils.validation import check_is_fitted
 
 
@@ -233,3 +235,235 @@ class ConsensusSelector(BaseEstimator, TransformerMixin):
     def get_feature_names_out(self, input_features=None):
         check_is_fitted(self, "consensus_features_")
         return np.array(self.consensus_features_)
+
+
+class StabilityWeightedConsensusSelector(BaseEstimator, TransformerMixin):
+    """Select an exact, fold-safe consensus signature from expression data.
+
+    The selector is deliberately a *single transformer* rather than a global
+    pre-computed feature list.  When placed inside an sklearn ``Pipeline``,
+    each call to :meth:`fit` sees only that pipeline fit's training rows.
+
+    For every repeated stratified split of those rows it:
+
+    1. retains the ``candidate_top_k`` most variable genes using the split's
+       training rows only;
+    2. fits a scaled multinomial logistic regression and a random forest on
+       those candidates;
+    3. converts each model's feature importance to a within-split percentile;
+    4. averages the two percentiles and records whether the gene is among that
+       split's ``signature_top_k`` strongest consensus genes.
+
+    The final score is the mean consensus percentile multiplied by selection
+    frequency across *all* repeated splits.  This favours genes that are both
+    predictive in two model families and stable under resampling.  Exactly
+    ``signature_top_k`` genes are returned (unless fewer columns exist).
+
+    No held-out outer-fold row or label is used when this selector is fitted
+    inside an outer-fold pipeline.
+    """
+
+    def __init__(
+        self,
+        candidate_top_k: int = 2000,
+        signature_top_k: int = 211,
+        n_splits: int = 3,
+        n_repeats: int = 2,
+        logistic_C: float = 0.1,
+        rf_n_estimators: int = 300,
+        rf_max_depth: Optional[int] = None,
+        random_state: int = 42,
+        n_jobs: int = 1,
+    ):
+        self.candidate_top_k = candidate_top_k
+        self.signature_top_k = signature_top_k
+        self.n_splits = n_splits
+        self.n_repeats = n_repeats
+        self.logistic_C = logistic_C
+        self.rf_n_estimators = rf_n_estimators
+        self.rf_max_depth = rf_max_depth
+        self.random_state = random_state
+        self.n_jobs = n_jobs
+
+    @staticmethod
+    def _percentile_from_importance(importance: np.ndarray) -> np.ndarray:
+        """Map importances to [0, 1], with 1 assigned to the strongest gene."""
+        n_features = len(importance)
+        if n_features <= 1:
+            return np.ones(n_features, dtype=float)
+        order = np.argsort(-importance, kind="mergesort")
+        ranks = np.empty(n_features, dtype=float)
+        ranks[order] = np.arange(n_features, dtype=float)
+        return 1.0 - ranks / (n_features - 1)
+
+    def fit(self, X, y):
+        if y is None:
+            raise ValueError("StabilityWeightedConsensusSelector requires class labels during fit.")
+
+        if isinstance(X, pd.DataFrame):
+            self.feature_names_in_ = np.asarray(X.columns, dtype=object)
+            X_arr = X.to_numpy(dtype=float)
+        else:
+            X_arr = np.asarray(X, dtype=float)
+            self.feature_names_in_ = np.asarray(
+                [f"Gene_{i}" for i in range(X_arr.shape[1])], dtype=object
+            )
+        y_arr = np.asarray(y)
+
+        if X_arr.ndim != 2:
+            raise ValueError("X must be a two-dimensional samples-by-features matrix.")
+        if len(X_arr) != len(y_arr):
+            raise ValueError("X and y must contain the same number of samples.")
+        if not np.isfinite(X_arr).all():
+            raise ValueError("X contains NaN or infinite values; impute before feature selection.")
+
+        classes, counts = np.unique(y_arr, return_counts=True)
+        if len(classes) < 2:
+            raise ValueError("At least two classes are required for consensus feature selection.")
+        if counts.min() < self.n_splits:
+            raise ValueError(
+                "The smallest class must contain at least n_splits samples for "
+                "stratified stability selection."
+            )
+
+        n_features = X_arr.shape[1]
+        candidate_k = min(int(self.candidate_top_k), n_features)
+        signature_k = min(int(self.signature_top_k), n_features)
+        if candidate_k < 2:
+            raise ValueError("candidate_top_k must leave at least two features.")
+        if signature_k < 1:
+            raise ValueError("signature_top_k must be at least one.")
+
+        splitter = RepeatedStratifiedKFold(
+            n_splits=self.n_splits,
+            n_repeats=self.n_repeats,
+            random_state=self.random_state,
+        )
+        total_splits = self.n_splits * self.n_repeats
+        score_sum = np.zeros(n_features, dtype=float)
+        lr_score_sum = np.zeros(n_features, dtype=float)
+        rf_score_sum = np.zeros(n_features, dtype=float)
+        candidate_count = np.zeros(n_features, dtype=np.int32)
+        selection_count = np.zeros(n_features, dtype=np.int32)
+
+        for split_number, (train_idx, _) in enumerate(splitter.split(X_arr, y_arr)):
+            X_train = X_arr[train_idx]
+            y_train = y_arr[train_idx]
+            variance_order = np.argsort(-np.var(X_train, axis=0), kind="mergesort")
+            candidate_idx = variance_order[:candidate_k]
+            X_candidate = X_train[:, candidate_idx]
+            X_scaled = StandardScaler().fit_transform(X_candidate)
+
+            lr = LogisticRegression(
+                C=self.logistic_C,
+                solver="lbfgs",
+                max_iter=2000,
+                class_weight="balanced",
+                random_state=self.random_state + split_number,
+            )
+            rf = RandomForestClassifier(
+                n_estimators=self.rf_n_estimators,
+                max_depth=self.rf_max_depth,
+                class_weight="balanced",
+                random_state=self.random_state + split_number,
+                n_jobs=self.n_jobs,
+            )
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                lr.fit(X_scaled, y_train)
+            rf.fit(X_candidate, y_train)
+
+            lr_importance = np.mean(np.abs(lr.coef_), axis=0)
+            rf_importance = rf.feature_importances_
+            lr_percentile = self._percentile_from_importance(lr_importance)
+            rf_percentile = self._percentile_from_importance(rf_importance)
+            consensus_percentile = (lr_percentile + rf_percentile) / 2.0
+
+            score_sum[candidate_idx] += consensus_percentile
+            lr_score_sum[candidate_idx] += lr_percentile
+            rf_score_sum[candidate_idx] += rf_percentile
+            candidate_count[candidate_idx] += 1
+
+            within_split_k = min(signature_k, candidate_k)
+            split_selected = candidate_idx[
+                np.argsort(-consensus_percentile, kind="mergesort")[:within_split_k]
+            ]
+            selection_count[split_selected] += 1
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            mean_consensus = np.divide(
+                score_sum,
+                candidate_count,
+                out=np.zeros(n_features, dtype=float),
+                where=candidate_count > 0,
+            )
+            mean_lr = np.divide(
+                lr_score_sum,
+                candidate_count,
+                out=np.zeros(n_features, dtype=float),
+                where=candidate_count > 0,
+            )
+            mean_rf = np.divide(
+                rf_score_sum,
+                candidate_count,
+                out=np.zeros(n_features, dtype=float),
+                where=candidate_count > 0,
+            )
+        selection_frequency = selection_count / float(total_splits)
+        stability_weighted_score = mean_consensus * selection_frequency
+
+        # Deterministic tie-breaking keeps a fitted schema reproducible.
+        selected_indices = np.lexsort(
+            (self.feature_names_in_.astype(str), -mean_consensus, -selection_frequency,
+             -stability_weighted_score)
+        )[:signature_k]
+        self.selected_indices_ = selected_indices.astype(int)
+        self.selected_features_ = self.feature_names_in_[self.selected_indices_].tolist()
+        self.ranking_ = pd.DataFrame(
+            {
+                "feature": self.feature_names_in_,
+                "selection_count": selection_count,
+                "selection_frequency": selection_frequency,
+                "candidate_frequency": candidate_count / float(total_splits),
+                "mean_lr_percentile": mean_lr,
+                "mean_rf_percentile": mean_rf,
+                "mean_consensus_percentile": mean_consensus,
+                "stability_weighted_consensus_score": stability_weighted_score,
+            }
+        ).sort_values(
+            [
+                "stability_weighted_consensus_score",
+                "selection_frequency",
+                "mean_consensus_percentile",
+                "feature",
+            ],
+            ascending=[False, False, False, True],
+            kind="mergesort",
+        ).reset_index(drop=True)
+        self.ranking_["consensus_rank"] = np.arange(1, len(self.ranking_) + 1)
+        self.ranking_["selected"] = self.ranking_["feature"].isin(self.selected_features_)
+        self.n_stability_splits_ = total_splits
+        self.candidate_top_k_ = candidate_k
+        self.signature_top_k_ = signature_k
+        return self
+
+    def transform(self, X):
+        check_is_fitted(self, "selected_indices_")
+        if isinstance(X, pd.DataFrame):
+            missing = [gene for gene in self.selected_features_ if gene not in X.columns]
+            if missing:
+                raise ValueError(
+                    f"Input is missing {len(missing)} selected features, e.g. {missing[:5]}."
+                )
+            return X.loc[:, self.selected_features_]
+        return np.asarray(X)[:, self.selected_indices_]
+
+    def get_support(self, indices: bool = False):
+        check_is_fitted(self, "selected_indices_")
+        mask = np.zeros(len(self.feature_names_in_), dtype=bool)
+        mask[self.selected_indices_] = True
+        return self.selected_indices_.copy() if indices else mask
+
+    def get_feature_names_out(self, input_features=None):
+        check_is_fitted(self, "selected_indices_")
+        return np.asarray(self.selected_features_, dtype=object)

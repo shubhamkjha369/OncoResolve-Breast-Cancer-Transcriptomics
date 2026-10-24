@@ -1,626 +1,344 @@
 {
-  "3169": {
-    "hgnc_id": null,
-    "symbol": "3169",
-    "name": "",
-    "status": ""
-  },
-  "79083": {
-    "hgnc_id": null,
-    "symbol": "79083",
-    "name": "",
-    "status": ""
-  },
-  "23650": {
-    "hgnc_id": null,
-    "symbol": "23650",
-    "name": "",
-    "status": ""
-  },
-  "155465": {
-    "hgnc_id": null,
-    "symbol": "155465",
-    "name": "",
-    "status": ""
-  },
-  "2568": {
-    "hgnc_id": null,
-    "symbol": "2568",
-    "name": "",
-    "status": ""
-  },
-  "2099": {
-    "hgnc_id": null,
-    "symbol": "2099",
-    "name": "",
-    "status": ""
-  },
-  "2196": {
-    "hgnc_id": null,
-    "symbol": "2196",
-    "name": "",
-    "status": ""
-  },
-  "3854": {
-    "hgnc_id": null,
-    "symbol": "3854",
-    "name": "",
-    "status": ""
-  },
-  "8190": {
-    "hgnc_id": null,
-    "symbol": "8190",
-    "name": "",
-    "status": ""
-  },
-  "5650": {
-    "hgnc_id": null,
-    "symbol": "5650",
-    "name": "",
-    "status": ""
-  },
-  "25818": {
-    "hgnc_id": null,
-    "symbol": "25818",
-    "name": "",
-    "status": ""
-  },
-  "3872": {
-    "hgnc_id": null,
-    "symbol": "3872",
-    "name": "",
-    "status": ""
-  },
-  "81706": {
-    "hgnc_id": null,
-    "symbol": "81706",
-    "name": "",
-    "status": ""
-  },
-  "653145": {
-    "hgnc_id": null,
-    "symbol": "653145",
-    "name": "",
-    "status": ""
-  },
-  "5653": {
-    "hgnc_id": null,
-    "symbol": "5653",
-    "name": "",
-    "status": ""
-  },
-  "3852": {
-    "hgnc_id": null,
-    "symbol": "3852",
-    "name": "",
-    "status": ""
-  },
-  "222171": {
-    "hgnc_id": null,
-    "symbol": "222171",
-    "name": "",
-    "status": ""
-  },
-  "6663": {
-    "hgnc_id": null,
-    "symbol": "6663",
-    "name": "",
-    "status": ""
-  },
-  "771": {
-    "hgnc_id": null,
-    "symbol": "771",
-    "name": "",
-    "status": ""
-  },
-  "1825": {
-    "hgnc_id": null,
-    "symbol": "1825",
-    "name": "",
-    "status": ""
-  },
-  "10551": {
-    "hgnc_id": null,
-    "symbol": "10551",
-    "name": "",
-    "status": ""
-  },
-  "6422": {
-    "hgnc_id": null,
-    "symbol": "6422",
-    "name": "",
-    "status": ""
-  },
-  "5268": {
-    "hgnc_id": null,
-    "symbol": "5268",
-    "name": "",
-    "status": ""
-  },
-  "2066": {
-    "hgnc_id": null,
-    "symbol": "2066",
-    "name": "",
-    "status": ""
-  },
-  "8424": {
-    "hgnc_id": null,
-    "symbol": "8424",
-    "name": "",
-    "status": ""
-  },
-  "3868": {
-    "hgnc_id": null,
-    "symbol": "3868",
-    "name": "",
-    "status": ""
-  },
-  "7802": {
-    "hgnc_id": null,
-    "symbol": "7802",
-    "name": "",
-    "status": ""
-  },
-  "3861": {
-    "hgnc_id": null,
-    "symbol": "3861",
-    "name": "",
-    "status": ""
-  },
-  "1830": {
-    "hgnc_id": null,
-    "symbol": "1830",
-    "name": "",
-    "status": ""
-  },
-  "51442": {
-    "hgnc_id": null,
-    "symbol": "51442",
-    "name": "",
-    "status": ""
-  },
-  "11202": {
-    "hgnc_id": null,
-    "symbol": "11202",
-    "name": "",
-    "status": ""
-  },
-  "80736": {
-    "hgnc_id": null,
-    "symbol": "80736",
-    "name": "",
-    "status": ""
-  },
-  "149563": {
-    "hgnc_id": null,
-    "symbol": "149563",
-    "name": "",
-    "status": ""
-  },
-  "419": {
-    "hgnc_id": null,
-    "symbol": "419",
-    "name": "",
-    "status": ""
-  },
-  "7033": {
-    "hgnc_id": null,
-    "symbol": "7033",
-    "name": "",
-    "status": ""
-  },
-  "25803": {
-    "hgnc_id": null,
-    "symbol": "25803",
-    "name": "",
-    "status": ""
-  },
-  "53335": {
-    "hgnc_id": null,
-    "symbol": "53335",
-    "name": "",
-    "status": ""
-  },
-  "286887": {
-    "hgnc_id": null,
-    "symbol": "286887",
-    "name": "",
-    "status": ""
-  },
-  "6273": {
-    "hgnc_id": null,
-    "symbol": "6273",
-    "name": "",
-    "status": ""
-  },
-  "161835": {
-    "hgnc_id": null,
-    "symbol": "161835",
-    "name": "",
-    "status": ""
-  },
-  "25928": {
-    "hgnc_id": null,
-    "symbol": "25928",
-    "name": "",
-    "status": ""
-  },
-  "29968": {
-    "hgnc_id": null,
-    "symbol": "29968",
-    "name": "",
-    "status": ""
-  },
-  "5241": {
-    "hgnc_id": null,
-    "symbol": "5241",
-    "name": "",
-    "status": ""
-  },
-  "144568": {
-    "hgnc_id": null,
-    "symbol": "144568",
-    "name": "",
-    "status": ""
-  },
-  "7031": {
-    "hgnc_id": null,
-    "symbol": "7031",
-    "name": "",
-    "status": ""
-  },
-  "3899": {
-    "hgnc_id": null,
-    "symbol": "3899",
-    "name": "",
-    "status": ""
-  },
-  "84072": {
-    "hgnc_id": null,
-    "symbol": "84072",
-    "name": "",
-    "status": ""
-  },
-  "388743": {
-    "hgnc_id": null,
-    "symbol": "388743",
-    "name": "",
-    "status": ""
-  },
-  "57758": {
-    "hgnc_id": null,
-    "symbol": "57758",
-    "name": "",
-    "status": ""
-  },
-  "6833": {
-    "hgnc_id": null,
-    "symbol": "6833",
-    "name": "",
-    "status": ""
-  },
-  "11254": {
-    "hgnc_id": null,
-    "symbol": "11254",
-    "name": "",
-    "status": ""
-  },
-  "1308": {
-    "hgnc_id": null,
-    "symbol": "1308",
-    "name": "",
-    "status": ""
-  },
-  "8537": {
-    "hgnc_id": null,
-    "symbol": "8537",
-    "name": "",
-    "status": ""
-  },
-  "367": {
-    "hgnc_id": null,
-    "symbol": "367",
-    "name": "",
-    "status": ""
-  },
-  "342667": {
-    "hgnc_id": null,
-    "symbol": "342667",
-    "name": "",
-    "status": ""
-  },
-  "1602": {
-    "hgnc_id": null,
-    "symbol": "1602",
-    "name": "",
-    "status": ""
-  },
-  "3853": {
-    "hgnc_id": null,
-    "symbol": "3853",
-    "name": "",
-    "status": ""
-  },
-  "57863": {
-    "hgnc_id": null,
-    "symbol": "57863",
-    "name": "",
-    "status": ""
-  },
-  "92291": {
-    "hgnc_id": null,
-    "symbol": "92291",
-    "name": "",
-    "status": ""
-  },
-  "79192": {
-    "hgnc_id": null,
-    "symbol": "79192",
-    "name": "",
-    "status": ""
-  },
-  "1908": {
-    "hgnc_id": null,
-    "symbol": "1908",
-    "name": "",
-    "status": ""
-  },
-  "90019": {
-    "hgnc_id": null,
-    "symbol": "90019",
-    "name": "",
-    "status": ""
-  },
-  "730": {
-    "hgnc_id": null,
-    "symbol": "730",
-    "name": "",
-    "status": ""
-  },
-  "2532": {
-    "hgnc_id": null,
-    "symbol": "2532",
-    "name": "",
-    "status": ""
-  },
-  "146894": {
-    "hgnc_id": null,
-    "symbol": "146894",
-    "name": "",
-    "status": ""
-  },
-  "125": {
-    "hgnc_id": null,
-    "symbol": "125",
-    "name": "",
-    "status": ""
-  },
-  "90865": {
-    "hgnc_id": null,
-    "symbol": "90865",
-    "name": "",
-    "status": ""
-  },
-  "9": {
-    "hgnc_id": null,
-    "symbol": "9",
-    "name": "",
-    "status": ""
-  },
-  "4137": {
-    "hgnc_id": null,
-    "symbol": "4137",
-    "name": "",
-    "status": ""
-  },
-  "5655": {
-    "hgnc_id": null,
-    "symbol": "5655",
-    "name": "",
-    "status": ""
-  },
-  "130497": {
-    "hgnc_id": null,
-    "symbol": "130497",
-    "name": "",
-    "status": ""
-  },
-  "256394": {
-    "hgnc_id": null,
-    "symbol": "256394",
-    "name": "",
-    "status": ""
-  },
-  "2674": {
-    "hgnc_id": null,
-    "symbol": "2674",
-    "name": "",
-    "status": ""
-  },
-  "143941": {
-    "hgnc_id": null,
-    "symbol": "143941",
-    "name": "",
-    "status": ""
-  },
-  "10568": {
-    "hgnc_id": null,
-    "symbol": "10568",
-    "name": "",
-    "status": ""
-  },
-  "8626": {
-    "hgnc_id": null,
-    "symbol": "8626",
-    "name": "",
-    "status": ""
-  },
-  "810": {
-    "hgnc_id": null,
-    "symbol": "810",
-    "name": "",
-    "status": ""
-  },
-  "8581": {
-    "hgnc_id": null,
-    "symbol": "8581",
-    "name": "",
-    "status": ""
-  },
-  "84417": {
-    "hgnc_id": null,
-    "symbol": "84417",
-    "name": "",
-    "status": ""
-  },
-  "1828": {
-    "hgnc_id": null,
-    "symbol": "1828",
-    "name": "",
-    "status": ""
-  },
-  "9568": {
-    "hgnc_id": null,
-    "symbol": "9568",
-    "name": "",
-    "status": ""
-  },
-  "203413": {
-    "hgnc_id": null,
-    "symbol": "203413",
-    "name": "",
-    "status": ""
-  },
-  "152110": {
-    "hgnc_id": null,
-    "symbol": "152110",
-    "name": "",
-    "status": ""
-  },
-  "150572": {
-    "hgnc_id": null,
-    "symbol": "150572",
-    "name": "",
-    "status": ""
-  },
-  "117195": {
-    "hgnc_id": null,
-    "symbol": "117195",
-    "name": "",
-    "status": ""
-  },
-  "158046": {
-    "hgnc_id": null,
-    "symbol": "158046",
-    "name": "",
-    "status": ""
-  },
-  "203328": {
-    "hgnc_id": null,
-    "symbol": "203328",
-    "name": "",
-    "status": ""
-  },
-  "1672": {
-    "hgnc_id": null,
-    "symbol": "1672",
-    "name": "",
-    "status": ""
-  },
-  "94122": {
-    "hgnc_id": null,
-    "symbol": "94122",
-    "name": "",
-    "status": ""
-  },
-  "11122": {
-    "hgnc_id": null,
-    "symbol": "11122",
-    "name": "",
-    "status": ""
-  },
-  "10647": {
-    "hgnc_id": null,
-    "symbol": "10647",
-    "name": "",
-    "status": ""
-  },
-  "4250": {
-    "hgnc_id": null,
-    "symbol": "4250",
-    "name": "",
-    "status": ""
-  },
-  "6279": {
-    "hgnc_id": null,
-    "symbol": "6279",
-    "name": "",
-    "status": ""
-  },
-  "6280": {
-    "hgnc_id": null,
-    "symbol": "6280",
-    "name": "",
-    "status": ""
-  },
-  "6289": {
-    "hgnc_id": null,
-    "symbol": "6289",
-    "name": "",
-    "status": ""
-  },
-  "6288": {
-    "hgnc_id": null,
-    "symbol": "6288",
-    "name": "",
-    "status": ""
-  },
-  "54490": {
-    "hgnc_id": null,
-    "symbol": "54490",
-    "name": "",
-    "status": ""
-  },
-  "10720": {
-    "hgnc_id": null,
-    "symbol": "10720",
-    "name": "",
-    "status": ""
-  },
-  "2893": {
-    "hgnc_id": null,
-    "symbol": "2893",
-    "name": "",
-    "status": ""
-  },
-  "3887": {
-    "hgnc_id": null,
-    "symbol": "3887",
-    "name": "",
-    "status": ""
-  },
-  "5649": {
-    "hgnc_id": null,
-    "symbol": "5649",
-    "name": "",
-    "status": ""
-  },
-  "8842": {
-    "hgnc_id": null,
-    "symbol": "8842",
-    "name": "",
-    "status": ""
-  },
-  "5803": {
-    "hgnc_id": null,
-    "symbol": "5803",
-    "name": "",
-    "status": ""
-  },
-  "285386": {
-    "hgnc_id": null,
-    "symbol": "285386",
-    "name": "",
-    "status": ""
+  "CENPA": {
+    "hgnc_id": "HGNC:1851",
+    "symbol": "CENPA",
+    "name": "centromere protein A",
+    "status": "Approved"
+  },
+  "CDCA5": {
+    "hgnc_id": "HGNC:14626",
+    "symbol": "CDCA5",
+    "name": "cell division cycle associated 5",
+    "status": "Approved"
+  },
+  "KIF2C": {
+    "hgnc_id": "HGNC:6393",
+    "symbol": "KIF2C",
+    "name": "kinesin family member 2C",
+    "status": "Approved"
+  },
+  "UBE2C": {
+    "hgnc_id": "HGNC:15937",
+    "symbol": "UBE2C",
+    "name": "ubiquitin conjugating enzyme E2 C",
+    "status": "Approved"
+  },
+  "NDC80": {
+    "hgnc_id": "HGNC:16909",
+    "symbol": "NDC80",
+    "name": "NDC80 kinetochore complex component",
+    "status": "Approved"
+  },
+  "MTFR2": {
+    "hgnc_id": "HGNC:21115",
+    "symbol": "MTFR2",
+    "name": "mitochondrial fission regulator 2",
+    "status": "Approved"
+  },
+  "TROAP": {
+    "hgnc_id": "HGNC:12327",
+    "symbol": "TROAP",
+    "name": "trophinin associated protein",
+    "status": "Approved"
+  },
+  "KIF20A": {
+    "hgnc_id": "HGNC:9787",
+    "symbol": "KIF20A",
+    "name": "kinesin family member 20A",
+    "status": "Approved"
+  },
+  "OIP5": {
+    "hgnc_id": "HGNC:20300",
+    "symbol": "OIP5",
+    "name": "Opa interacting protein 5",
+    "status": "Approved"
+  },
+  "CDKN3": {
+    "hgnc_id": "HGNC:1791",
+    "symbol": "CDKN3",
+    "name": "cyclin dependent kinase inhibitor 3",
+    "status": "Approved"
+  },
+  "ZWINT": {
+    "hgnc_id": "HGNC:13195",
+    "symbol": "ZWINT",
+    "name": "ZW10 interacting kinetochore protein",
+    "status": "Approved"
+  },
+  "POLQ": {
+    "hgnc_id": "HGNC:9186",
+    "symbol": "POLQ",
+    "name": "DNA polymerase theta",
+    "status": "Approved"
+  },
+  "CENPE": {
+    "hgnc_id": "HGNC:1856",
+    "symbol": "CENPE",
+    "name": "centromere protein E",
+    "status": "Approved"
+  },
+  "SPAG5": {
+    "hgnc_id": "HGNC:13452",
+    "symbol": "SPAG5",
+    "name": "sperm associated antigen 5",
+    "status": "Approved"
+  },
+  "RAD51AP1": {
+    "hgnc_id": "HGNC:16956",
+    "symbol": "RAD51AP1",
+    "name": "RAD51 associated protein 1",
+    "status": "Approved"
+  },
+  "CENPF": {
+    "hgnc_id": "HGNC:1857",
+    "symbol": "CENPF",
+    "name": "centromere protein F",
+    "status": "Approved"
+  },
+  "PLK4": {
+    "hgnc_id": "HGNC:11397",
+    "symbol": "PLK4",
+    "name": "polo like kinase 4",
+    "status": "Approved"
+  },
+  "TACC3": {
+    "hgnc_id": "HGNC:11524",
+    "symbol": "TACC3",
+    "name": "transforming acidic coiled-coil containing protein 3",
+    "status": "Approved"
+  },
+  "CKS2": {
+    "hgnc_id": "HGNC:2000",
+    "symbol": "CKS2",
+    "name": "CDC28 protein kinase regulatory subunit 2",
+    "status": "Approved"
+  },
+  "CHEK1": {
+    "hgnc_id": "HGNC:1925",
+    "symbol": "CHEK1",
+    "name": "checkpoint kinase 1",
+    "status": "Approved"
+  },
+  "ABCA8": {
+    "hgnc_id": "HGNC:38",
+    "symbol": "ABCA8",
+    "name": "ATP binding cassette subfamily A member 8",
+    "status": "Approved"
+  },
+  "PODN": {
+    "hgnc_id": "HGNC:23174",
+    "symbol": "PODN",
+    "name": "podocan",
+    "status": "Approved"
+  },
+  "CKS1B": {
+    "hgnc_id": "HGNC:19083",
+    "symbol": "CKS1B",
+    "name": "CDC28 protein kinase regulatory subunit 1B",
+    "status": "Approved"
+  },
+  "ADH1B": {
+    "hgnc_id": "HGNC:250",
+    "symbol": "ADH1B",
+    "name": "alcohol dehydrogenase 1B (class I), beta polypeptide",
+    "status": "Approved"
+  },
+  "ABCA9": {
+    "hgnc_id": "HGNC:39",
+    "symbol": "ABCA9",
+    "name": "ATP binding cassette subfamily A member 9",
+    "status": "Approved"
+  },
+  "KERA": {
+    "hgnc_id": "HGNC:6309",
+    "symbol": "KERA",
+    "name": "keratocan",
+    "status": "Approved"
+  },
+  "HSPB6": {
+    "hgnc_id": "HGNC:26511",
+    "symbol": "HSPB6",
+    "name": "heat shock protein family B (small) member 6",
+    "status": "Approved"
+  },
+  "CIDEA": {
+    "hgnc_id": "HGNC:1976",
+    "symbol": "CIDEA",
+    "name": "cell death inducing DFFA like effector a",
+    "status": "Approved"
+  },
+  "LRRC17": {
+    "hgnc_id": "HGNC:16895",
+    "symbol": "LRRC17",
+    "name": "leucine rich repeat containing 17",
+    "status": "Approved"
+  },
+  "INMT": {
+    "hgnc_id": "HGNC:6069",
+    "symbol": "INMT",
+    "name": "indolethylamine N-methyltransferase",
+    "status": "Approved"
+  },
+  "C1QTNF7": {
+    "hgnc_id": "HGNC:14342",
+    "symbol": "C1QTNF7",
+    "name": "C1q and TNF related 7",
+    "status": "Approved"
+  },
+  "GALNT15": {
+    "hgnc_id": "HGNC:21531",
+    "symbol": "GALNT15",
+    "name": "polypeptide N-acetylgalactosaminyltransferase 15",
+    "status": "Approved"
+  },
+  "PCP2": {
+    "hgnc_id": "HGNC:30209",
+    "symbol": "PCP2",
+    "name": "Purkinje cell protein 2",
+    "status": "Approved"
+  },
+  "ABCA10": {
+    "hgnc_id": "HGNC:30",
+    "symbol": "ABCA10",
+    "name": "ATP binding cassette subfamily A member 10",
+    "status": "Approved"
+  },
+  "ALDH1L1": {
+    "hgnc_id": "HGNC:3978",
+    "symbol": "ALDH1L1",
+    "name": "aldehyde dehydrogenase 1 family member L1",
+    "status": "Approved"
+  },
+  "C1QTNF3": {
+    "hgnc_id": "HGNC:14326",
+    "symbol": "C1QTNF3",
+    "name": "C1q and TNF related 3",
+    "status": "Approved"
+  },
+  "AGR2": {
+    "hgnc_id": "HGNC:328",
+    "symbol": "AGR2",
+    "name": "anterior gradient 2, protein disulphide isomerase family member",
+    "status": "Approved"
+  },
+  "DEGS2": {
+    "hgnc_id": "HGNC:20113",
+    "symbol": "DEGS2",
+    "name": "delta 4-desaturase, sphingolipid 2",
+    "status": "Approved"
+  },
+  "NOSTRIN": {
+    "hgnc_id": "HGNC:20203",
+    "symbol": "NOSTRIN",
+    "name": "nitric oxide synthase trafficking",
+    "status": "Approved"
+  },
+  "TUBA3E": {
+    "hgnc_id": "HGNC:20765",
+    "symbol": "TUBA3E",
+    "name": "tubulin alpha 3e",
+    "status": "Approved"
+  },
+  "TUBA3D": {
+    "hgnc_id": "HGNC:24071",
+    "symbol": "TUBA3D",
+    "name": "tubulin alpha 3d",
+    "status": "Approved"
+  },
+  "HSPA12B": {
+    "hgnc_id": "HGNC:16193",
+    "symbol": "HSPA12B",
+    "name": "heat shock protein family A (Hsp70) member 12B",
+    "status": "Approved"
+  },
+  "PGLYRP2": {
+    "hgnc_id": "HGNC:30013",
+    "symbol": "PGLYRP2",
+    "name": "peptidoglycan recognition protein 2",
+    "status": "Approved"
+  },
+  "CYP4F22": {
+    "hgnc_id": "HGNC:26820",
+    "symbol": "CYP4F22",
+    "name": "cytochrome P450 family 4 subfamily F member 22",
+    "status": "Approved"
+  },
+  "NLRP8": {
+    "hgnc_id": "HGNC:22940",
+    "symbol": "NLRP8",
+    "name": "NLR family pyrin domain containing 8",
+    "status": "Approved"
+  },
+  "NLRP5": {
+    "hgnc_id": "HGNC:21269",
+    "symbol": "NLRP5",
+    "name": "NLR family pyrin domain containing 5",
+    "status": "Approved"
+  },
+  "CMA1": {
+    "hgnc_id": "HGNC:2097",
+    "symbol": "CMA1",
+    "name": "chymase 1",
+    "status": "Approved"
+  },
+  "CIRBP": {
+    "hgnc_id": "HGNC:1982",
+    "symbol": "CIRBP",
+    "name": "cold inducible RNA binding protein",
+    "status": "Approved"
+  },
+  "LRRC56": {
+    "hgnc_id": "HGNC:25430",
+    "symbol": "LRRC56",
+    "name": "leucine rich repeat containing 56",
+    "status": "Approved"
+  },
+  "TSPAN1": {
+    "hgnc_id": "HGNC:20657",
+    "symbol": "TSPAN1",
+    "name": "tetraspanin 1",
+    "status": "Approved"
+  },
+  "SLC34A2": {
+    "hgnc_id": "HGNC:11020",
+    "symbol": "SLC34A2",
+    "name": "solute carrier family 34 member 2",
+    "status": "Approved"
+  },
+  "SLC6A14": {
+    "hgnc_id": "HGNC:11047",
+    "symbol": "SLC6A14",
+    "name": "solute carrier family 6 member 14",
+    "status": "Approved"
+  },
+  "FAM47E": {
+    "hgnc_id": "HGNC:34343",
+    "symbol": "FAM47E",
+    "name": "family with sequence similarity 47 member E",
+    "status": "Approved"
+  },
+  "UBXN10": {
+    "hgnc_id": "HGNC:26354",
+    "symbol": "UBXN10",
+    "name": "UBX domain protein 10",
+    "status": "Approved"
+  },
+  "KIF12": {
+    "hgnc_id": "HGNC:21495",
+    "symbol": "KIF12",
+    "name": "kinesin family member 12",
+    "status": "Approved"
+  },
+  "KLHDC1": {
+    "hgnc_id": "HGNC:19836",
+    "symbol": "KLHDC1",
+    "name": "kelch domain containing 1",
+    "status": "Approved"
+  },
+  "CNN1": {
+    "hgnc_id": "HGNC:2155",
+    "symbol": "CNN1",
+    "name": "calponin 1",
+    "status": "Approved"
   }
 }

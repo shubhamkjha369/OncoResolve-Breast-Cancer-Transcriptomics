@@ -1,0 +1,2 @@
+Clinical_patients,Patients_matched_to_subtypes,Patients_without_subtype,KM_N,KM_Deaths,Cox_N,Cox_Deaths,Cox_Excluded_missing_covariates,KM_Logrank_P,Cox_C_index,Cox_Penalizer,Cox_Reference_Subtype
+1084,784,300,773,110,759,103,14,0.1658290897107197,0.773532444000125,0.1,luminal_A

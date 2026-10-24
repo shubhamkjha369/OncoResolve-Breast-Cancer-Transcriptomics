@@ -1,0 +1,29 @@
+{
+  "analysis": "Reference-based TME marker scoring",
+  "reference_database": "PanglaoDB via decoupler",
+  "scoring_method": "Mean gene-wise z-score across measured marker genes",
+  "organism": "human",
+  "minimum_reference_sensitivity": 0.5,
+  "minimum_measured_markers": 5,
+  "minimum_coverage_fraction": 0.2,
+  "n_samples": 784,
+  "n_genes": 17951,
+  "n_signatures": 19,
+  "subtypes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ],
+  "interpretation": "Relative marker-expression patterns, not direct cell abundance or cell fractions.",
+  "outputs": [
+    "tme_marker_zscore_patient_scores.parquet",
+    "tme_marker_coverage_qc.csv",
+    "tme_marker_zscore_subtype_means.csv",
+    "tme_marker_zscore_subtype_medians.csv",
+    "tme_subtype_association_statistics.csv",
+    "fig37_tme_marker_zscore_heatmap.png",
+    "fig37_tme_marker_zscore_heatmap.pdf"
+  ]
+}

@@ -16,9 +16,10 @@
     "source_matrix": "discovery cohort"
   },
   "method": "decoupler.mt.ulm",
+  "pvalue_adjustment": "Benjamini-Hochberg FDR across signatures within each sample",
   "tmin": 5,
   "n_samples": 784,
-  "n_expression_genes": 17993,
+  "n_expression_genes": 17951,
   "n_tme_signatures": 22,
   "n_network_edges": 310,
   "tme_signatures": [

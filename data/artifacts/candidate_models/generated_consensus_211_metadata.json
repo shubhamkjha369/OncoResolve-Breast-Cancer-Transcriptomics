@@ -1,0 +1,31 @@
+{
+  "stage": "generated_211_gene_signature_discovery_refit",
+  "discovery_samples": 784,
+  "input_feature_count": 17952,
+  "feature_count": 211,
+  "feature_schema": "generated_consensus_211_gene_features.pkl",
+  "signature_table": "generated_consensus_211_biomarkers.parquet",
+  "selector": {
+    "candidate_top_k": 2000,
+    "signature_top_k": 211,
+    "stability_folds": 3,
+    "stability_repeats": 2,
+    "logistic_C": 0.1,
+    "rf_n_estimators": 300,
+    "ranking_models": [
+      "standardized logistic regression",
+      "random forest"
+    ],
+    "score": "mean model percentile importance multiplied by selection frequency"
+  },
+  "legacy_consensus_artifacts_used": false,
+  "holdout_data_used": false,
+  "random_seed": 42,
+  "subtype_classes": [
+    "basal",
+    "her2",
+    "luminal_A",
+    "luminal_B",
+    "normal"
+  ]
+}
