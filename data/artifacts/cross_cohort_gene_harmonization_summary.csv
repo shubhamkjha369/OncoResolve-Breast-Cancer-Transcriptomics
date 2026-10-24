@@ -1,0 +1,7 @@
+Cohort / Comparison,Unique Genes
+TCGA Discovery (HUGO),17951
+SMC 2018 (HUGO mapped),17907
+SCAN-B (HUGO space),5108
+METABRIC (HUGO space),713
+"Shared RNA-seq (TCGA, SMC, SCAN-B)",2839
+Shared Across All 4 Cohorts,318
