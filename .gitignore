@@ -116,5 +116,6 @@ download_and_format_depmap.py
 test_*.pkl
 *.pdf.tmp
 Comparison*.pdf
+*.bak
 
 

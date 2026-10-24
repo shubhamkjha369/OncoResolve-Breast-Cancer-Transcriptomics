@@ -63,7 +63,7 @@
       ],
       "validation_sample_count": 8,
       "max_probability_difference": 1.1102230246251565e-16,
-      "sha256": "df5f4e5ff669a29c2e546f06f48cd2172be05d8c296167dcb0b0ec86875b9c14",
+      "sha256": "809a3ad6d46349b892c2ce2e05e9682579468f70a63aed483f5406cd8409c08b",
       "serialization_test": "passed"
     },
     "mlp": {
@@ -85,7 +85,7 @@
       ],
       "validation_sample_count": 8,
       "max_probability_difference": 0.0,
-      "sha256": "ef5679f76c236df734be5bd1b9a1c2c41ab919ed375762c260ab6de62b82d5cb",
+      "sha256": "abb6b47a07aa3ce0b5238fc17067499a90a606b8ece7d0b9a21c2f004d8bc7c5",
       "serialization_test": "passed"
     }
   },
