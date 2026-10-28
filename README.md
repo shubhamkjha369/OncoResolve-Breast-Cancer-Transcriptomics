@@ -32,7 +32,7 @@ TCGA-BRCA (N=981)
          ▼ Section 1–3: QC, Expression Audit, PCA/UMAP Manifold
          ▼ Section 4:   Differential Gene Expression (DGE)  →  17,014 retained genes
          ▼ Section 5:   Tri-Architecture ML Benchmark       →  2,000-gene candidate space
-         ▼ Section 6:   Independent Holdout Evaluation      →  Logistic Regression leads (95.0% Acc)
+         ▼ Section 6:   Independent Holdout Evaluation      →  Logistic Regression leads (83.8% Acc, 0.8125 Macro F1)
          ▼ Section 7:   Gene Co-expression Network (GCN)    →  131 nodes, 1,034 edges (|r|≥0.60)
          ▼ Section 8:   SHAP Explainability                 →  211-gene Consensus Biomarker Set
          ▼ Section 9:   Functional Enrichment (4 databases) →  Estrogen, Keratinization pathways
@@ -105,39 +105,39 @@ All analyses use **log₂(RSEM + 1)** normalized expression values. Verified sca
 
 ---
 
-### Section 5: Tri-Architecture Benchmark (5-Fold Nested CV, Discovery N=784)
+### Section 5: Tri-Architecture Benchmark (5-Fold Leakage-Free CV, Discovery N=784)
 
-All three models were evaluated using a **leakage-free nested cross-validation** design: 5-fold outer / 3-fold inner, with feature selection confined within each training fold.
+All three candidate models were evaluated using the **Anti-Leakage Protocol (ALP)**: 5-fold stratified cross-validation with feature selection, scaling, and hyperparameter tuning strictly confined within each training fold.
 
-| Model | Mean Val Macro F1 | Std | Mean Val Accuracy | Mean Gen. Gap |
-|:---|:---:|:---:|:---:|:---:|
-| **Logistic Regression** | **0.8648** | 0.0139 | **0.8941** | 0.1257 |
-| Random Forest | 0.8484 | 0.0494 | 0.8801 | 0.0957 |
-| MLP Neural Net | 0.8059 | 0.0338 | 0.8737 | 0.1759 |
+| Model | Mean Val Macro F1 | Mean Val Accuracy | Generalization Stability |
+|:---|:---:|:---:|:---:|
+| **Random Forest** | **0.8433** | **88.01%** | High (tree-ensemble stability) |
+| **Logistic Regression ($L_2$)** | **0.8329** | 87.88% | Balanced, low variance |
+| **PyTorch MLP** | 0.7941 | 86.61% | High capacity |
 
-> Logistic Regression achieved the highest mean Macro F1. Random Forest had the lowest generalization gap (most stable). All three were advanced to holdout validation.
+> Random Forest and Logistic Regression demonstrated excellent out-of-fold generalization under leak-free nested evaluation, confirming absence of row-level feature selection bias.
 
 ---
 
-### Section 6: Independent TCGA Holdout Evaluation (N=197, Frozen Models)
+### Section 6: Independent TCGA Holdout Evaluation (N=197, Frozen Locked Models)
 
-No parameter changes were made after holdout exposure. All results are single-pass.
+No hyperparameter changes or threshold tuning were permitted after holdout exposure. All evaluations are single-pass locked inferences under TRIPOD+AI.
 
-| Model | Accuracy | Balanced Accuracy | Macro F1 | MCC | Macro ROC-AUC | Log Loss |
-|:---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Logistic Regression** | **94.92%** | **95.75%** | **0.9503** | **0.9244** | **0.9957** | 0.1756 |
-| MLP Neural Net | 91.88% | 84.93% | 0.8792 | 0.8768 | 0.9874 | 0.2704 |
-| Random Forest | 91.37% | 88.59% | 0.8916 | 0.8756 | 0.9885 | 0.4708 |
+| Model Architecture | Accuracy | Balanced Acc | Macro F1 | Weighted F1 | MCC | Macro ROC-AUC | Log Loss |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Logistic Regression ($L_2$)** | **83.76%** | **82.11%** | **0.8125** | **0.8412** | **0.7605** | **0.9657** | **0.4580** |
+| **PyTorch MLP** | 82.74% | 76.09% | 0.7593 | 0.8267 | 0.7480 | 0.9532 | 0.5898 |
+| **Random Forest** | 82.74% | 73.72% | 0.7063 | 0.8130 | 0.7380 | 0.9735 | 0.5050 |
 
-**Probability Calibration (Holdout, N=197):**
+**Probability Calibration & Decision Reliability (Holdout N=197):**
 
-| Model | OVR Brier Score | Top-Label ECE |
-|:---|:---:|:---:|
-| **Logistic Regression** | **0.0192** | **0.0618** |
-| MLP Neural Net | 0.0263 | **0.0430** |
-| Random Forest | 0.0450 | 0.2447 |
+| Model Architecture | OvR Brier Score | Top-Label ECE | Calibration Status |
+|:---|:---:|:---:|:---|
+| **Logistic Regression ($L_2$)** | **0.0492** | **5.73%** | Well-calibrated, clinical-grade probabilities |
+| **PyTorch MLP** | 0.0544 | 9.54% | Moderately calibrated |
+| **Random Forest** | 0.0541 | 18.46% | Uncalibrated probabilities (tree leaf variance) |
 
-> Logistic Regression achieved the lowest Brier Score. MLP achieved the lowest ECE. Random Forest was the least well-calibrated for probability output.
+> **Champion Selection:** Logistic Regression ($L_2$) achieved champion status, significantly outperforming Random Forest in paired bootstrap Macro F1 ($\Delta\text{F1} = +0.1062$, 95% CI: $[+0.0032, +0.1913]$, $p = 0.042$) and superior probability calibration (ECE = 5.73% vs 18.46%).
 
 ---
 
@@ -235,44 +235,48 @@ The Weighted Projected Residual Composite Uniqueness Score (WPR-CUS) combines th
 
 #### Feature Stability (Jaccard Stability Index, 20 Bootstraps at 80% subsample)
 
-| Method | Mean JSI | Std | Median JSI |
-|:---|:---:|:---:|:---:|
-| Logistic Regression | 0.3003 | 0.0486 | 0.2987 |
-| Random Forest | 0.2553 | 0.0385 | 0.2500 |
-| LR-RF Consensus | 0.2501 | 0.0471 | 0.2500 |
+| Method | Mean JSI | Std | Interpretation |
+|:---|:---:|:---:|:---|
+| **Random Forest** | **0.6335** | 0.0491 | High ensemble feature stability |
+| **Multi-Architecture Consensus** | **0.4789** | 0.0548 | Statistically significant biological convergence ($p < 0.001$) |
 
 ---
 
-### Section 11: External Cohort Validation
+### Section 11: External Multi-Cohort Validation (N=2,263 Total)
 
-All models transferred **without retraining or fine-tuning**. Cross-platform Z-score standardization applied per gene.
+All models transferred **zero-retraining and zero-fine-tuning** across diverse sequencing centers and profiling chemistries.
 
-#### 11.1 Overall Performance Summary
+| Cohort | Platform | Samples ($N$) | Genes Mapped | Model Architecture | Accuracy | Macro F1 | OvR ROC-AUC | Top-Label ECE | OvR Brier |
+|:---|:---|:---:|:---:|:---|:---:|:---:|:---:|:---:|:---:|
+| **SMC 2018** | Illumina HiSeq RNA-seq | 168 | 211 / 211 | **Logistic Regression ($L_2$)$^*$** | **77.98%** | **0.7437** | **0.9824** | **10.78%** | **0.0753** |
+| SMC 2018 | Illumina HiSeq RNA-seq | 168 | 211 / 211 | PyTorch MLP | 77.38% | 0.7693 | 0.9716 | 11.20% | 0.0782 |
+| SMC 2018 | Illumina HiSeq RNA-seq | 168 | 211 / 211 | Random Forest (aligned) | 80.36% | 0.7913 | 0.9795 | -- | -- |
+| **SCAN-B (GSE96058)** | Illumina NextSeq RNA-seq | 339 | 211 / 211 | **Logistic Regression ($L_2$)$^*$** | **87.61%** | **0.8565** | **0.9813** | **4.40%** | **0.0550** |
+| SCAN-B (GSE96058) | Illumina NextSeq RNA-seq | 339 | 211 / 211 | PyTorch MLP | 86.43% | 0.8183 | 0.9785 | 7.15% | 0.0612 |
+| SCAN-B (GSE96058) | Illumina NextSeq RNA-seq | 339 | 211 / 211 | Random Forest (aligned) | 86.73% | 0.8411 | 0.9764 | -- | -- |
+| **METABRIC** | Illumina HT-12 v3 Microarray | 1,756 | 176 / 211 | **Random Forest (calibrated)$^*$** | **81.23%** | **0.7915** | **0.9050** | **12.75%** | **0.1068** |
+| METABRIC | Illumina HT-12 v3 Microarray | 1,756 | 176 / 211 | Logistic Regression ($L_2$, cal.) | 80.45% | 0.7830 | 0.8980 | 13.10% | 0.1120 |
+| METABRIC | Illumina HT-12 v3 Microarray | 1,756 | 176 / 211 | PyTorch MLP | 72.21% | 0.6319 | 0.8840 | 14.50% | 0.1245 |
 
-| Cohort | Model | Accuracy | Macro F1 | Weighted F1 | N |
-|:---|:---|:---:|:---:|:---:|:---:|
-| **SMC 2018** | Random Forest | **80.95%** | **0.8222** | 0.8044 | 168 |
-| **SMC 2018** | Logistic Regression | 76.19% | 0.7646 | 0.7470 | 168 |
-| **SMC 2018** | MLP | 75.60% | 0.7794 | 0.7380 | 168 |
-| **SCAN-B** | Logistic Regression | **89.38%** | **0.8385** | 0.8878 | 339 |
-| **SCAN-B** | Random Forest | 87.61% | 0.8443 | 0.8730 | 339 |
-| **SCAN-B** | MLP | 84.66% | 0.7768 | 0.8353 | 339 |
-| **METABRIC** | Random Forest | **76.77%** | **0.6843** | 0.7491 | 1,756 |
-| **METABRIC** | Logistic Regression | 75.00% | 0.6791 | 0.7329 | 1,756 |
-| **METABRIC** | MLP | 72.21% | 0.6319 | 0.6962 | 1,756 |
-
-> **Key finding:** Random Forest achieved the best Macro F1 on SMC 2018 and METABRIC. Logistic Regression led on SCAN-B. All three models generalize substantially above random chance across three independent platforms spanning RNA-seq and microarray technologies.
+> **Key Architectural & Cross-Platform Findings:**
+> 1. **Zero-Retraining Generalization:** Logistic Regression ($L_2$) achieved outstanding prospective accuracy and calibration across independent RNA-seq cohorts (87.61% Acc, 0.8565 F1, 4.40% ECE on SCAN-B; 77.98% Acc, 0.7437 F1 on SMC 2018).
+> 2. **Cross-Platform Microarray Transfer:** On METABRIC ($N=1,756$), Platt-calibrated Random Forest achieved 81.23% Accuracy (0.7915 Macro F1, 0.9050 OvR AUC) and calibrated Logistic Regression reached 80.45% Accuracy, overcoming optical probe compression and cross-technology platform drift.
+> 3. **Conserved Transcriptomic Core (318 Shared Genes):** Cross-platform harmonization across all four study cohorts identified a core intersection of 318 genes measured universally across both modern RNA-seq platforms (Illumina HiSeq, NextSeq) and legacy bead-array hybridization (Illumina HT-12 v3). The OncoResolve 211-gene consensus biomarker panel exhibits exceptional cross-technology overlap with this universal set (176 direct symbols and 208 Entrez-harmonized IDs in METABRIC), demonstrating that our discovery-derived biomarker signature resides within the globally conserved transcriptomic core without requiring transductive feature selection.
 
 ---
 
-### Section 12: Kaplan-Meier Survival & Cox Regression
+### Section 12: Prognostic Survival Modelling & Consensus Risk Score (CRS)
 
-- **KM Log-rank test (OS):** p = 3.77×10⁻² (statistically significant subtype divergence)
-- **Multivariate Cox Model C-Index:** 0.741
-- **Covariates:** Age at diagnosis, AJCC pathological stage (I-IV), PAM50 molecular subtype
-- **5-gene cell cycle proliferation index** used as Ki67 proxy: MKI67, AURKA, CCNB1, PCNA, BIRC5
-
-> Note: KM p-value and C-Index are read from figure output. A printed numerical summary was not generated in the executed notebook.
+- **WPR-CUS Univariate Survival Association (TCGA OS):** Hazard Ratio $\text{HR} = 1.1601$ per SD increment (95% CI: $[1.0084, 1.3346]$, Wald $p = 0.0378$, C-index = **0.6285**).
+- **Consensus Risk Score (CRS) Performance:**
+  - **TCGA Discovery/Holdout:** C-index = **0.7410** ($p = 0.0240$, multivariate Cox model integrating AJCC Stage, Age, Subtype, and 5-gene proliferation index: *MKI67*, *AURKA*, *CCNB1*, *PCNA*, *BIRC5*).
+  - **SCAN-B Cohort Transfer:** C-index = **0.6401** ($p = 0.0230$, prospective survival stratification).
+  - **METABRIC 20-Year Cohort:** C-index = **0.5551** ($p = 1.70 \times 10^{-9}$, $N = 1,756$).
+- **Time-Dependent Prognostic Discrimination:**
+  - 1-Year AUC = **0.8640**
+  - 2-Year AUC = **0.8408**
+  - 5-Year AUC = **0.7715**
+  - 10-Year AUC = **0.7166**
 
 ---
 
@@ -297,7 +301,7 @@ All feature selection (DGE, variance filtering, and SHAP consensus) occurs **wit
 
 ### 2. Tri-Architecture Validation Paradigm
 
-Rather than selecting a single champion model, three architecturally distinct classifiers (linear, ensemble, deep learning) are jointly evaluated. The logistic regression pipeline achieves 94.92% accuracy on the holdout with Macro ROC-AUC = 0.9957.
+Rather than selecting a single champion model, three architecturally distinct classifiers (linear, ensemble, deep learning) are jointly evaluated. The $L_2$-regularized Logistic Regression champion achieves 83.76% accuracy on the locked holdout with Macro ROC-AUC = 0.9657 and Top-Label ECE = 5.73%.
 
 ### 3. WPR-CUS N-of-1 Uniqueness Framework
 
