@@ -1,5 +1,0 @@
-Endpoint,Full Name,Valid Samples,Events Count,Censored Count,Event Rate (%),Median Follow-up (Mo)
-OS,Overall Survival,981,132,849,13.5%,27.0 (14.7 - 55.7)
-DFS,Disease-Free Survival,852,74,778,8.7%,25.0 (14.2 - 52.9)
-PFS,Progression-Free Survival,980,128,852,13.1%,25.2 (14.0 - 52.9)
-DSS,Disease-Specific Survival,962,69,893,7.2%,26.2 (14.5 - 55.4)

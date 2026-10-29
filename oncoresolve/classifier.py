@@ -217,6 +217,35 @@ class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
         
         return np.stack(attributions, axis=2)
 
+    def eval(self):
+        """Set underlying PyTorch model to evaluation mode."""
+        if self.model_ is not None:
+            self.model_.eval()
+        return self
+
+    def train(self, mode=True):
+        """Set underlying PyTorch model to train mode."""
+        if self.model_ is not None:
+            self.model_.train(mode)
+        return self
+
+    def parameters(self, recurse=True):
+        """Returns an iterator over underlying PyTorch model parameters."""
+        if self.model_ is not None:
+            return self.model_.parameters(recurse=recurse)
+        raise RuntimeError("PyTorchMLPClassifier model is not fitted.")
+
+    def zero_grad(self, set_to_none=True):
+        """Sets gradients of all model parameters to zero."""
+        if self.model_ is not None:
+            self.model_.zero_grad(set_to_none=set_to_none)
+
+    def __call__(self, *args, **kwargs):
+        """Forward pass through underlying PyTorch model."""
+        if self.model_ is not None:
+            return self.model_(*args, **kwargs)
+        raise RuntimeError("PyTorchMLPClassifier model is not fitted.")
+
 
 class OncoClassifier:
     """

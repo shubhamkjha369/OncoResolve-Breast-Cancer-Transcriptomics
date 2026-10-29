@@ -118,4 +118,10 @@ test_*.pkl
 Comparison*.pdf
 *.bak
 
+# Presentation & Interview Guide
+ONCORESOLVE_NOTEBOOK_DEEP_DIVE_INTERVIEW_GUIDE.md
+Oncoresolve-Breast Cancer Subtyping and Precision Profiling.pptx
 
+# Backups & Scratch Inventory
+backups/
+scratch_cell_inventory.json
