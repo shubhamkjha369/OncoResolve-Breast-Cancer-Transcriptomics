@@ -1,8 +1,8 @@
 """
 automl_page.py - Premium Clinical Subtype Predictor & Benchmarking Interface
 =============================================================================
-Deploys locked v3.5 pre-trained models (LightGBM + Linear SVM)
-on user-uploaded transcriptomics datasets.
+Deploys locked Tri-Architecture pre-trained models (MLP, Random Forest, L2 Logistic Regression)
+trained on the 211-gene consensus biomarker panel for user-uploaded transcriptomics datasets.
 """
 import time
 import html
@@ -20,6 +20,7 @@ import streamlit as st
 # =============================================================================
 BASE_DIR = Path(__file__).resolve().parent
 ARTIFACT_DIR = BASE_DIR / "data" / "artifacts"
+DEPLOY_DIR = ARTIFACT_DIR / "deployment_candidates"
 PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
 PLOTLY_LAYOUT = dict(
@@ -38,14 +39,11 @@ SUBTYPE_COLORS = {
     "normal": "#ec4899",
 }
 
-PRETRAINED_LR_KEY = "linear_svm_model"
-PRETRAINED_LGBM_KEY = "lgbm_model"
-
 # Ground-truth mapping options for benchmarking
 SUBTYPE_MAPPINGS = {
-    "Basal": "basal", "basal": "basal", "TNBC": "basal",
-    "Her2": "her2", "HER2": "her2", "HER": "her2", "her2": "her2",
-    "LumA": "luminal_A", "Luminal A": "luminal_A", "luminal_A": "luminal_A", "luminal-a": "luminal_A",
+    "Basal": "basal", "basal": "basal", "TNBC": "basal", "Basal-like": "basal",
+    "Her2": "her2", "HER2": "her2", "HER": "her2", "her2": "her2", "HER2-enriched": "her2",
+    "LumA": "luminal_A", "Luminal A": "luminal_A", "luminal_A": "luminal_A", "luminal-a": "luminal_A", "LumA/B": "luminal_A",
     "LumB": "luminal_B", "Luminal B": "luminal_B", "luminal_B": "luminal_B", "luminal-b": "luminal_B",
     "Normal": "normal", "normal": "normal", "Normal-like": "normal",
 }
@@ -71,61 +69,81 @@ def _prediction_color_map(labels):
 # =============================================================================
 # DATA PREPARATION & ALIGNMENT
 # =============================================================================
-def _load_and_align_features(df, consensus_genes, entrez_to_hugo):
+def _load_and_align_features(df, target_features, consensus_df, entrez_to_hugo):
     """
     Transposes, filters, and aligns the uploaded dataframe to match the consensus
-    biomarker signature, applying log2 scaling if linear expected counts are detected.
+    211-biomarker signature, applying log2 scaling if linear counts are detected.
     """
     raw_df = df.copy()
 
     # Determine index and columns
-    # If the first column is string-like/identifiers, set it as index
     first_col = raw_df.columns[0]
     first_col_series = raw_df[first_col]
     if pd.api.types.is_object_dtype(first_col_series) or pd.api.types.is_string_dtype(first_col_series):
         raw_df.set_index(first_col, inplace=True)
 
-    # Detect genes x samples format (e.g. if >10000 rows and <500 columns) and transpose
+    # Detect genes x samples format (e.g. if >500 rows and <500 columns) and transpose
     if raw_df.shape[0] > 500 and raw_df.shape[1] < 500:
         st.warning("Detected (genes × patients) orientation. Automatically transposing gene expression matrix.")
         raw_df = raw_df.T
 
     patient_ids = [str(x) for x in raw_df.index]
-
-    # Clean whitespace from column names
     raw_df.columns = raw_df.columns.astype(str).str.strip()
 
-    # Pre-allocate array for aligned feature values
-    correct_genes_order = sorted([str(g) for g in consensus_genes])
-    X_aligned = np.zeros((raw_df.shape[0], len(correct_genes_order)))
+    # Build bidirectional mapping dictionaries
+    symbol_to_entrez = {}
+    entrez_to_symbol = {}
+    if consensus_df is not None and "feature" in consensus_df.columns and "mapped_symbol" in consensus_df.columns:
+        for _, row in consensus_df.iterrows():
+            f_str = str(row["feature"])
+            s_str = str(row["mapped_symbol"])
+            symbol_to_entrez[s_str.upper()] = f_str
+            entrez_to_symbol[f_str] = s_str
+
+    if entrez_to_hugo:
+        for ent, hug in entrez_to_hugo.items():
+            ent_str = str(ent)
+            hug_str = str(hug)
+            if hug_str.upper() not in symbol_to_entrez:
+                symbol_to_entrez[hug_str.upper()] = ent_str
+            if ent_str not in entrez_to_symbol:
+                entrez_to_symbol[ent_str] = hug_str
+
+    # Create mapping from raw_df columns to upper case
+    col_upper_map = {str(c).upper(): c for c in raw_df.columns}
+
+    # Pre-allocate aligned matrix
+    n_samples = raw_df.shape[0]
+    n_feats = len(target_features)
+    X_aligned = np.zeros((n_samples, n_feats), dtype=np.float32)
     mapped_features = []
     missing_features = []
 
-    # Map genes to raw_df columns
-    for idx, target_gene in enumerate(correct_genes_order):
+    for idx, target_feat in enumerate(target_features):
+        target_str = str(target_feat)
+        hugo_sym = entrez_to_symbol.get(target_str, "").upper()
+
         found_col = None
-        target_str = str(target_gene)
-        
         if target_str in raw_df.columns:
             found_col = target_str
-        elif entrez_to_hugo.get(target_str) in raw_df.columns:
-            found_col = entrez_to_hugo.get(target_str)
-        else:
-            # Reverse lookup if entrez_to_hugo is mapping HUGO -> Entrez
-            rev_match = [k for k, v in entrez_to_hugo.items() if str(v) == target_str]
-            if rev_match and rev_match[0] in raw_df.columns:
-                found_col = rev_match[0]
+        elif hugo_sym and hugo_sym in col_upper_map:
+            found_col = col_upper_map[hugo_sym]
+        elif target_str.upper() in col_upper_map:
+            found_col = col_upper_map[target_str.upper()]
 
         if found_col is not None:
             val = raw_df[found_col].astype(float).fillna(0.0).values
             if val.max() > 50:
                 val = np.log2(np.clip(val, 0, None) + 1.0)
             X_aligned[:, idx] = val
-            mapped_features.append(found_col)
+            display_name = hugo_sym if hugo_sym else found_col
+            mapped_features.append(display_name)
         else:
-            missing_features.append(target_str)
+            display_name = hugo_sym if hugo_sym else target_str
+            missing_features.append(display_name)
 
-    return X_aligned, patient_ids, mapped_features, missing_features
+    df_aligned = pd.DataFrame(X_aligned, columns=[str(f) for f in target_features], index=patient_ids)
+    return df_aligned, patient_ids, mapped_features, missing_features
 
 # =============================================================================
 # RENDERING INTERFACE
@@ -135,7 +153,6 @@ def render(card_fn=None):
     st.markdown(
         """
 <style>
-/* Premium Card Layout containers */
 div[data-testid="stVerticalBlockBordered"] {
     background-color: #ffffff !important;
     border: 1px solid #dcdcd3 !important;
@@ -150,7 +167,6 @@ div[data-testid="stVerticalBlockBordered"]:hover {
     transform: translateY(-2px);
 }
 
-/* Custom styled action buttons */
 div[data-testid="stVerticalBlockBordered"] button[data-testid="baseButton-secondary"] {
     background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
     color: #ffffff !important;
@@ -165,7 +181,6 @@ div[data-testid="stVerticalBlockBordered"] button[data-testid="baseButton-second
     width: 100% !important;
 }
 
-/* File Uploader styling */
 div[data-testid="stFileUploader"] {
     background-color: #fcfcfb !important;
     border: 1px dashed #4f46e5 !important;
@@ -173,7 +188,6 @@ div[data-testid="stFileUploader"] {
     padding: 16px !important;
 }
 
-/* Diagnostic molecular panels */
 .diag-card {
     background: #ffffff;
     border-radius: 14px;
@@ -218,39 +232,46 @@ div[data-testid="stFileUploader"] {
 
     st.markdown('<div class="main-title">Clinical Subtype Predictor & <span class="main-title-accent">Benchmark Tool</span></div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="sub-title">Evaluate locked v3.5 pre-trained breast cancer transcriptomic classifiers on custom cohort datasets.</div>',
+        '<div class="sub-title">Deploy locked Tri-Architecture models (MLP, Random Forest, L2 Logistic Regression) on custom cohort transcriptomics.</div>',
         unsafe_allow_html=True,
     )
 
     # 1. LOAD ARTIFACTS
     try:
-        try:
-            linear_svm_pipeline = joblib.load(ARTIFACT_DIR / "linear_svm_model.pkl")
-        except Exception:
-            linear_svm_pipeline = joblib.load(ARTIFACT_DIR / "finalized_pam50_linear_svm_model.pkl")
+        # Load candidate models
+        models = {}
+        if (DEPLOY_DIR / "mlp_candidate.pkl").exists():
+            models["mlp"] = joblib.load(DEPLOY_DIR / "mlp_candidate.pkl")
+        if (DEPLOY_DIR / "random_forest_candidate.pkl").exists():
+            models["random_forest"] = joblib.load(DEPLOY_DIR / "random_forest_candidate.pkl")
+        if (DEPLOY_DIR / "logistic_regression_candidate.pkl").exists():
+            models["logistic_regression"] = joblib.load(DEPLOY_DIR / "logistic_regression_candidate.pkl")
 
-        try:
-            lgbm_pipeline = joblib.load(ARTIFACT_DIR / "lgbm_model.pkl")
-        except Exception:
-            lgbm_pipeline = joblib.load(ARTIFACT_DIR / "finalized_pam50_LGBM_model.pkl")
+        if not models:
+            st.error("Critical Error: No deployment candidate models found in data/artifacts/deployment_candidates/.")
+            return
 
-        if (ARTIFACT_DIR / "final_consensus_biomarkers.parquet").exists():
-            consensus_df = pd.read_parquet(ARTIFACT_DIR / "final_consensus_biomarkers.parquet")
-            consensus_genes = (
-                consensus_df["mapped_symbol"].tolist()
-                if "mapped_symbol" in consensus_df.columns
-                else (consensus_df["feature"].tolist() if "feature" in consensus_df.columns else consensus_df["gene"].tolist())
-            )
-        elif (BASE_DIR / "results" / "consensus_gene_list.csv").exists():
-            consensus_df = pd.read_csv(BASE_DIR / "results" / "consensus_gene_list.csv")
-            consensus_genes = consensus_df["gene"].tolist()
+        # Load feature order
+        if (DEPLOY_DIR / "generated_consensus_211_gene_features.pkl").exists():
+            target_features = joblib.load(DEPLOY_DIR / "generated_consensus_211_gene_features.pkl")
+        elif (DEPLOY_DIR / "consensus_biomarkers.parquet").exists():
+            cb_temp = pd.read_parquet(DEPLOY_DIR / "consensus_biomarkers.parquet")
+            target_features = cb_temp["feature"].astype(str).tolist()
         else:
-            consensus_genes = []
+            st.error("Critical Error: Consensus feature list not found.")
+            return
 
+        # Load consensus mapping and label encoder
+        consensus_df = pd.read_parquet(DEPLOY_DIR / "consensus_biomarkers.parquet") if (DEPLOY_DIR / "consensus_biomarkers.parquet").exists() else None
         entrez_to_hugo = joblib.load(ARTIFACT_DIR / "tcga_entrez_to_hugo.pkl") if (ARTIFACT_DIR / "tcga_entrez_to_hugo.pkl").exists() else {}
-        label_encoder = joblib.load(ARTIFACT_DIR / "label_encoder_cohort.pkl")
+        
+        if (DEPLOY_DIR / "label_encoder_cohort.pkl").exists():
+            label_encoder = joblib.load(DEPLOY_DIR / "label_encoder_cohort.pkl")
+        else:
+            label_encoder = joblib.load(ARTIFACT_DIR / "label_encoder_cohort.pkl")
+
     except Exception as exc:
-        st.error(f"Critical Error: Failed to load pre-trained OncoResolve model artifacts: {exc}")
+        st.error(f"Critical Error: Failed to load OncoResolve deployment bundle: {exc}")
         return
 
     # Render Prediction Setup Form
@@ -259,30 +280,40 @@ div[data-testid="stFileUploader"] {
         
         col_model, col_scaling = st.columns(2)
         with col_model:
-            model_choice = st.selectbox(
-                "Select Pre-trained Model",
-                [PRETRAINED_LR_KEY, PRETRAINED_LGBM_KEY],
-                format_func=lambda x: "Linear SVM (Linear Classifier — Holdout ACC: 86.80%, Macro-F1: 0.8359)" if x == PRETRAINED_LR_KEY else "LightGBM (Primary Classifier — Holdout ACC: 88.32%, Macro-F1: 0.8527)"
+            model_options = []
+            model_labels = {
+                "mlp": "MLP Champion (Deep Neural Net — Holdout ACC: 82.74%, ROC-AUC: 0.9532)",
+                "random_forest": "Random Forest Ensemble (Holdout ACC: 82.74%, ROC-AUC: 0.9735)",
+                "logistic_regression": "L2 Logistic Regression (Sparse Linear — Holdout ACC: 83.76%, ROC-AUC: 0.9657)"
+            }
+            for m_key in ["mlp", "random_forest", "logistic_regression"]:
+                if m_key in models:
+                    model_options.append(m_key)
+
+            selected_model_key = st.selectbox(
+                "Select Pre-trained Model Architecture",
+                model_options,
+                format_func=lambda x: model_labels.get(x, x.upper())
             )
+
         with col_scaling:
             scaling_choice = st.selectbox(
                 "Select Standardization Protocol",
                 ["Independent Cohort Scaling (Recommended)", "Discovery Cohort Scaling (N-of-1)"],
-                help="Independent scaling fits a new StandardScaler to the uploaded dataset. This is highly recommended for cohort-level external datasets to bridge platform shifts. Discovery scaling uses the static TCGA-BRCA training statistics (ideal for single-sample/N-of-1 predictions)."
+                help="Independent scaling standardizes the uploaded dataset internally, successfully bridging platform and technical shifts across external datasets. Discovery scaling applies static TCGA-BRCA training parameters, ideal for N-of-1 single-patient predictions."
             )
 
         # Upload file
         uploaded_file = st.file_uploader(
             "Upload Gene Expression Dataset (CSV or Parquet)",
             type=["csv", "parquet"],
-            help="The dataset must contain HUGO gene symbols (e.g., ESR1, ERBB2, MKI67, KRT5) either as columns (patients as rows) or rows (transposed genes)."
+            help="The dataset may contain either HUGO gene symbols (e.g., TPX2, ESR1, ERBB2, MKI67) or Entrez Gene IDs as columns (or rows in transposed format)."
         )
 
         # Ground truth column selection (optional for benchmarking)
         ground_truth_col = None
         if uploaded_file is not None:
             try:
-                # Read header
                 if uploaded_file.name.lower().endswith(".parquet"):
                     preview_df = pd.read_parquet(uploaded_file, columns=None)
                 else:
@@ -322,37 +353,41 @@ div[data-testid="stFileUploader"] {
                     y_true_raw = raw_df[ground_truth_col].copy()
 
                 # Align features to consensus signature
-                X_aligned, patient_ids, mapped_features, missing_features = _load_and_align_features(
-                    raw_df, consensus_genes, entrez_to_hugo
+                df_aligned, patient_ids, mapped_features, missing_features = _load_and_align_features(
+                    raw_df, target_features, consensus_df, entrez_to_hugo
                 )
 
                 if len(mapped_features) == 0:
-                    st.error("Error: The uploaded dataset does not share any mapped HUGO symbols with the consensus biomarker signature. Check your column labels.")
+                    st.error("Error: The uploaded dataset does not share any mapped HUGO symbols or Entrez IDs with the 211 consensus biomarker signature. Check your column labels.")
                     return
 
-                # Choose model pipeline
-                pipeline = linear_svm_pipeline if model_choice == PRETRAINED_LR_KEY else lgbm_pipeline
-                scaler_fitted = pipeline.named_steps["scaler"]
-                clf = pipeline.named_steps["clf"]
+                # Choose model
+                selected_pipeline = models[selected_model_key]
 
                 # Apply standardization protocol
                 if scaling_choice.startswith("Independent"):
-                    if X_aligned.shape[0] < 2:
-                        st.warning("Independent Z-scaling requires at least 2 samples. Falling back to pre-trained TCGA Discovery scaling.")
-                        X_scaled = scaler_fitted.transform(X_aligned)
+                    if df_aligned.shape[0] < 2:
+                        st.warning("Independent scaling requires >= 2 samples. Falling back to pre-trained TCGA Discovery scaling.")
+                        preds_encoded = selected_pipeline.predict(df_aligned)
+                        probs = selected_pipeline.predict_proba(df_aligned)
                     else:
                         from sklearn.preprocessing import StandardScaler
                         scaler_new = StandardScaler()
-                        X_scaled = scaler_new.fit_transform(X_aligned)
+                        X_indep_scaled = scaler_new.fit_transform(df_aligned.values)
+                        df_indep = pd.DataFrame(X_indep_scaled, columns=df_aligned.columns, index=df_aligned.index)
+
+                        # Check if pipeline has scaler step
+                        if hasattr(selected_pipeline, "named_steps") and "scaler" in selected_pipeline.named_steps:
+                            clf_step = selected_pipeline.named_steps["model"]
+                            preds_encoded = clf_step.predict(df_indep.values)
+                            probs = clf_step.predict_proba(df_indep.values)
+                        else:
+                            preds_encoded = selected_pipeline.predict(df_indep)
+                            probs = selected_pipeline.predict_proba(df_indep)
                 else:
-                    # Discovery scale
-                    X_scaled = scaler_fitted.transform(X_aligned)
-
-                X_scaled = np.nan_to_num(X_scaled, nan=0.0)
-
-                # Generate predictions and probabilities
-                preds_encoded = clf.predict(X_scaled)
-                probs = clf.predict_proba(X_scaled)
+                    # Discovery scale using fitted pipeline
+                    preds_encoded = selected_pipeline.predict(df_aligned)
+                    probs = selected_pipeline.predict_proba(df_aligned)
 
                 pred_labels = label_encoder.inverse_transform(preds_encoded)
                 class_labels = list(label_encoder.classes_)
@@ -370,7 +405,7 @@ div[data-testid="stFileUploader"] {
                 # Render metrics
                 st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
                 st.markdown(
-                    f'<div class="success-box"><b>Prediction Complete!</b> Successfully aligned <b>{len(mapped_features)}/{len(consensus_genes)}</b> signature genes.</div>',
+                    f'<div class="success-box"><b>Prediction Complete!</b> Successfully aligned <b>{len(mapped_features)}/{len(target_features)}</b> signature genes.</div>',
                     unsafe_allow_html=True
                 )
 
@@ -384,7 +419,6 @@ div[data-testid="stFileUploader"] {
                 weighted_f1 = None
                 
                 if y_true_raw is not None:
-                    # Clean and map ground truth values to the expected classes
                     y_true_mapped = y_true_raw.astype(str).map(SUBTYPE_MAPPINGS)
                     valid_idx = y_true_mapped.isin(class_labels)
                     
@@ -410,7 +444,7 @@ div[data-testid="stFileUploader"] {
                         st.markdown(custom_card(f"{weighted_f1:.2%}", "Weighted F1-Score", True), unsafe_allow_html=True)
                 else:
                     with c_stats[2]:
-                        st.markdown(custom_card("Locked v3.5", "Model Version", True), unsafe_allow_html=True)
+                        st.markdown(custom_card("211 Genes", "Consensus Signature", True), unsafe_allow_html=True)
 
                 col_chart, col_stats = st.columns([3, 2] if not bench_eval else [1, 1])
                 dist = results_df["Predicted Subtype"].value_counts().reset_index()
@@ -419,7 +453,6 @@ div[data-testid="stFileUploader"] {
 
                 with col_chart:
                     if bench_eval:
-                        # Render Confusion Matrix
                         cm = confusion_matrix(y_true_final, y_pred_final, labels=class_labels)
                         fig_cm = px.imshow(
                             cm,
@@ -450,7 +483,6 @@ div[data-testid="stFileUploader"] {
 
                 with col_stats:
                     if bench_eval:
-                        # Draw distribution chart on the right side if benchmarking confusion matrix is on the left
                         fig = px.bar(
                             dist,
                             x="Predicted Subtype",
@@ -532,23 +564,23 @@ def _render_clinical_interpretations():
         """
         <div class="diag-card diag-card-basal">
             <div class="diag-title diag-title-basal">Basal-like (basal)</div>
-            <div class="diag-desc">Typically corresponds to Triple-Negative Breast Cancer (TNBC). Characterized by elevated expression of master transcriptomic drivers (e.g., FOXC1) and reduced hormone receptor signaling. Management is centered around aggressive systemic chemotherapy and immune checkpoint inhibitors.</div>
+            <div class="diag-desc">Typically corresponds to Triple-Negative Breast Cancer (TNBC). Characterized by elevated expression of master transcriptomic drivers (e.g., FOXC1) and reduced hormone receptor signaling. Management is centered around aggressive systemic chemotherapy, PARP inhibitors, and immune checkpoint blockade.</div>
         </div>
         <div class="diag-card diag-card-her">
             <div class="diag-title diag-title-her">HER2-Enriched (her2)</div>
-            <div class="diag-desc">Driven by unique transcriptomic programs and amplicon regulatory networks. Aggressive subtype but highly responsive to anti-HER2 targeted monoclonal antibodies (e.g., Trastuzumab/Herceptin).</div>
+            <div class="diag-desc">Driven by 17q12 amplicon co-amplification (ERBB2, GRB7, STARD3). Highly proliferative and aggressive, but strongly responsive to anti-HER2 targeted monoclonal antibodies (Trastuzumab/Herceptin, Pertuzumab) and antibody-drug conjugates.</div>
         </div>
         <div class="diag-card diag-card-luma">
             <div class="diag-title diag-title-luma">Luminal A (luminal_A)</div>
-            <div class="diag-desc">The most common and low-grade molecular subtype. High expression of estrogen receptor pathway genes (ESR1, AGR2, AGR3, MLPH, NAT1, TFF1, XBP1) and low cell proliferation index. Highly responsive to hormonal/endocrine therapies (e.g., Tamoxifen).</div>
+            <div class="diag-desc">The most common and favorable breast cancer subtype. High expression of estrogen receptor pathway genes (ESR1, AGR2, AGR3, MLPH, NAT1, TFF1, XBP1) and low cell proliferation index. Highly responsive to hormonal/endocrine therapies (Tamoxifen, Aromatase Inhibitors).</div>
         </div>
         <div class="diag-card diag-card-lumb">
             <div class="diag-title diag-title-lumb">Luminal B (luminal_B)</div>
-            <div class="diag-desc">Hormone-receptor positive but exhibits higher proliferation markers and faster growth. More aggressive than Luminal A, often managed with combined endocrine therapy and targeted regimens.</div>
+            <div class="diag-desc">Hormone-receptor positive with elevated proliferation markers (MKI67, AURKA, TOP2A). Clinically more aggressive than Luminal A, managed with combination endocrine therapy, chemotherapy, and CDK4/6 inhibitors.</div>
         </div>
         <div class="diag-card diag-card-norm">
             <div class="diag-title diag-title-norm">Normal-like (normal)</div>
-            <div class="diag-desc">Transcriptomic profile closely resembling normal breast tissue. Often associated with high stromal or adipose tissue content in the bulk tumor sample. Generally carries a favorable prognosis compared to more aggressive subtypes.</div>
+            <div class="diag-desc">Transcriptomic profile closely resembling non-malignant breast epithelium and stromal components. Generally carries intermediate-to-favorable clinical prognosis.</div>
         </div>
         """,
         unsafe_allow_html=True,

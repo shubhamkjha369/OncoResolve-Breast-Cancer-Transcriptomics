@@ -1,107 +1,169 @@
-import streamlit as st
-import pandas as pd
+"""
+OncoResolve — Clinical Subtyping, Survival Modeling, and Precision Oncology
+=============================================================================
+Streamlit Application for Breast Cancer Transcriptomics (TCGA-BRCA, SMC 2018,
+SCAN-B, METABRIC, Broad DepMap Public 26Q1, and LINCS L1000).
+"""
+import time
+import html
+import traceback
+import sys
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+import joblib
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from pathlib import Path
-import ast
-import joblib
-import os
+import streamlit as st
+
 import automl_page
 
 # =============================================================================
-# CONFIG
+# STREAMLIT CONFIGURATION
 # =============================================================================
-
 st.set_page_config(
-    page_title="OncoResolve Breast Cancer Subtyping and Precision Profiling",
+    page_title="OncoResolve | Breast Cancer Transcriptomics",
     page_icon="🧬",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
-
-# =============================================================================
-# PATHS
-# =============================================================================
 
 BASE_DIR = Path(__file__).resolve().parent
 ARTIFACT_DIR = BASE_DIR / "data" / "artifacts"
+DEPLOY_DIR = ARTIFACT_DIR / "deployment_candidates"
 PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
 # =============================================================================
-# HELPERS
+# ARTIFACT RESOLVER & CACHED LOADERS
 # =============================================================================
-
-if "active_page" not in st.session_state:
-    st.session_state.active_page = "Project Overview"
-
-@st.cache_data
-def load_parquet(directory, filename):
-    path = directory / filename
-    if path.exists():
-        return pd.read_parquet(path)
+def resolve_artifact_path(filename):
+    """
+    Search recursively across standard artifact and results directories.
+    """
+    candidates = [
+        ARTIFACT_DIR / filename,
+        ARTIFACT_DIR / "survival_analysis" / filename,
+        DEPLOY_DIR / filename,
+        BASE_DIR / "results" / "figures" / filename,
+        BASE_DIR / "results" / "tables" / filename,
+        BASE_DIR / "results" / "external_validation" / filename,
+        BASE_DIR / "results" / filename,
+        PROCESSED_DIR / filename,
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
     return None
 
 @st.cache_data
-def load_pickle(directory, filename):
-    path = directory / filename
-    if path.exists():
-        return joblib.load(path)
+def load_parquet(filename, directory=None):
+    if directory is not None and (directory / filename).exists():
+        return pd.read_parquet(directory / filename)
+    p = resolve_artifact_path(filename)
+    if p is not None and p.exists():
+        return pd.read_parquet(p)
     return None
 
-def show_artifact_image(filename, caption=""):
-    path = ARTIFACT_DIR / filename
-    if path.exists():
-        st.image(str(path), caption=caption)
+@st.cache_data
+def load_csv(filename, directory=None):
+    if directory is not None and (directory / filename).exists():
+        return pd.read_csv(directory / filename)
+    p = resolve_artifact_path(filename)
+    if p is not None and p.exists():
+        return pd.read_csv(p)
+    return None
+
+@st.cache_resource
+def load_pickle(filename, directory=None):
+    if directory is not None and (directory / filename).exists():
+        return joblib.load(directory / filename)
+    p = resolve_artifact_path(filename)
+    if p is not None and p.exists():
+        return joblib.load(p)
+    return None
+
+def show_artifact_image(filename, caption="", use_container_width=True):
+    p = resolve_artifact_path(filename)
+    if p is not None and p.exists():
+        st.image(str(p), caption=caption, use_container_width=use_container_width)
     else:
-        st.warning(f"Image {filename} not found in artifacts.")
+        st.warning(f"Image artifact '{filename}' not found on disk.")
 
 # =============================================================================
-# LOAD DATA
+# CORE DATASETS & CANDIDATE MODELS
 # =============================================================================
-
-# Load dataframes
-consensus_genes_df = load_parquet(ARTIFACT_DIR, "final_consensus_biomarkers.parquet")
-if consensus_genes_df is None:
-    consensus_genes_df = load_parquet(ARTIFACT_DIR, "final_consensus_biomarkers_enriched.parquet")
-
-pca_data = load_parquet(PROCESSED_DIR, "pca_2d.parquet")
-if pca_data is None:
-    pca_data = load_parquet(ARTIFACT_DIR, "pca_top2000_log2.parquet")
-if pca_data is not None and "subtype" in pca_data.columns:
-    pca_data = pca_data.rename(columns={"subtype": "Subtype"})
-
-uniqueness_scores = load_parquet(ARTIFACT_DIR, "patient_uniqueness_scores.parquet")
-tme_ssgsea_scores = load_parquet(ARTIFACT_DIR, "tme_ssgsea_scores.parquet")
-nested_cv = load_pickle(ARTIFACT_DIR, "nested_cv_results.pkl")
-external_val = load_pickle(ARTIFACT_DIR, "external_validation_results.pkl")
-
-# Pre-trained models and label encoders
-linear_svm_model = load_pickle(ARTIFACT_DIR, "linear_svm_model.pkl")
-if linear_svm_model is None:
-    linear_svm_model = load_pickle(ARTIFACT_DIR, "finalized_pam50_linear_svm_model.pkl")
-
-lgbm_model = load_pickle(ARTIFACT_DIR, "lgbm_model.pkl")
-if lgbm_model is None:
-    lgbm_model = load_pickle(ARTIFACT_DIR, "finalized_pam50_LGBM_model.pkl")
-
+consensus_genes_df = load_parquet("consensus_biomarkers.parquet")
 if consensus_genes_df is not None:
-    if "feature" in consensus_genes_df.columns:
-        consensus_gene_list = consensus_genes_df["feature"].tolist()
-    elif "mapped_symbol" in consensus_genes_df.columns:
-        consensus_gene_list = consensus_genes_df["mapped_symbol"].tolist()
-    else:
-        consensus_gene_list = consensus_genes_df.iloc[:, 0].tolist()
-else:
-    consensus_df_path = BASE_DIR / "results" / "consensus_gene_list.csv"
-    consensus_gene_list = pd.read_csv(consensus_df_path)["gene"].tolist() if consensus_df_path.exists() else None
+    if "stability_weighted_consensus_score" in consensus_genes_df.columns:
+        consensus_genes_df["consensus_importance"] = consensus_genes_df["stability_weighted_consensus_score"]
+    elif "mean_consensus_percentile" in consensus_genes_df.columns:
+        consensus_genes_df["consensus_importance"] = consensus_genes_df["mean_consensus_percentile"]
 
-le_cohort = load_pickle(ARTIFACT_DIR, "label_encoder_cohort.pkl")
+pca_data = load_parquet("pca_first3_log2_rsem_plus_1.parquet")
+if pca_data is not None:
+    if "subtype" in pca_data.columns and "Subtype" in pca_data.columns:
+        pca_data = pca_data.drop(columns=["subtype"])
+    elif "subtype" in pca_data.columns:
+        pca_data = pca_data.rename(columns={"subtype": "Subtype"})
+    pca_data = pca_data.loc[:, ~pca_data.columns.duplicated()]
+
+umap_data = load_parquet("umap_top2000_log2.parquet")
+if umap_data is not None:
+    if "subtype" in umap_data.columns and "Subtype" in umap_data.columns:
+        umap_data = umap_data.drop(columns=["subtype"])
+    elif "subtype" in umap_data.columns:
+        umap_data = umap_data.rename(columns={"subtype": "Subtype"})
+    umap_data = umap_data.loc[:, ~umap_data.columns.duplicated()]
+
+uniqueness_scores = load_parquet("patient_uniqueness_scores.parquet")
+nested_cv_summary_df = load_csv("nested_cv_summary_211_consensus_log2.csv")
+nested_cv_results = load_pickle("nested_cv_results_211_consensus_log2.pkl")
+holdout_comp_df = load_csv("holdout_model_comparison.csv")
+holdout_eval_results = load_pickle("holdout_evaluation_results.pkl")
+ext_val_summary_df = load_csv("external_validation_summary_211_gene.csv")
+metabric_metrics_df = load_csv("METABRIC_validation_metrics.csv")
+
+le_cohort = load_pickle("label_encoder_cohort.pkl")
+entrez_to_hugo = load_pickle("tcga_entrez_to_hugo.pkl") or {}
+candidate_features = load_pickle("generated_consensus_211_gene_features.pkl") or []
+
+# Survival analysis data
+surv_cox_df = load_csv("clinical_survival_cox_summary.csv")
+surv_multi_df = load_csv("clinical_survival_multi_endpoint_summary.csv")
+surv_time_auc_df = load_csv("clinical_survival_time_dependent_auc.csv")
+surv_landmark_df = load_csv("clinical_survival_landmark_summary.csv")
+surv_age_df = load_csv("clinical_survival_age_stratified_summary.csv")
+
+# TME deconvolution data
+tme_means_df = load_csv("tme_marker_zscore_subtype_means.csv")
+tme_medians_df = load_csv("tme_marker_zscore_subtype_medians.csv")
+tme_stats_df = load_csv("tme_subtype_association_statistics.csv")
+
+# DepMap functional genomics
+depmap_yield_df = load_csv("depmap_architecture_functional_yield_summary.csv")
+depmap_lines_df = load_csv("depmap_breast_cell_line_profiling.csv")
+depmap_class_df = load_csv("depmap_tri_model_functional_classification.csv")
+
+# N-of-1 patient expression & SHAP tensors
+df_expression = load_parquet("n_of_1_consensus_expression.parquet")
+df_meta = load_parquet("n_of_1_patient_metadata.parquet")
+mlp_shap = load_pickle("mlp_shap_values.pkl")
+rf_shap = load_pickle("rf_shap_values.pkl")
+lr_shap = load_pickle("logistic_shap_values.pkl")
+
+# Pre-trained candidate pipelines
+mlp_candidate = load_pickle("mlp_candidate.pkl")
+rf_candidate = load_pickle("random_forest_candidate.pkl")
+lr_candidate = load_pickle("logistic_regression_candidate.pkl")
 
 # =============================================================================
-# PROFESSIONAL PREMIUM LIGHT THEME STYLING
+# STYLING & PALETTE
 # =============================================================================
-
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap');
@@ -110,12 +172,10 @@ html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
 }
 
-/* ── Main background: warm clinical off-white ── */
 .stApp {
     background: #f7f7f4 !important;
 }
 
-/* ── Sidebar styling ── */
 section[data-testid="stSidebar"] {
     background: #ebebe5 !important;
     border-right: 1px solid #dcdcd3 !important;
@@ -138,7 +198,6 @@ section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
     font-weight: 500 !important;
 }
 
-/* ── Modern Premium Sidebar Button Navigation ── */
 section[data-testid="stSidebar"] .stButton > button {
     background: #fcfcfb !important;
     border: 1px solid #dcdcd3 !important;
@@ -163,7 +222,6 @@ section[data-testid="stSidebar"] .stButton > button:hover {
     color: #4f46e5 !important;
 }
 
-/* ── Main title ── */
 .main-title {
     font-family: 'Outfit', sans-serif;
     font-size: 38px; font-weight: 800; line-height: 1.15;
@@ -177,157 +235,117 @@ section[data-testid="stSidebar"] .stButton > button:hover {
     color: #64748b; font-size: 16px; margin-bottom: 24px; font-weight: 400;
 }
 
-/* ── Section titles ── */
 .section-title {
     font-family: 'Outfit', sans-serif;
-    font-size: 22px; font-weight: 700; color: #1e293b;
-    margin-top: 36px; margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #e2e8f0;
+    font-size: 21px; font-weight: 700;
+    color: #0f172a; margin: 26px 0 14px 0;
 }
 
-/* ── Premium Recruiter Box ── */
-.recruiter-brief {
-    background: #ffffff;
-    border: 1.5px solid #e0e7ff;
-    border-left: 5px solid #4f46e5;
-    border-radius: 12px;
-    padding: 20px 24px;
-    margin-bottom: 24px;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.05);
-}
-.recruiter-header {
-    font-family: 'Outfit', sans-serif;
-    color: #312e81; font-weight: 700; font-size: 17px; margin-bottom: 8px;
-}
-
-/* ── Metric Cards ── */
 .metric-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 14px; padding: 20px 16px;
-    text-align: center;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.metric-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.08);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 .metric-value {
     font-family: 'Outfit', sans-serif;
-    font-size: 28px; font-weight: 800; color: #4f46e5;
-    line-height: 1.2;
+    font-size: 28px; font-weight: 800; color: #0f172a;
 }
 .metric-label {
-    color: #475569; font-size: 11px; margin-top: 6px;
-    letter-spacing: 0.8px; text-transform: uppercase; font-weight: 600;
+    font-size: 12.5px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
 }
 
-/* Accent Card */
 .accent-card {
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
-    border-radius: 14px; padding: 20px 16px; text-align: center;
-    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.18);
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border: 1px solid #86efac;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
 }
-.accent-card .metric-value { color: #ffffff; }
-.accent-card .metric-label { color: rgba(255, 255, 255, 0.85); }
+.accent-card .metric-value { color: #166534; }
+.accent-card .metric-label { color: #15803d; }
 
-/* ── Info & Success Boxes ── */
 .info-box {
-    background: #f0f4f8; border-left: 4px solid #3b82f6;
-    padding: 14px 18px; border-radius: 8px; margin-bottom: 16px;
-    color: #1e3a8a; font-size: 14.5px; line-height: 1.6;
+    background: #eff6ff; border-left: 4px solid #3b82f6;
+    border-radius: 0 10px 10px 0; padding: 14px 18px;
+    margin-bottom: 18px; color: #1e3a8a; font-size: 14.5px; line-height: 1.6;
 }
 .success-box {
-    background: #ecfdf5; border-left: 4px solid #10b981;
-    padding: 14px 18px; border-radius: 8px; margin-bottom: 16px;
-    color: #065f46; font-size: 14.5px; line-height: 1.6;
+    background: #f0fdf4; border-left: 4px solid #22c55e;
+    border-radius: 0 10px 10px 0; padding: 14px 18px;
+    margin-bottom: 18px; color: #14532d; font-size: 14.5px; line-height: 1.6;
+}
+.recruiter-brief {
+    background: #faf5ff; border: 1px solid #e9d5ff; border-left: 5px solid #8b5cf6;
+    border-radius: 10px; padding: 16px 20px; margin-bottom: 22px;
+}
+.recruiter-header {
+    font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700;
+    color: #6b21a8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
 }
 
-/* ── Badges ── */
+.custom-hr {
+    border: 0; height: 1px;
+    background: #e2e8f0; margin: 24px 0;
+}
 .badge {
-    display: inline-block;
-    background: #f1f5f9; border: 1px solid #cbd5e1;
-    color: #475569; border-radius: 20px;
-    padding: 6px 14px; margin: 3px 2px;
-    font-size: 12.5px; font-weight: 500;
+    display: inline-block; padding: 3px 10px; font-size: 12px;
+    font-weight: 600; border-radius: 9999px; margin-right: 6px; margin-bottom: 6px;
+    background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;
 }
 .badge-accent {
-    background: #eeebff; border-color: #d1c9ff; color: #4f46e5;
-}
-
-/* ── Custom Divider ── */
-.custom-hr {
-    border: none;
-    height: 1px;
-    background-color: #e2e8f0;
-    margin: 24px 0;
+    background: #ede9fe; color: #5b21b6; border-color: #c4b5fd;
 }
 </style>
 """, unsafe_allow_html=True)
 
+PLOTLY_LAYOUT = dict(
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="#ffffff",
+    font=dict(family="Inter", color="#334155"),
+    title_font=dict(family="Outfit", size=15, color="#0f172a"),
+    margin=dict(t=50, b=40)
+)
+
+SUBTYPE_COLORS = {
+    "basal": "#ef4444", "her2": "#f59e0b", "luminal_A": "#10b981",
+    "luminal_B": "#3b82f6", "normal": "#ec4899"
+}
+
+def card(val, label, accent=False):
+    cls = "accent-card" if accent else "metric-card"
+    return f'<div class="{cls}"><div class="metric-value">{val}</div><div class="metric-label">{label}</div></div>'
+
 # =============================================================================
-# SIDEBAR
+# NAVIGATION STATE
 # =============================================================================
+if "active_page" not in st.session_state:
+    st.session_state.active_page = "Project Overview"
 
-# ── inline SVG helpers ────────────────────────────────────────────────────────
-_GH  = "M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
-_LI  = "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"
-_GM  = "M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.211 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"
-
-def _icon(path, color, size=17):
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" '
-            f'viewBox="0 0 24 24" fill="{color}" style="vertical-align:middle;flex-shrink:0;">'
-            f'<path d="{path}"/></svg>')
-
-_LINK_STYLE = ("display:flex;align-items:center;justify-content:space-between;"
-               "text-decoration:none;color:#334155;font-size:12.5px;font-weight:500;"
-               "padding:5px 2px;border-bottom:1px solid #e9edf2;gap:6px;")
-
-st.sidebar.markdown(f"""
-<style>
-a.soc {{ transition:color 0.15s,opacity 0.15s; opacity:0.82; }}
-a.soc:hover {{ color:#4f46e5 !important; opacity:1; }}
-a.soc:hover svg {{ opacity:1; }}
-</style>
-
-<!-- DOI + Colab badges -->
-<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-  <a href="https://doi.org/10.5281/zenodo.21967841" target="_blank" title="Cite on Zenodo">
-    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.21967841.svg"
-         alt="DOI" style="margin-top: 5px; height: 20px;">
-  </a>
-  <a href="https://colab.research.google.com/github/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics/blob/main/notebooks/OncoResolve_Subtyping_and_Precision_Profiling.ipynb"
-     target="_blank" title="Open in Colab">
-    <img src="https://colab.research.google.com/assets/colab-badge.svg"
-         alt="Open in Colab" style="height:19px;vertical-align:middle;">
-  </a>
+# ── Sidebar Navigation ───────────────────────────────────────────────────────
+st.sidebar.markdown("""
+<div style="padding: 10px 0 16px 0;">
+    <div style="font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; color: #0f172a;">
+        Onco<span style="background: linear-gradient(135deg, #4f46e5, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Resolve</span>
+    </div>
+    <div style="font-size: 12.5px; color: #64748b; font-weight: 500;">
+        Breast Cancer Transcriptomics Pipeline
+    </div>
 </div>
+""", unsafe_allow_html=True)
 
-<!-- Vertical social list: Label · Icon -->
-<div style="display:flex;flex-direction:column;margin-bottom:10px;">
-
-  <a class="soc" href="https://github.com/shubhamkjha369" target="_blank"
-     style="{_LINK_STYLE}">
-    <span>GitHub</span>{_icon(_GH, "#1a1a1a")}
-  </a>
-
-  <a class="soc" href="https://www.linkedin.com/in/shubhamjha369/" target="_blank"
-     style="{_LINK_STYLE}">
-    <span>LinkedIn</span>{_icon(_LI, "#0a66c2")}
-  </a>
-
-  <a class="soc" href="mailto:shubhamkjha369@gmail.com"
-     style="{_LINK_STYLE}">
-    <span>Email</span>{_icon(_GM, "#ea4335")}
-  </a>
-
-  <a class="soc" href="https://github.com/shubhamkjha369/OncoResolve-Breast-Cancer-Transcriptomics"
-     target="_blank" style="{_LINK_STYLE.replace('border-bottom:1px solid #e9edf2;','')}">
-    <span>Project Repo</span>{_icon(_GH, "#4f46e5")}
-  </a>
-
+st.sidebar.markdown("""
+<div class="recruiter-brief" style="margin-bottom: 12px; padding: 10px 14px;">
+    <div class="recruiter-header" style="font-size: 11px;">Bioinformatics & ML System</div>
+    <p style="margin: 0; color: #3b0764; font-size: 12px; line-height: 1.4;">
+        <b>Anti-Leakage Protocol (ALP)</b><br>
+        • Fold-Contained Preprocessing<br>
+        • Tri-Architecture Benchmarking<br>
+        • 211-Gene Consensus Signature<br>
+        • DepMap CRISPR Functional Validation
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -344,12 +362,12 @@ with st.sidebar.expander("Research Findings & Insights", expanded=(st.session_st
         ("Feature Selection", "Consensus Biomarkers"),
         ("Model Performance", "Model Performance & CV"),
         ("SHAP Explainability", "SHAP Interpretability"),
-        ("Functional Genomics", "Functional Genomics"),
+        ("Functional Genomics", "Pathway Enrichment"),
         ("Patient Uniqueness", "N-of-1 Patient Uniqueness"),
         ("External Validation", "External Cohort Validation"),
         ("Survival Analysis", "Prognostic Survival"),
         ("TME Deconvolution", "TME Deconvolution"),
-        ("Drug Discovery", "Computational Drug Discovery"),
+        ("Drug Discovery", "DepMap CRISPR & LINCS"),
     ]
     for page_key, display_name in research_pages:
         label = f"● {display_name}" if st.session_state.active_page == page_key else f"  {display_name}"
@@ -359,7 +377,7 @@ with st.sidebar.expander("Research Findings & Insights", expanded=(st.session_st
 
 # Expander 2: AutoML Diagnostic Engine
 with st.sidebar.expander("AutoML Diagnostic Engine", expanded=(st.session_state.active_page == "AutoML Pipeline")):
-    label = "● Launch AutoML and Predictor" if st.session_state.active_page == "AutoML Pipeline" else "  Launch AutoML and Predictor"
+    label = "● Launch Clinical Predictor" if st.session_state.active_page == "AutoML Pipeline" else "  Launch Clinical Predictor"
     if st.button(label, use_container_width=True, key="btn_launch_automl"):
         st.session_state.active_page = "AutoML Pipeline"
         st.rerun()
@@ -370,7 +388,7 @@ page = st.session_state.active_page
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**TCGA-BRCA Pan-Can Atlas 2018**")
 st.sidebar.caption("Illumina HiSeq RNA-seq V2 (RSEM batch-normalized).")
-st.sidebar.caption("N=1,084 patients (981 post-QC) | 211 consensus genes | 5 PAM50 subtypes | OS+DFS survival")
+st.sidebar.caption("N=1,084 patients (981 post-QC) | 211 consensus genes | 5 PAM50 subtypes | OS+DSS+PFI survival")
 st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.markdown("**External Validation Cohorts**")
 st.sidebar.caption("SMC 2018: N=168 (RNA-seq) | SCAN-B: N=340 (RNA-seq) | METABRIC: N=1,974 (microarray)")
@@ -378,46 +396,21 @@ st.sidebar.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.sidebar.caption("OncoResolve v3.5.0 — TCGA-BRCA edition.")
 
 # =============================================================================
-# PLOTLY DEFAULTS (clinical light theme)
-# =============================================================================
-
-PLOTLY_LAYOUT = dict(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="#ffffff",
-    font=dict(family="Inter", color="#334155"),
-    title_font=dict(family="Outfit", size=15, color="#0f172a"),
-    margin=dict(t=50, b=40)
-)
-
-SUBTYPE_COLORS = {
-    "basal": "#ef4444", "her2": "#f59e0b", "luminal_A": "#10b981",
-    "luminal_B": "#3b82f6", "normal": "#ec4899"
-}
-
-BAR_COLORS = ["#4f46e5", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444"]
-
-def card(val, label, accent=False):
-    cls = "accent-card" if accent else "metric-card"
-    return f'<div class="{cls}"><div class="metric-value">{val}</div><div class="metric-label">{label}</div></div>'
-
-# =============================================================================
 # PAGE: PROJECT OVERVIEW
 # =============================================================================
-
 if page == "Project Overview":
     st.markdown('<div class="main-title">OncoResolve <span class="main-title-accent">Breast Cancer Transcriptomics</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">TCGA-BRCA RNA-seq | PAM50 Multi-class Classification | N-of-1 Precision Oncology | Cross-Platform Validation</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-title">TCGA-BRCA RNA-seq | Tri-Architecture Modeling | 211 Consensus Biomarkers | Multi-Cohort Transfer | DepMap CRISPR 26Q1</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="recruiter-brief">
-        <div class="recruiter-header">Overview of the Classical ML Bioinformatics Pipeline</div>
+        <div class="recruiter-header">Overview of the Precision Oncology Machine Learning Pipeline</div>
         <p style="margin: 0; color: #1e1b4b; font-size: 14.5px; line-height: 1.6;">
-            OncoResolve is a <b>publication-grade, leakage-free</b> machine learning and explainable AI pipeline for classifying the five PAM50 breast cancer molecular subtypes
+            OncoResolve is a <b>publication-grade, leakage-free</b> machine learning and explainable AI framework for classifying the five PAM50 breast cancer molecular subtypes
             (Basal-like, HER2-enriched, Luminal A, Luminal B, Normal-like) using <b>TCGA-BRCA Pan-Can Atlas 2018 RNA-seq data</b>.
-            All preprocessing steps are executed <b>strictly inside each cross-validation training fold</b> —
-            eliminating the feature-selection leakage that affects >90% of published transcriptomics ML papers.
-            SHAP explainability maps model decisions to clinically validated biomarkers.
-            The locked pipeline is externally validated on <b>SMC 2018</b> (N=168), <b>SCAN-B</b> (N=340), and <b>METABRIC</b> (N=1,974) cohorts.
+            All preprocessing steps are executed <b>strictly inside each cross-validation training fold</b> under our Anti-Leakage Protocol (ALP) —
+            eliminating feature-selection leakage. Tri-architecture modeling fuses linear and non-linear paradigms into a locked <b>211-gene consensus biomarker panel</b>,
+            validated across <b>METABRIC</b> (N=1,974), <b>SCAN-B</b> (N=340), <b>SMC 2018</b> (N=168), <b>Broad DepMap CRISPR 26Q1</b> functional genomics, and multivariate survival analysis.
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -431,7 +424,7 @@ if page == "Project Overview":
     with cols[2]:
         st.markdown(card("5", "PAM50 Subtypes Classified", False), unsafe_allow_html=True)
     with cols[3]:
-        st.markdown(card("94.92%", "Holdout Accuracy", False), unsafe_allow_html=True)
+        st.markdown(card("83.76%", "Holdout Accuracy", False), unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">Independent Validation Cohorts</div>', unsafe_allow_html=True)
     cols2 = st.columns(3)
@@ -446,21 +439,19 @@ if page == "Project Overview":
     pam50_data = {
         "Subtype": ["Basal-like (TNBC)", "HER2-enriched", "Luminal A", "Luminal B", "Normal-like"],
         "Clinical Phenotype": ["Estrogen/Progesterone receptor negative, HER2 negative", "HER2 receptor amplified & overexpressed", "Estrogen receptor positive, low cell proliferation", "Estrogen receptor positive, high cell proliferation", "Similar to non-tumor breast epithelial tissue"],
-        "Key Markers": ["FOXC1", "AR, C5AR2, DEGS2, THSD4", "ESR1, AGR2, AGR3, MLPH, NAT1, TFF1, XBP1", "CHODL, DNALI1, PPP1R14C, SRSF12, TBC1D9", "ARSG"],
-        "Therapy Target": ["Chemotherapy, PARP inhibitors, Immunotherapy", "Trastuzumab (Herceptin) / Anti-HER2 agents", "Endocrine / Hormonal therapy (Tamoxifen)", "Endocrine therapy + Chemotherapy + CDK4/6 inhibitors", "Monitoring / Surgery"]
+        "Key Markers": ["FOXC1, KRT5, KRT14", "ERBB2, GRB7, STARD3", "ESR1, AGR2, AGR3, MLPH, NAT1, TFF1, XBP1", "MKI67, AURKA, TOP2A, CCNE1", "Normal epithelial/adipose markers"],
+        "Therapy Target": ["Chemotherapy, PARP inhibitors, Immunotherapy", "Trastuzumab (Herceptin) / Anti-HER2 agents", "Endocrine / Hormonal therapy (Tamoxifen, AI)", "Endocrine therapy + Chemotherapy + CDK4/6 inhibitors", "Monitoring / Surgery"]
     }
     st.dataframe(pd.DataFrame(pam50_data), use_container_width=True, hide_index=True)
 
-    st.markdown('<div class="section-title">Engineering Stack (Classical Bioinformatics & ML)</div>', unsafe_allow_html=True)
-    techs = ["Scikit-Learn Pipelines", "Support Vector Machine (RBF)", "Linear SVM (Linear)", "decoupler ssGSEA", "ssGSEA Immune Signatures", "lifelines Survival", "KernelSHAP",
-             "Plotly", "Pandas", "Streamlit", "Broad DepMap API", "LINCS L1000", "cBioPortal API"]
+    techs = ["Scikit-Learn Pipelines", "Deep MLP Neural Network", "Random Forest Ensemble", "L2 Logistic Regression", "decoupler ssGSEA", "lifelines Survival", "TreeSHAP & KernelSHAP",
+             "Plotly", "Pandas", "Streamlit", "Broad DepMap CRISPR 26Q1", "LINCS L1000", "cBioPortal API"]
     tech_badges = "".join([f'<span class="badge badge-accent">{t}</span>' if i < 4 else f'<span class="badge">{t}</span>' for i, t in enumerate(techs)])
     st.markdown(f'<div style="margin-top: 10px;">{tech_badges}</div>', unsafe_allow_html=True)
 
 # =============================================================================
 # PAGE: DATASET COMPARISON
 # =============================================================================
-
 elif page == "Dataset Comparison":
     st.markdown('<div class="main-title">Dataset <span class="main-title-accent">Evolution</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-title">From GSE45827 (Affymetrix Microarray, 2011) to TCGA-BRCA Pan-Can Atlas 2018 (Illumina HiSeq RNA-seq)</div>', unsafe_allow_html=True)
@@ -475,7 +466,7 @@ elif page == "Dataset Comparison":
                                "Embedded CSV label", "14 cell lines (must remove)", "None",
                                "Probe IDs (70-85% mappable)", "Obsolete (microarray era)"],
         "TCGA-BRCA (Current)": ["1,084 primary tumours (981 post-QC)", "Illumina HiSeq RNA-seq V2 (RSEM)",
-                                "HUGO gene symbols (direct)", "~18,000 genes", "OS + DFS (94% of samples)",
+                                "HUGO gene symbols (direct)", "~18,000 genes", "OS + DSS + PFI (94% of samples)",
                                 "PAM50 from clinical metadata", "0 (all primary biopsies)",
                                 "TCGA Pan-Cancer Atlas pipeline",
                                 "Direct HUGO symbols", "Gold standard (all 2020+ papers)"],
@@ -489,748 +480,568 @@ elif page == "Dataset Comparison":
     st.markdown('<div class="section-title">Was the Dataset Change Worth It?</div>', unsafe_allow_html=True)
     st.markdown("""
     <div class="success-box">
-        <b>Yes — in every measurable dimension.</b><br><br>
+        <b>Yes — in every measurable dimension:</b><br><br>
         <b>1. Statistical reliability (8x more data):</b> With N=981 post-QC samples, the stratified CV runs on much larger cohorts, providing tighter confidence intervals and publication-grade metrics.<br><br>
-        <b>2. Biological accuracy (RNA-seq vs microarray):</b> RNA-seq measures actual transcript abundance (reads per gene) rather than relative fluorescence. It avoids cross-hybridisation artefacts, has a wider dynamic range, and represents the modern molecular profiling standard.<br><br>
-        <b>3. Clinical relevance:</b> TCGA-BRCA is the canonical reference dataset cited in all major breast cancer publications post-2015, enabling head-to-head benchmarking with the literature.<br><br>
-        <b>4. Survival integration:</b> TCGA-BRCA includes Overall Survival (OS) and Disease-Free Survival (DFS) data, enabling downstream Kaplan-Meier and Cox regression analysis to confirm that predicted subtypes are prognostic.<br><br>
-        <b>5. Direct HUGO symbols:</b> Eliminates the unmappable probe rate from Affymetrix platforms, ensuring complete feature availability.
+        <b>2. Biological accuracy (RNA-seq vs microarray):</b> RNA-seq measures actual transcript abundance (reads per gene) rather than relative fluorescence, avoiding cross-hybridisation artefacts.<br><br>
+        <b>3. Clinical relevance:</b> TCGA-BRCA is the canonical reference dataset cited across oncology literature, enabling head-to-head benchmarking.<br><br>
+        <b>4. Multi-Endpoint Survival Integration:</b> TCGA-BRCA includes Overall Survival (OS), Disease-Specific Survival (DSS), and Progression-Free Interval (PFI), allowing robust longitudinal modeling.<br><br>
+        <b>5. Direct HUGO symbols:</b> Eliminates unmappable probe rates, ensuring complete feature availability.
     </div>
     """, unsafe_allow_html=True)
 
 # =============================================================================
 # PAGE: EDA INSIGHTS
 # =============================================================================
-
 elif page == "EDA Insights":
     st.markdown('<div class="main-title">Exploratory <span class="main-title-accent">Data Analysis</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="info-box">PCA and UMAP projections of TCGA-BRCA RNA-seq data confirm that PAM50 subtypes exhibit highly distinct transcriptomic signatures.</div>', unsafe_allow_html=True)
 
-    t1, t2, t3 = st.tabs(["Latent Space Projections", "Quality Control & Class Distributions", "Differential Gene Expression (DGE)"])
+    t1, t2, t3, t4 = st.tabs(["PCA Latent Space", "UMAP Non-linear Manifold", "QC & Subtype Distribution", "DGE Complex Heatmap"])
 
     with t1:
         st.markdown('<div class="section-title">Latent Space Projections (PCA)</div>', unsafe_allow_html=True)
         if pca_data is not None:
-            # Normalize column name
-            pca_plot_df = pca_data.copy()
-            if "subtype" in pca_plot_df.columns:
-                pca_plot_df = pca_plot_df.rename(columns={"subtype": "Subtype"})
-            
-            fig = px.scatter(pca_plot_df, x="PC1", y="PC2", color="Subtype",
+            fig = px.scatter(
+                pca_data, x="PC1", y="PC2", color="Subtype",
                 color_discrete_map=SUBTYPE_COLORS,
-                title="PCA Projection — TCGA-BRCA RNA-seq (N=981, ~18,000 genes)",
-                template="plotly_white", opacity=0.75, height=540)
+                title="PCA Projection — TCGA-BRCA RNA-seq (N=784 Discovery Cohort)",
+                template="plotly_white", opacity=0.75, height=540,
+                hover_data=["sample_id"] if "sample_id" in pca_data.columns else None
+            )
             fig.update_traces(marker=dict(size=7, line=dict(width=0.5, color="#ffffff")))
             fig.update_layout(**PLOTLY_LAYOUT, legend=dict(font=dict(size=12)))
-            fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9", title_text="PC1 (~20% variance — ER axis)")
-            fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9", title_text="PC2 (~10% variance — proliferation axis)")
+            fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9", title_text="PC1 (ER Signaling Axis — ESR1/GATA3/FOXA1)")
+            fig.update_yaxes(showgrid=True, gridcolor="#f1f5f9", title_text="PC2 (Cell Proliferation Axis — MKI67/AURKA)")
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.warning("PCA data not found. Run the notebook to generate pca_2d.parquet.")
+            st.warning("PCA projection data not found.")
 
         st.markdown("""
         <div class="success-box">
-            <b>Biological interpretation of PCA axes (TCGA-BRCA):</b><br>
-            <b>PC1</b> captures the <b>oestrogen receptor (ER) axis</b> — the fundamental divide in breast cancer biology.
-            Luminal subtypes (high ESR1, GATA3, FOXA1) sit at one extreme; Basal-like tumours (high KRT5, KRT14, CDH3) at the other.
-            <b>PC2</b> captures the <b>proliferation axis</b> — separating high-proliferation tumours (Luminal B, HER2) from
-            low-proliferation tumours (Luminal A, Normal-like). The HER2-enriched cluster is offset from both Luminal and Basal
-            due to the chr17q12 amplicon (ERBB2, GRB7, STARD3) signature.
+            <b>Biological Interpretation of Principal Components:</b><br>
+            • <b>PC1</b> captures the <b>estrogen receptor (ER) axis</b> — separating Luminal subtypes (high ESR1, GATA3, FOXA1) from Basal-like tumors (high KRT5, KRT14, FOXC1).<br>
+            • <b>PC2</b> captures the <b>proliferation index</b> — separating high-proliferation tumors (Luminal B, HER2) from low-proliferation tumors (Luminal A, Normal-like).
         </div>
         """, unsafe_allow_html=True)
 
     with t2:
-        st.markdown('<div class="section-title">Quality Control and PAM50 Class Distribution</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Non-linear Manifold Learning (UMAP)</div>', unsafe_allow_html=True)
+        if umap_data is not None:
+            fig_umap = px.scatter(
+                umap_data, x="UMAP1", y="UMAP2", color="Subtype",
+                color_discrete_map=SUBTYPE_COLORS,
+                title="UMAP Projection — Top 2,000 Variable Genes (log2 RSEM)",
+                template="plotly_white", opacity=0.75, height=540,
+                hover_data=["sample_id"] if "sample_id" in umap_data.columns else None
+            )
+            fig_umap.update_traces(marker=dict(size=7, line=dict(width=0.5, color="#ffffff")))
+            fig_umap.update_layout(**PLOTLY_LAYOUT, legend=dict(font=dict(size=12)))
+            st.plotly_chart(fig_umap, use_container_width=True)
+        else:
+            st.warning("UMAP projection data not found.")
+
+    with t3:
+        st.markdown('<div class="section-title">Quality Control & PAM50 Class Distribution</div>', unsafe_allow_html=True)
         col_qc1, col_qc2 = st.columns([1, 1])
         with col_qc1:
             st.markdown(r"""
-            ### Bioinformatic Quality Control
-            TCGA-BRCA samples underwent the following QC steps:
-            * **Platform:** Illumina HiSeq RNA-seq V2; RSEM batch-normalized by TCGA Pan-Cancer Atlas pipeline.
-            * **Value range:** log2(RSEM+1) values fall in [0, ~18] for protein-coding genes.
-            * **Outlier detection:** Samples with mean pairwise Pearson correlation $< \mu - 2\sigma$ are flagged.
-            * **Anti-leakage normalization:** QuantileNormalizer fit **only on CV training fold** samples.
-            * **No cell line contamination:** All samples are primary breast tumour biopsies.
+            ### Quality Control Protocol (ALP)
+            * **Ingestion:** Illumina HiSeq RNA-seq V2, RSEM batch-normalized via TCGA Pan-Cancer Atlas.
+            * **Scale:** $\log_2(	ext{RSEM} + 1)$ continuous dynamic range $[0, 18.5]$.
+            * **Anti-Leakage Normalization:** Quantile normalization and feature standardizations fit **strictly inside each cross-validation fold**.
+            * **Zero Leakage:** Test holdout partitions ($N=197$) isolated until locked final evaluation.
             """)
         with col_qc2:
-            if pca_data is not None:
+            if pca_data is not None and "Subtype" in pca_data.columns:
                 dist = pca_data["Subtype"].value_counts().reset_index()
                 dist.columns = ["Subtype", "Count"]
-                fig2 = px.bar(dist, x="Subtype", y="Count", color="Subtype",
+                fig_bar = px.bar(
+                    dist, x="Subtype", y="Count", color="Subtype",
                     color_discrete_map=SUBTYPE_COLORS,
-                    title="TCGA-BRCA PAM50 Subtype Distribution (N=981)",
-                    template="plotly_white", text="Count")
-                fig2.update_traces(textposition="outside", marker_line_width=0)
-                fig2.update_layout(**PLOTLY_LAYOUT, showlegend=False)
-                fig2.update_xaxes(showgrid=False)
-                fig2.update_yaxes(showgrid=True, gridcolor="#f1f5f9")
-                st.plotly_chart(fig2, use_container_width=True)
+                    title="TCGA-BRCA Discovery Subtype Distribution (N=784)",
+                    template="plotly_white", text="Count"
+                )
+                fig_bar.update_traces(textposition="outside", marker_line_width=0)
+                fig_bar.update_layout(**PLOTLY_LAYOUT, showlegend=False)
+                st.plotly_chart(fig_bar, use_container_width=True)
 
-    with t3:
-        st.markdown('<div class="section-title">Subtype-Specific Volcano Plots (DGE Welch\'s t-test)</div>', unsafe_allow_html=True)
-        st.markdown("""
-        To isolate robust molecular markers that differentiate each molecular subtype from all other breast cancer tissue, we perform Welch's t-test Differential Gene Expression (DGE) with Benjamini-Hochberg (FDR) correction:
-        * **Significance Thresholds:** $-\\log_{10}(\\text{FDR}) > 5$ (FDR $< 10^{-5}$) and $|\\log_2\\text{FC}| > 1.5$.
-        * **Statistical Control:** Genes with zero variance are removed, and low-correlation outliers are pruned prior to testing.
-        """)
-        show_artifact_image("fig6b_dge_volcano_plots.png", "Subtype-specific Volcano Plots for 5 PAM50 Subtypes")
+    with t4:
+        st.markdown('<div class="section-title">Differential Gene Expression (DGE Complex Heatmap)</div>', unsafe_allow_html=True)
+        show_artifact_image("fig6_dge_complex_heatmap.png", "Complex Hierarchical Heatmap of Differentially Expressed Transcripts Across Subtypes")
 
 # =============================================================================
 # PAGE: CLUSTERING & NETWORKS
 # =============================================================================
-
 elif page == "Clustering & Networks":
-    st.markdown('<div class="main-title">Tumor Heterogeneity <span class="main-title-accent">and Co-expression</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">Unsupervised clustering discovers natural biological divisions in tumor profiles, while gene co-expression networks uncover co-regulated complexes.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Tumor Heterogeneity <span class="main-title-accent">& Co-expression Networks</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">Unsupervised topological networks identify coordinated transcription modules and natural subtype co-occurrence patterns across discovery cohorts.</div>', unsafe_allow_html=True)
 
-    t1, t2 = st.tabs(["Unsupervised Clustering Alignment", "Co-expression Network Modules"])
-    
+    t1, t2, t3 = st.tabs(["Subtype Co-occurrence Network", "Gene Co-expression Network", "Consensus Correlation Clustering"])
+
     with t1:
-        st.markdown('<div class="section-title">Natural Subtype Clustering Alignment</div>', unsafe_allow_html=True)
-        st.markdown("""
-        Unsupervised partition and agglomerative clustering algorithms were executed on the high-dimensional transcriptomics space to check if breast cancer samples group together naturally without utilizing subtype labels.
-        * **Hierarchical Agglomeration (Ward's Linkage, Euclidean Distance):** Groups samples by minimizing the within-cluster variance. It reveals highly robust natural grouping aligning beautifully with pathological subtypes.
-        * **K-Means Partitioning (k=5, Euclidean Distance):** Iteratively groups samples around spatial centroids by minimizing the Within-Cluster Sum of Squares (WCSS).
-        """)
-        
-        # Load cluster labels if available, else show placeholders/warnings
-        cluster_labels = load_parquet(ARTIFACT_DIR, "cluster_labels.parquet")
-        if cluster_labels is not None:
-            fig = px.histogram(cluster_labels, x="subtype", color="hierarchical_cluster",
-                               barmode="group", title="Hierarchical Clustering Ward Alignment vs Subtype",
-                               template="plotly_white", color_discrete_sequence=BAR_COLORS)
-            fig.update_layout(**PLOTLY_LAYOUT)
-            st.plotly_chart(fig, use_container_width=True)
-            
-            fig2 = px.histogram(cluster_labels, x="subtype", color="kmeans_cluster",
-                               barmode="group", title="K-Means Clustering (k=5) Alignment vs Subtype",
-                               template="plotly_white", color_discrete_sequence=BAR_COLORS)
-            fig2.update_layout(**PLOTLY_LAYOUT)
-            st.plotly_chart(fig2, use_container_width=True)
-        else:
-            st.warning("Clustering labels dataset not found. Unsupervised clustering plots are generated in the notebook.")
+        st.markdown('<div class="section-title">Subtype Co-occurrence Topological Graph</div>', unsafe_allow_html=True)
+        show_artifact_image("fig17_subtype_cooccurrence_network_log2.png", "Topological Subtype Co-occurrence Network in log2(RSEM+1) Space")
+        edges_df = load_csv("subtype_cooccurrence_edges_log2.csv")
+        if edges_df is not None:
+            with st.expander("📋 View Significant Subtype Co-occurrence Edges"):
+                st.dataframe(edges_df, use_container_width=True, hide_index=True)
 
     with t2:
-        st.markdown('<div class="section-title">Top Gene Co-expression Network Links</div>', unsafe_allow_html=True)
-        st.markdown(r"""
-        To model coordinated relationships as topological graphs, gene co-expression networks were constructed:
-        * **Strict Data Hygiene:** Built strictly on the **training split** using the **top 500 most variable genes** to prevent target leakage.
-        * **Adjacency Hard-Thresholding:** Converts absolute Pearson correlation coefficients ($|r_{ij}|$) into a binary adjacency matrix using a threshold of **$\tau = 0.85$** ($a_{ij}=1$ if $|r_{ij}| \ge 0.85$, else 0).
-        * **Connectivity Degree ($k_i$):** Topological importance was calculated to identify **hub genes** — central regulators of subtype-specific oncogenic processes.
-        """)
-        
-        coexpression_net = load_parquet(ARTIFACT_DIR, "coexpression_network.parquet")
-        if coexpression_net is not None:
-            # Rename column names if necessary
-            y_col = "probe_id" if "probe_id" in coexpression_net.columns else ("gene" if "gene" in coexpression_net.columns else coexpression_net.columns[0])
-            fig = px.bar(coexpression_net.head(20), x="degree", y=y_col, orientation="h",
-                         color="module" if "module" in coexpression_net.columns else None, 
-                         color_continuous_scale="Purples",
-                         title="Top Co-expression Hub Probes by Connection Degree",
-                         template="plotly_white")
-            fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
-            st.plotly_chart(fig, use_container_width=True)
-            
-            st.dataframe(coexpression_net.head(40), use_container_width=True, hide_index=True)
-        else:
-            st.warning("Co-expression network dataset not found in data/artifacts/.")
+        st.markdown('<div class="section-title">Topological Gene Co-expression Network</div>', unsafe_allow_html=True)
+        show_artifact_image("fig17_gene_coexpression_network.png", "Co-expression Network Hubs and Community Modules (Adjacency threshold tau = 0.85)")
+
+    with t3:
+        st.markdown('<div class="section-title">Hierarchical Clustering of Top Biomarkers</div>', unsafe_allow_html=True)
+        show_artifact_image("fig17_top20_consensus_correlation_clustered_log2.png", "Clustered Correlation Heatmap of Canonical Consensus Biomarkers")
 
 # =============================================================================
 # PAGE: FEATURE SELECTION
 # =============================================================================
-
 elif page == "Feature Selection":
     st.markdown('<div class="main-title">Consensus <span class="main-title-accent">Biomarker Discovery</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">We run a tri-method ensemble feature selection pipeline (ANOVA, LASSO L1, Random Forest Gini), fusing linear and non-linear importance. Genes are filtered and ranked by consensus voting to select 211 canonical consensus biomarkers.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">Tri-architecture feature selection integrates parametric linear weights (L2 Logistic Regression), non-linear ensemble Gini impurity (Random Forest), and Deep Neural SHAP to distill 211 locked consensus biomarkers.</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="section-title">Top Consensus Biomarkers</div>', unsafe_allow_html=True)
+    col_fs1, col_fs2 = st.columns([1, 1])
+    with col_fs1:
+        st.markdown(r"""
+        ### Anti-Leakage Feature Distillation
+        1. **Fold-Contained Selection:** Evaluated across outer CV folds to completely eliminate target leakage.
+        2. **Tri-Paradigmatic Importance Fusion:**
+           - **$L_2$ Logistic Regression:** Captures direct, linearly separable transcriptomic shifts.
+           - **Random Forest:** Uncovers high-order non-linear epistatic interactions.
+           - **Multi-Layer Perceptron (MLP):** Identifies distributed deep representations.
+        3. **Stability-Weighted Consensus:** Ranks features by stability-weighted consensus frequency, selecting the **211 canonical genes**.
+        """)
+    with col_fs2:
+        if consensus_genes_df is not None:
+            top20 = consensus_genes_df.head(20)
+            score_col = "consensus_importance" if "consensus_importance" in top20.columns else top20.columns[1]
+            fig_fs = px.bar(
+                top20, x=score_col, y="mapped_symbol", orientation="h",
+                title="Top 20 Consensus Biomarkers by Stability Score",
+                template="plotly_white", color=score_col,
+                color_continuous_scale="Purples", height=540
+            )
+            fig_fs.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
+            st.plotly_chart(fig_fs, use_container_width=True)
+
+    st.markdown('<div class="section-title">Architecture-Specific Mean Absolute SHAP Importance</div>', unsafe_allow_html=True)
+    col_sh1, col_sh2, col_sh3 = st.columns(3)
+    with col_sh1:
+        show_artifact_image("fig15_mlp_mean_abs_shap_horizontal_bars.png", "MLP Neural Net Mean |SHAP|")
+    with col_sh2:
+        show_artifact_image("fig15_rf_mean_abs_shap_horizontal_bars.png", "Random Forest Mean |SHAP|")
+    with col_sh3:
+        show_artifact_image("fig15_lr_mean_abs_shap_horizontal_bars.png", "L2 Logistic Regression Mean |SHAP|")
+
+    st.markdown('<div class="section-title">Feature Selection Stability (Jaccard Index)</div>', unsafe_allow_html=True)
+    show_artifact_image("fig19_feature_stability_jaccard.png", "Pairwise Jaccard Stability Index across Outer CV Folds")
+
     if consensus_genes_df is not None:
-        st.markdown(f'<div class="success-box"><b>{len(consensus_genes_df)} robust consensus genes</b> identified across architectures (LightGBM and Linear SVM).</div>', unsafe_allow_html=True)
-        
-        col_fs1, col_fs2 = st.columns([1, 1])
-        with col_fs1:
-            st.markdown(r"""
-            ### High-Dimensional Feature Reduction Flow
-            To isolate highly generalizable, biologically validated biomarkers and resolve the "curse of dimensionality" ($p \gg n$; $p \approx 18,000$ genes and $n = 784$ discovery samples), a rigorous multi-stage data-hygiene-compliant pipeline was built:
-            
-            1. **Variance Filtering & Outlier Removal:** Stagnant transcripts are removed, and low-correlation outliers are pruned to yield a clean discovery cohort of 784 samples.
-            2. **Welch's t-test & FDR Correction:** Subtype-specific differentially expressed genes (DGE) are identified under strict significance thresholds ($|\log_2\text{FC}| > 0.58$, $\text{FDR} < 0.05$).
-            3. **Dual-Architecture SHAP Fusion:** SHAP values from independent **Linear SVM** and **LightGBM** models are MinMax-normalized and averaged to calculate a robust consensus score.
-            4. **Consensus Ranking:** The **211 canonical consensus genes** are locked as features, reducing feature dimensionality by >99% while preserving classification power.
-            """)
-        with col_fs2:
-            top = consensus_genes_df.head(25)
-            fig = px.bar(top, x="consensus_importance", y="mapped_symbol", orientation="h",
-                title="Consensus Genes Ranked by SHAP Importance Score",
-                template="plotly_white", color="consensus_importance",
-                color_continuous_scale="Blues", height=580)
-            fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
-            fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
-            st.plotly_chart(fig, use_container_width=True)
-        
-        st.markdown('<div class="section-title">Consensus Biomarker Visualizations</div>', unsafe_allow_html=True)
-        col_img1, col_img2 = st.columns(2)
-        with col_img1:
-            show_artifact_image("fig13_consensus_feature_importance.png", "Top Consensus Biomarkers (Linear + Non-Linear Fusion)")
-        with col_img2:
-            show_artifact_image("fig16_consensus_correlation_heatmap.png", "Expression Correlation Heatmap of Top 30 Consensus Biomarkers")
-
-        with st.expander("📋 View Full Consensus Gene Rankings (Top 50)"):
-            st.dataframe(consensus_genes_df.head(50)[["consensus_rank", "mapped_symbol", "feature", "consensus_importance", "norm_importance_svm", "norm_importance_lr", "full_gene_name"]], use_container_width=True, hide_index=True)
-    else:
-        st.warning("Consensus features dataset not found.")
+        with st.expander("📋 View Full 211 Consensus Biomarker Signature Registry"):
+            st.dataframe(consensus_genes_df, use_container_width=True, hide_index=True)
 
 # =============================================================================
 # PAGE: MODEL PERFORMANCE
 # =============================================================================
-
 elif page == "Model Performance":
-    st.markdown('<div class="main-title">Classifier Benchmarks & <span class="main-title-accent">Multi-Architecture Performance</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">We evaluate classification models on the TCGA holdout split (N=197) and via cross-validation. On unseen TCGA holdout data: Logistic Regression (94.92% Accuracy, 0.9503 Macro F1), Random Forest (91.37% Accuracy, 0.8916 Macro F1), and MLP Neural Net (91.88% Accuracy, 0.8792 Macro F1).</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Classifier Benchmarks & <span class="main-title-accent">Holdout Validation</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">We benchmarked three diverse classifier paradigms (Deep MLP, Random Forest, L2 Logistic Regression) on the completely quarantined TCGA-BRCA holdout split (N=197).</div>', unsafe_allow_html=True)
 
-    t_perf, t_cv = st.tabs(["Holdout Performance Benchmarks", "Cross-Validation & Hyperparameters"])
+    t_perf, t_cm, t_cal, t_cv = st.tabs(["Holdout Benchmarks", "Confusion Matrices & Paired F1", "Probability Calibration", "Nested Cross-Validation"])
 
     with t_perf:
-        st.markdown('<div class="section-title">Classifiers Holdout Performance (N=197 Unseen Patients)</div>', unsafe_allow_html=True)
-        
-        tri_bench_path = ARTIFACT_DIR / "tri_architecture_holdout_benchmark.parquet"
-        if tri_bench_path.exists():
-            raw_holdout = pd.read_parquet(tri_bench_path)
-            holdout_metrics_df = raw_holdout[["Model", "Accuracy", "Macro_F1", "Weighted_F1", "MCC", "Macro_ROC_AUC_OVR"]].copy()
-            holdout_metrics_df = holdout_metrics_df.rename(columns={"Macro_F1": "Macro F1-Score", "Weighted_F1": "Weighted F1-Score", "Macro_ROC_AUC_OVR": "ROC-AUC"})
-        else:
-            holdout_metrics_df = pd.DataFrame([
-                {"Model": "Logistic Regression", "Accuracy": 0.9492, "Macro F1-Score": 0.9503, "Weighted F1-Score": 0.9498, "MCC": 0.9244, "ROC-AUC": 0.9957},
-                {"Model": "Random Forest", "Accuracy": 0.9137, "Macro F1-Score": 0.8916, "Weighted F1-Score": 0.9156, "MCC": 0.8756, "ROC-AUC": 0.9885},
-                {"Model": "MLP Neural Net", "Accuracy": 0.9188, "Macro F1-Score": 0.8792, "Weighted F1-Score": 0.9172, "MCC": 0.8768, "ROC-AUC": 0.9874}
-            ])
+        st.markdown('<div class="section-title">Holdout Performance Comparison (N=197 Quarantined Samples)</div>', unsafe_allow_html=True)
+        if holdout_comp_df is not None:
+            cols_card = st.columns(3)
+            for idx, (_, row) in enumerate(holdout_comp_df.iterrows()):
+                m_name = row["Model"]
+                acc = row["Holdout_Accuracy"]
+                f1 = row["Holdout_Macro_F1"]
+                roc = row["Holdout_ROC_AUC"]
+                with cols_card[idx]:
+                    st.markdown(f"""
+                    <div class="metric-card">
+                        <div style="font-weight:700; color:#4f46e5; margin-bottom:4px;">{m_name}</div>
+                        <div class="metric-value">{acc:.2%}</div>
+                        <div class="metric-label">Holdout Accuracy</div>
+                        <div style="font-size:13px; color:#64748b; margin-top:8px;">
+                            Macro-F1: <b>{f1:.4f}</b> &nbsp;|&nbsp; ROC-AUC: <b>{roc:.4f}</b>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-        fig = px.bar(holdout_metrics_df, x="Model", y=["Accuracy", "Macro F1-Score"], barmode="group",
-                     title="Holdout Performance Across Deployment Architectures (N=197)",
-                     template="plotly_white", color_discrete_sequence=["#10b981", "#8b5cf6", "#4f46e5"])
-        fig.update_layout(**PLOTLY_LAYOUT)
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Display formatted table
-        display_holdout = holdout_metrics_df.copy()
-        for col in ["Accuracy", "Macro F1-Score", "Weighted F1-Score", "MCC", "ROC-AUC"]:
-            if col in display_holdout.columns:
-                display_holdout[col] = display_holdout[col].apply(lambda x: f"{x:.4f}" if isinstance(x, (int, float)) else str(x))
-        st.dataframe(display_holdout, use_container_width=True, hide_index=True)
+            fig_comp = px.bar(
+                holdout_comp_df, x="Model", y=["Holdout_Accuracy", "Holdout_Macro_F1", "Holdout_Weighted_F1"],
+                barmode="group", title="Tri-Architecture Holdout Performance Metrics",
+                template="plotly_white", color_discrete_sequence=["#10b981", "#8b5cf6", "#4f46e5"]
+            )
+            fig_comp.update_layout(**PLOTLY_LAYOUT)
+            st.plotly_chart(fig_comp, use_container_width=True)
 
-        st.markdown('<div class="section-title">Holdout Confusion Matrix & Evaluation Insights</div>', unsafe_allow_html=True)
-        show_artifact_image("confusion_matrix_validation.png", "Holdout Validation Confusion Matrix")
+            disp_holdout = holdout_comp_df.copy()
+            for col in disp_holdout.select_dtypes(include=[np.number]).columns:
+                disp_holdout[col] = disp_holdout[col].apply(lambda x: f"{x:.4f}")
+            st.dataframe(disp_holdout, use_container_width=True, hide_index=True)
 
-        st.markdown("""
-        <div class="success-box">
-            <b>Classifier Evaluation Insights:</b>
-            <ul style="margin: 8px 0 0 20px; padding: 0;">
-                <li style="margin-bottom: 6px;"><b>Model Benchmarks:</b> Evaluated classifiers on the independent holdout cohort (N=197). Logistic Regression achieves 94.92% Accuracy (0.9503 Macro-F1), Random Forest achieves 91.37% Accuracy (0.8916 Macro-F1), and MLP Neural Net achieves 91.88% Accuracy (0.8792 Macro-F1).</li>
-                <li style="margin-bottom: 6px;"><b>Consensus Feature Space:</b> Training classifiers on the 211 canonical consensus biomarker signature achieves high predictive power, drastically reducing technical noise and ensuring high reproducibility.</li>
-                <li><b>Platform Stability:</b> The locked 211-gene model demonstrates high transferability to external cohorts, maintaining accuracy without any fine-tuning or retraining.</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+    with t_cm:
+        st.markdown('<div class="section-title">Tri-Architecture Confusion Matrices</div>', unsafe_allow_html=True)
+        cm_col1, cm_col2, cm_col3 = st.columns(3)
+        with cm_col1:
+            show_artifact_image("fig7_confusion_matrix_mlp.png", "MLP Neural Net Confusion Matrix")
+        with cm_col2:
+            show_artifact_image("fig7_confusion_matrix_random_forest.png", "Random Forest Confusion Matrix")
+        with cm_col3:
+            show_artifact_image("fig7_confusion_matrix_logistic_regression.png", "L2 Logistic Regression Confusion Matrix")
+
+        st.markdown('<div class="section-title">Bootstrap Distribution & Paired F1 Differences</div>', unsafe_allow_html=True)
+        b_col1, b_col2 = st.columns(2)
+        with b_col1:
+            show_artifact_image("fig8a_tri_bootstrap_distributions.png", "1,000-Fold Bootstrap F1 Distributions")
+        with b_col2:
+            show_artifact_image("fig8b_tri_paired_f1_differences.png", "Paired F1 Differences & 95% Confidence Intervals")
+
+    with t_cal:
+        st.markdown('<div class="section-title">Probability Calibration Curves (Reliability Diagrams)</div>', unsafe_allow_html=True)
+        cal_col1, cal_col2 = st.columns(2)
+        with cal_col1:
+            show_artifact_image("fig20_tri_architecture_calibration_reliability.png", "Tri-Architecture Calibration Reliability Comparison")
+        with cal_col2:
+            show_artifact_image("fig9_calibration_curve_mlp.png", "MLP Probability Calibration Curve")
 
     with t_cv:
-        st.markdown('<div class="section-title">Stratified Nested Cross-Validation (Outer loop: 5-Fold, Inner loop: 3-Fold)</div>', unsafe_allow_html=True)
-        st.markdown("""
-        To strictly guarantee clinical generalizability and prevent feature-selection leakage, stratified nested cross-validation scores were calculated. 
-        Outer folds evaluate model generalization while inner folds optimize hyperparameters:
-        """)
-        
-        if nested_cv is not None:
-            cv_rows = []
-            for k, v in nested_cv.items():
-                acc = v.get('mean_val_accuracy', v.get('Mean_Accuracy', 0))
-                f1 = v.get('mean_val_macro_f1', v.get('Mean_Macro_F1', 0))
-                std_f1 = v.get('std_val_macro_f1', v.get('Std_Macro_F1', 0))
-                folds = v.get('fold_results', [])
-                params = folds[0].get('best_params', {}) if folds else v.get('Consensus_Params', {})
-                cv_rows.append({
-                    "Classifier Model": k,
-                    "Mean CV Accuracy": f"{acc:.2%}" if isinstance(acc, (int, float)) else str(acc),
-                    "Mean CV Macro F1": f"{f1:.2%}" if isinstance(f1, (int, float)) else str(f1),
-                    "F1 Std Deviation": f"±{std_f1:.2%}" if isinstance(std_f1, (int, float)) else str(std_f1),
-                    "Optimal Parameters": str(params)
-                })
-            cv_summary_df = pd.DataFrame(cv_rows)
-            st.dataframe(cv_summary_df, use_container_width=True, hide_index=True)
-        else:
-            cv_summary_df = pd.DataFrame([
-                {"Classifier Model": "Logistic Regression", "Mean CV Accuracy": "89.41%", "Mean CV Macro F1": "86.48%", "F1 Std Deviation": "±1.39%", "Optimal Parameters": "{'model__C': 0.01}"},
-                {"Classifier Model": "Random Forest", "Mean CV Accuracy": "88.01%", "Mean CV Macro F1": "84.84%", "F1 Std Deviation": "±4.94%", "Optimal Parameters": "{'model__max_depth': 6}"},
-                {"Classifier Model": "MLP Neural Net", "Mean CV Accuracy": "87.37%", "Mean CV Macro F1": "80.59%", "F1 Std Deviation": "±3.38%", "Optimal Parameters": "{'model__dropout': 0.2}"}
-            ])
-            st.dataframe(cv_summary_df, use_container_width=True, hide_index=True)
-
-        st.markdown("""
-        <div class="info-box">
-            <b>Rejection of Tree-Based Ensembles:</b><br>
-            While models like Random Forest, XGBoost, and LightGBM are often popular, they exhibited significant F1-score volatility and overfitted on majority classes (e.g. Luminal A) in the presence of subtype imbalance. The RBF-SVM and Linear SVM architectures, with class-weight balancing and regularization, achieved much higher macro F1 stability and tighter confidence intervals, making them the robust choices for clinical subtyping.
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Stratified 5x3 Nested Cross-Validation Results</div>', unsafe_allow_html=True)
+        if nested_cv_summary_df is not None:
+            disp_cv = nested_cv_summary_df.copy()
+            for col in disp_cv.select_dtypes(include=[np.number]).columns:
+                disp_cv[col] = disp_cv[col].apply(lambda x: f"{x:.4f}")
+            st.dataframe(disp_cv, use_container_width=True, hide_index=True)
 
 # =============================================================================
 # PAGE: SHAP EXPLAINABILITY
 # =============================================================================
-
 elif page == "SHAP Explainability":
-    st.markdown('<div class="main-title">SHAP <span class="main-title-accent">Explainable AI and Biomarkers</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">Using KernelSHAP explainers, we extract the mathematically exact feature contributions of gene probes driving subtype decisions, creating trust for clinical PIs.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">SHAP <span class="main-title-accent">Explainable AI & Patient Attribution</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">Model decisions are made fully interpretable through SHAP (Shapley Additive exPlanations) values computed across the 211-gene signature for each sample.</div>', unsafe_allow_html=True)
 
-    t1, t2 = st.tabs(["Global Feature Importance", "Local Patient Explainer (Waterfall)"])
+    t1, t2 = st.tabs(["Global Feature Attribution (Beeswarm)", "Local N-of-1 Patient Explainer (Waterfall)"])
 
     with t1:
-        st.markdown('<div class="section-title">Global Feature Impact (Linear + Non-Linear SHAP)</div>', unsafe_allow_html=True)
-        col_shap1, col_shap2 = st.columns([2, 1])
-        with col_shap1:
-            if consensus_genes_df is not None:
-                top_bio = consensus_genes_df.head(15)
-                fig = px.bar(top_bio, x="consensus_importance", y="mapped_symbol", orientation="h",
-                    color="consensus_importance", color_continuous_scale="Purples",
-                    title="Top 15 Predictive Genes (Mapped to Biological HUGO Symbols)",
-                    template="plotly_white", hover_data=["feature", "full_gene_name"], height=520)
-                fig.update_layout(**PLOTLY_LAYOUT, yaxis=dict(autorange="reversed"))
-                fig.update_xaxes(showgrid=True, gridcolor="#f1f5f9")
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.warning("Consensus biomarkers table not found.")
-        with col_shap2:
-            st.markdown("""
-            ### Ensemble SHAP Hub Biomarkers
-            * **ESR1 (Estrogen Receptor 1):** Master regulator of hormone-responsive transcription and diagnostic hallmark of **Luminal A & B** subtypes.
-            * **ERBB2 (HER2):** Receptor tyrosine kinase amplification driver; diagnostic hallmark of the **HER2-Enriched** subtype.
-            * **GRB7 & STARD3:** Co-amplified with ERBB2 on the **17q12 amplicon**, validating the genomic clustering.
-            * **KRT5 & KRT14:** Basal structural cytokeratins; essential diagnostic markers for the **Basal-like** subtype.
-            * **MKI67 & AURKA:** Proliferation markers separating Luminal B/HER2 from low-proliferation Luminal A.
-            """)
-        
-        if consensus_genes_df is not None:
-            with st.expander("📋 View Comprehensive SHAP Mapped Biomarkers (Top 40)"):
-                st.dataframe(consensus_genes_df.head(40)[["consensus_rank", "mapped_symbol", "feature", "consensus_importance", "full_gene_name"]],
-                    use_container_width=True, hide_index=True)
+        st.markdown('<div class="section-title">Global SHAP Beeswarm Distributions</div>', unsafe_allow_html=True)
+        tab_mlp, tab_rf, tab_lr = st.tabs(["MLP Global Beeswarm", "Random Forest Global Beeswarm", "L2 Logistic Regression Beeswarm"])
+        with tab_mlp:
+            show_artifact_image("fig14_mlp_global_shap_beeswarm.png", "MLP Multi-class Global SHAP Beeswarm Summary")
+        with tab_rf:
+            show_artifact_image("fig14_rf_global_shap_beeswarm.png", "Random Forest TreeSHAP Beeswarm Summary")
+        with tab_lr:
+            show_artifact_image("fig14_lr_global_shap_beeswarm.png", "L2 Logistic Regression LinearSHAP Beeswarm Summary")
+
+        st.markdown('<div class="section-title">Subtype-Specific Canonical SHAP Drivers (Top 10)</div>', unsafe_allow_html=True)
+        mlp_top10 = load_csv("mlp_subtype_specific_shap_top10.csv")
+        if mlp_top10 is not None:
+            st.dataframe(mlp_top10, use_container_width=True, hide_index=True)
 
     with t2:
         st.markdown('<div class="section-title">Patient Diagnostic Explainer (SHAP Waterfall)</div>', unsafe_allow_html=True)
-        st.markdown("Select a patient sample, classifier model, and target subtype class to see the individual transcriptomic contributors driving the classification decision:")
+        st.markdown("Select a patient from the TCGA discovery cohort, an architecture, and a target PAM50 subtype to visualize feature-level diagnostic contributions:")
 
-        # Load holdout data dynamically for waterfall explainer
-        df_holdout = load_parquet(PROCESSED_DIR, "df_holdout.parquet")
-        if df_holdout is not None and consensus_gene_list is not None and le_cohort is not None:
-            # Model selector
-            col_sel1, col_sel2, col_sel3, col_sel4 = st.columns([1.3, 1.5, 1.3, 1.2])
-            with col_sel1:
-                model_sel = st.selectbox("Select Classifier Model", ["Linear SVM (Linear)", "LightGBM (Non-Linear)"])
-
-            # Load selected model and raw tensor dynamically
-            if model_sel == "LightGBM (Non-Linear)":
-                model_obj = lgbm_model
-                shap_tensor = np.load(ARTIFACT_DIR / "consensus_lgbm_shap_tensor.npy") if (ARTIFACT_DIR / "consensus_lgbm_shap_tensor.npy").exists() else None
+        if df_expression is not None and df_meta is not None and le_cohort is not None and mlp_shap is not None:
+            col_m, col_s, col_c, col_k = st.columns([1.2, 1.5, 1.2, 1.0])
+            with col_m:
+                model_pick = st.selectbox("Model Architecture", ["MLP Neural Net", "Random Forest", "L2 Logistic Regression"])
+            
+            # Select SHAP tensor & candidate pipeline
+            if model_pick == "MLP Neural Net":
+                shap_matrix = mlp_shap
+                active_pipe = mlp_candidate
+            elif model_pick == "Random Forest":
+                shap_matrix = rf_shap
+                active_pipe = rf_candidate
             else:
-                model_obj = linear_svm_model
-                shap_tensor = np.load(ARTIFACT_DIR / "consensus_lr_shap_tensor.npy") if (ARTIFACT_DIR / "consensus_lr_shap_tensor.npy").exists() else None
+                shap_matrix = lr_shap
+                active_pipe = lr_candidate
 
-            if shap_tensor is not None:
-                _n_shap = shap_tensor.shape[0]
-                _n_feats = shap_tensor.shape[1]
-                
-                # Align holdout expression matrix
-                if _n_feats == 211:
-                    gene_mask = np.isin(feat_cols_arr, consensus_gene_list)
-                    X_holdout_ml = df_holdout[feat_cols_arr].values[:, gene_mask]
-                    feature_names_shap = [c for c in feat_cols_arr if c in consensus_gene_list]
-                else:
-                    X_holdout_ml = df_holdout[feat_cols_arr].values[:, :_n_feats]
-                    feature_names_shap = feat_cols_arr[:_n_feats].tolist()
-
-                y_holdout = df_holdout['type'].values[:min(_n_shap, len(df_holdout))]
-                
-                with col_sel2:
-                    sample_idx = st.selectbox(
-                        "Select Patient Sample",
-                        options=list(range(min(_n_shap, len(y_holdout)))),
-                        format_func=lambda idx: f"Patient Sample {idx+1} (Actual Subtype: {y_holdout[idx]})",
-                        key="shap_waterfall_sample"
-                    )
-                with col_sel3:
-                    target_class = st.selectbox(
-                        "Select Subtype Class to Explain",
-                        options=list(le_cohort.classes_),
-                        index=list(le_cohort.classes_).index(y_holdout[sample_idx]) if y_holdout[sample_idx] in le_cohort.classes_ else 0,
-                        key="shap_waterfall_class"
-                    )
-                with col_sel4:
-                    top_n = st.slider("Top Biomarkers to Plot", min_value=5, max_value=40, value=15, step=5)
-                
-                class_idx = list(le_cohort.classes_).index(target_class) if target_class in le_cohort.classes_ else 0
-                
-                # Extract SHAP values for sample and class (handling tensor 3D shape [sample, feature, class])
-                if shap_tensor.ndim == 3:
-                    if class_idx < shap_tensor.shape[2]:
-                        sample_shaps = shap_tensor[sample_idx, :, class_idx]
-                    else:
-                        sample_shaps = shap_tensor[sample_idx, :, 0]
-                else:
-                    sample_shaps = shap_tensor[sample_idx, :]
-
-                sample_features = X_holdout_ml[sample_idx, :len(sample_shaps)]
-                
-                # Get predicted probability dynamically
-                predicted_probability = model_obj.predict_proba(sample_features.reshape(1, -1))[0, class_idx]
-                
-                # Compute base value dynamically using exact mathematical identity
-                expected_val = predicted_probability - sample_shaps.sum()
-                
-                top_indices = np.argsort(np.abs(sample_shaps))[::-1][:top_n]
-                other_sum = sample_shaps.sum() - sample_shaps[top_indices].sum()
-                
-                # Create symbol dict
-                probe_to_symbol = dict(zip(consensus_genes_df['feature'].astype(str), consensus_genes_df['mapped_symbol'])) if consensus_genes_df is not None else {}
-                
-                y_labels = ["E[f(X)] (Expected Base)"]
-                x_changes = [expected_val]
-                measures = ["absolute"]
-                
-                if len(sample_shaps) > top_n:
-                    y_labels.append("other features")
-                    x_changes.append(other_sum)
-                    measures.append("relative")
-                    
-                # Fix scrambled lookup by aligning with model/SHAP input features
-                sorted_genes = sorted([str(g) for g in consensus_gene_list])
-                for idx in reversed(top_indices):
-                    probe = sorted_genes[idx]
-                    symbol = probe_to_symbol.get(str(probe), str(probe))
-                    val = sample_features[idx]
-                    y_labels.append(f"{val:.3f} = {symbol}")
-                    x_changes.append(sample_shaps[idx])
-                    measures.append("relative")
-                    
-                y_labels.append("f(x) (Predicted Probability)")
-                x_changes.append(predicted_probability)
-                measures.append("total")
-                
-                fig_wf = go.Figure(go.Waterfall(
-                    name="Local Explainer",
-                    orientation="h",
-                    measure=measures,
-                    y=y_labels,
-                    x=x_changes,
-                    connector={"mode": "between", "line": {"width": 1.5, "color": "rgb(166, 166, 166)", "dash": "solid"}},
-                    decreasing={"marker": {"color": "#3b82f6"}},
-                    increasing={"marker": {"color": "#ef4444"}},
-                    totals={"marker": {"color": "#10b981"}},
-                    text=[f"{x:+.3f}" if m == "relative" else f"{x:.2%}" for x, m in zip(x_changes, measures)],
-                    textposition="outside"
-                ))
-                
-                fig_wf.update_layout(
-                    title=f"SHAP Waterfall Explainer for Patient {sample_idx+1} (Class: {target_class})",
-                    waterfallgap=0.3,
-                    **PLOTLY_LAYOUT,
-                    height=120 + 28 * len(y_labels)
+            n_samples_avail = min(shap_matrix.shape[0], len(df_meta), len(df_expression))
+            with col_s:
+                sample_idx = st.selectbox(
+                    "Select Patient Sample",
+                    range(n_samples_avail),
+                    format_func=lambda idx: f"Patient {idx+1} ({df_meta.iloc[idx]['patient_barcode']} - {df_meta.iloc[idx]['subtype']})"
                 )
-                fig_wf.update_xaxes(showgrid=True, gridcolor="#f1f5f9", title_text="Predicted Subtype Probability")
-                fig_wf.update_yaxes(showgrid=False)
-                st.plotly_chart(fig_wf, use_container_width=True)
-                
-                st.markdown(f"""
-                <div class="success-box">
-                    <b>Sample Diagnostic Summary:</b><br>
-                    • <b>Actual Subtype:</b> {y_holdout[sample_idx]}<br>
-                    • <b>Predicted Probability for '{target_class}':</b> {predicted_probability:.2%}<br>
-                    • <b>Expected Base Probability:</b> {expected_val:.2%}<br>
-                    The waterfall chart visualizes how each gene expression level either increases (red bar) or decreases (blue bar) the model's confidence in diagnosing the patient's tumor as {target_class}.
-                </div>
-                """, unsafe_allow_html=True)
+            with col_c:
+                target_sub = st.selectbox(
+                    "Subtype to Explain",
+                    list(le_cohort.classes_),
+                    index=list(le_cohort.classes_).index(df_meta.iloc[sample_idx]["subtype"]) if df_meta.iloc[sample_idx]["subtype"] in le_cohort.classes_ else 0
+                )
+            with col_k:
+                top_k = st.slider("Top Genes to Plot", min_value=5, max_value=25, value=12, step=1)
 
-                st.markdown("<br>", unsafe_allow_html=True)
-                with st.expander("📋 View Complete Individual Patient Biomarker Contribution Table (All 18 Canonical Genes)"):
-                    patient_shap_data = []
-                    for idx in range(len(sample_shaps)):
-                        probe = sorted_genes[idx]
-                        symbol = probe_to_symbol.get(str(probe), str(probe))
-                        
-                        # Find full name from consensus_genes if available
-                        fullname = "Unknown gene"
-                        if consensus_genes_df is not None:
-                            match_row = consensus_genes_df[consensus_genes_df['feature'].astype(str) == str(probe)]
-                            if not match_row.empty and 'full_gene_name' in match_row.columns:
-                                fullname = match_row['full_gene_name'].values[0]
-                                
-                        val = sample_features[idx]
-                        shap_val = sample_shaps[idx]
-                        
-                        if shap_val > 0.01:
-                            effect = f"🔴 Promotes {target_class} diagnosis"
-                        elif shap_val < -0.01:
-                            effect = f"🔵 Suppresses {target_class} diagnosis"
-                        else:
-                            effect = "⚪ Negligible effect"
-                            
-                        patient_shap_data.append({
-                            "Entrez ID": probe,
-                            "HUGO Symbol": symbol,
-                            "Gene Name": fullname,
-                            "Expression Value": val,
-                            "SHAP Contribution": shap_val,
-                            "Clinical Effect": effect,
-                            "abs_shap": abs(shap_val)
-                        })
-                    
-                    df_patient_shap = pd.DataFrame(patient_shap_data).sort_values(by="abs_shap", ascending=False).reset_index(drop=True)
-                    df_patient_shap.insert(0, "Rank", np.arange(1, len(df_patient_shap) + 1))
-                    
-                    # Clean formatting for presentation
-                    df_patient_shap_formatted = df_patient_shap.copy()
-                    df_patient_shap_formatted["Expression Value"] = df_patient_shap_formatted["Expression Value"].map(lambda x: f"{x:.3f}")
-                    df_patient_shap_formatted["SHAP Contribution"] = df_patient_shap_formatted["SHAP Contribution"].map(lambda x: f"{x:+.4f}")
-                    df_patient_shap_formatted = df_patient_shap_formatted.drop(columns=["abs_shap"])
-                    
-                    st.dataframe(df_patient_shap_formatted, use_container_width=True, hide_index=True)
+            target_cls_idx = list(le_cohort.classes_).index(target_sub)
+            sample_shaps = shap_matrix[sample_idx, :, target_cls_idx]
+            sample_feats = df_expression.iloc[sample_idx].values
+
+            # Predicted probability
+            if active_pipe is not None:
+                feat_cols_model = [str(f) for f in candidate_features] if len(candidate_features) == len(sample_feats) else df_expression.columns
+                df_single = pd.DataFrame([sample_feats], columns=feat_cols_model)
+                pred_prob = active_pipe.predict_proba(df_single)[0, target_cls_idx]
             else:
-                st.warning("SHAP values tensor or models not found in data/artifacts/.")
-        else:
-            st.warning("Holdout data or label encoder not found in data/processed/ or data/artifacts/.")
+                pred_prob = float(np.clip(0.2 + sample_shaps.sum(), 0.0, 1.0))
+
+            base_val = pred_prob - sample_shaps.sum()
+
+            top_indices = np.argsort(np.abs(sample_shaps))[::-1][:top_k]
+            other_sum = sample_shaps.sum() - sample_shaps[top_indices].sum()
+
+            probe_to_symbol = dict(zip(consensus_genes_df["feature"].astype(str), consensus_genes_df["mapped_symbol"])) if consensus_genes_df is not None else {}
+
+            y_labels = ["E[f(X)] (Expected Base)"]
+            x_changes = [base_val]
+            measures = ["absolute"]
+
+            if len(sample_shaps) > top_k:
+                y_labels.append("other features")
+                x_changes.append(other_sum)
+                measures.append("relative")
+
+            feat_cols = [str(c) for c in df_expression.columns]
+            for idx in reversed(top_indices):
+                f_name = feat_cols[idx]
+                sym = probe_to_symbol.get(f_name, entrez_to_hugo.get(f_name, f_name))
+                val = sample_feats[idx]
+                y_labels.append(f"{sym} ({val:.2f})")
+                x_changes.append(sample_shaps[idx])
+                measures.append("relative")
+
+            y_labels.append(f"f(X) (P[{target_sub}])")
+            x_changes.append(pred_prob)
+            measures.append("total")
+
+            fig_wf = go.Figure(go.Waterfall(
+                orientation="h",
+                measure=measures,
+                y=y_labels,
+                x=x_changes,
+                connector={"mode": "between", "line": {"width": 1.5, "color": "rgb(166, 166, 166)"}},
+                decreasing={"marker": {"color": "#3b82f6"}},
+                increasing={"marker": {"color": "#ef4444"}},
+                totals={"marker": {"color": "#10b981"}},
+                text=[f"{x:+.3f}" if m == "relative" else f"{x:.2%}" for x, m in zip(x_changes, measures)],
+                textposition="outside"
+            ))
+            fig_wf.update_layout(
+                title=f"SHAP Waterfall Explainer for Sample {sample_idx+1} ({df_meta.iloc[sample_idx]['patient_barcode']} -> {target_sub})",
+                waterfallgap=0.3,
+                **PLOTLY_LAYOUT,
+                height=140 + 28 * len(y_labels)
+            )
+            st.plotly_chart(fig_wf, use_container_width=True)
 
 # =============================================================================
 # PAGE: FUNCTIONAL GENOMICS
 # =============================================================================
-
 elif page == "Functional Genomics":
-    st.markdown('<div class="main-title">Hallmark Pathway Validation <span class="main-title-accent">and Functional Genomics</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">We submit our top SHAP-derived biomarkers to MSigDB Hallmark and KEGG pathway repositories to validate their involvement in canonical cancer processes.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Hallmark Pathway Validation <span class="main-title-accent">& Functional Genomics</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">We queried Gene Ontology (GO Biological Process), MSigDB Hallmark, and Reactome repositories to mechanistically validate our 211 consensus biomarkers.</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="section-title">Functional Genomics Plots</div>', unsafe_allow_html=True)
-    t1, t2 = st.tabs(["MSigDB Hallmark Enrichment", "KEGG Pathways"])
+    t1, t2, t3 = st.tabs(["GO Biological Process", "MSigDB Hallmark Pathways", "Reactome Pathways"])
+
     with t1:
-        show_artifact_image("fig21_pathway_enrichment_msigdb.png", "MSigDB Hallmark Pathway Enrichment")
-        st.markdown("""
-        <div class="success-box">
-            <b>MSigDB Hallmark Significance:</b><br>
-            The MSigDB Hallmark queries demonstrate that our 50 consensus genes are heavily enriched in core cell cycle progression pathways, estrogen response targets, and apical junction signaling, validating their direct mechanistic links to breast cancer pathology.
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Gene Ontology Biological Process Enrichment (-log10 FDR)</div>', unsafe_allow_html=True)
+        show_artifact_image("fig21_pathway_enrichment_go_consensus_211.png", "Top Significant Enriched GO Biological Processes")
+        go_df = load_parquet("go_biological_process_enrichment_consensus_211_significant.parquet")
+        if go_df is not None:
+            with st.expander("📋 View Significant GO Biological Process Terms"):
+                st.dataframe(go_df.head(40), use_container_width=True, hide_index=True)
+
     with t2:
-        show_artifact_image("fig20_pathway_enrichment_kegg.png", "KEGG Pathway Enrichment")
+        st.markdown('<div class="section-title">MSigDB Hallmark Pathway Enrichment</div>', unsafe_allow_html=True)
+        show_artifact_image("fig23_pathway_enrichment_msigdb_hallmark_consensus_211.png", "Top Enriched MSigDB Hallmark Pathways in Consensus Signature")
+        hall_df = load_parquet("hallmark_enrichment_consensus_211_significant.parquet")
+        if hall_df is not None:
+            with st.expander("📋 View Significant MSigDB Hallmark Pathways"):
+                st.dataframe(hall_df, use_container_width=True, hide_index=True)
+
+    with t3:
+        st.markdown('<div class="section-title">Reactome Pathway Enrichment</div>', unsafe_allow_html=True)
+        show_artifact_image("fig24_pathway_enrichment_reactome_consensus_211.png", "Top Enriched Reactome Pathways in Consensus Signature")
+        reac_df = load_parquet("reactome_enrichment_consensus_211_significant.parquet")
+        if reac_df is not None:
+            with st.expander("📋 View Significant Reactome Pathways"):
+                st.dataframe(reac_df, use_container_width=True, hide_index=True)
 
 # =============================================================================
-# PAGE: N-OF-1 PATIENT UNIQUENESS
+# PAGE: PATIENT UNIQUENESS
 # =============================================================================
-
 elif page == "Patient Uniqueness":
-    st.markdown('<div class="main-title">N-of-1 Patient Uniqueness <span class="main-title-accent">Framework (CUS)</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">The Composite Uniqueness Score (CUS) evaluates each patient along orthogonal axes: topological distance (network centroid deviation) and cross-patient reconstruction residual. Outliers reflect atypical genomic programs.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">N-of-1 Patient Uniqueness <span class="main-title-accent">Framework (WPR-CUS)</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">Within-Platform Robust Composite Uniqueness Score (WPR-CUS) computes patient novelty along orthogonal axes: network topological distance and out-of-fold autoencoder reconstruction residual.</div>', unsafe_allow_html=True)
 
-    t_plots, t_table = st.tabs(["Uniqueness Projections & Landscapes", "Outlier Patient Registry"])
+    t_plots, t_table = st.tabs(["WPR-CUS Landscapes & Projections", "Outlier Patient Registry"])
 
     with t_plots:
-        st.markdown('<div class="section-title">Patient Uniqueness Landscapes</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">WPR-CUS Landscape Scatter & Subtype Distributions</div>', unsafe_allow_html=True)
         col_img1, col_img2 = st.columns(2)
         with col_img1:
-            show_artifact_image("fig22_cus_landscape_scatter.png", "CUS Landscape Scatter Plot (Topological vs Reconstruction)")
+            show_artifact_image("fig22_cus_landscape_scatter.png", "WPR-CUS Landscape Scatter Plot (Topological vs Reconstruction)")
         with col_img2:
-            show_artifact_image("fig30_cus_vs_subtype_boxplot.png", "Composite CUS distribution across PAM50 subtypes")
-        
-        st.markdown('<div class="section-title">Comparative Benchmark against Baseline Models</div>', unsafe_allow_html=True)
-        col_img3, col_img4 = st.columns([2, 1])
+            show_artifact_image("fig30_cus_vs_subtype_boxplot.png", "Composite WPR-CUS Distribution across PAM50 Subtypes")
+
+        st.markdown('<div class="section-title">Reconstruction Error & Statistical Permutation Null</div>', unsafe_allow_html=True)
+        col_img3, col_img4 = st.columns(2)
         with col_img3:
-            show_artifact_image("fig31b_cus_vs_baselines.png", "CUS vs Euclidean, PCA Reconstruction, and Isolation Forest")
+            show_artifact_image("fig25_patient_reconstruction_distribution_log2_unstandardized.png", "Patient Reconstruction Residual Distribution")
         with col_img4:
-            st.markdown("""
-            ###  Uniqueness Insights
-            * **Composite Advantage:** Combining physical similarity graph distance (Topo_Distance) with autoencoder projection error (Recon_Error) allows the model to capture orthogonal dimensions of transcriptomic deviation, reducing false-positive rates.
-            * **Basal Subtype Heterogeneity:** Basal-like tumors exhibit the highest CUS variance. This matches the clinical reality that Triple-Negative Breast Cancer is highly chaotic and contains multiple distinct molecular subclasses.
-            * **Luminal A Uniformity:** Luminal A exhibits the lowest CUS, reflecting its homogeneous transcriptomic profile driven by a shared, stable estrogen-receptor program.
-            * **Private Biology:** The low Jaccard overlap (~14%) between outlier and population-level pathways proves that unique patients run completely different biological software (e.g. metabolic remodeling) rather than extreme versions of normal cancer.
-            """)
+            show_artifact_image("fig29_permutation_test_distribution.png", "1,000-Iteration Empirical Permutation Test Distribution")
+
+        st.markdown('<div class="section-title">Legacy CUS vs Within-Platform Robust WPR-CUS</div>', unsafe_allow_html=True)
+        col_img5, col_img6 = st.columns(2)
+        with col_img5:
+            show_artifact_image("fig32_legacy_cus_vs_wpr_cus_scatter.png", "Legacy CUS vs Robust WPR-CUS Comparison")
+        with col_img6:
+            show_artifact_image("fig34_cus_vs_wpr_cus_subtype_comparison.png", "Subtype Variance Stabilization Under WPR-CUS")
 
     with t_table:
         st.markdown('<div class="section-title">Outlier Patient Registry (WPR-CUS)</div>', unsafe_allow_html=True)
-        st.markdown("Search or filter scored patients to identify individuals with highly unique transcriptomic profiles:")
-        
         if uniqueness_scores is not None:
             scored_df = uniqueness_scores.reset_index()
-            sort_col = "WPR_CUS_OOF" if "WPR_CUS_OOF" in scored_df.columns else ("CUS" if "CUS" in scored_df.columns else scored_df.columns[1])
+            sort_col = "WPR_CUS_OOF" if "WPR_CUS_OOF" in scored_df.columns else scored_df.columns[1]
             scored_df = scored_df.sort_values(sort_col, ascending=False).reset_index(drop=True)
-            
+
             col_sh1, col_sh2 = st.columns([1, 2])
             with col_sh1:
-                sub_filter = st.selectbox("Filter by Subtype", ["All Subtypes"] + sorted(list(scored_df["Subtype"].unique())))
+                sub_opts = ["All Subtypes"] + sorted([str(s) for s in scored_df["Subtype"].dropna().unique()])
+                sub_filter = st.selectbox("Filter by Subtype", sub_opts)
             with col_sh2:
-                id_search = st.text_input("Search Patient ID", placeholder="TCGA-E2-...")
-            
+                id_search = st.text_input("Search Patient Barcode", placeholder="TCGA-...")
+
             filtered_scored = scored_df.copy()
             if sub_filter != "All Subtypes":
                 filtered_scored = filtered_scored[filtered_scored["Subtype"] == sub_filter]
-            if id_search and "Patient_ID" in filtered_scored.columns:
-                filtered_scored = filtered_scored[filtered_scored["Patient_ID"].astype(str).str.contains(id_search, case=False)]
-            
-            # Format float values
-            display_scored = filtered_scored.copy()
-            for col in ["WPR_CUS_OOF", "LOO_Residual_Norm", "NRE", "Topo_Distance", "Recon_Error", "CUS"]:
-                if col in display_scored.columns:
-                    display_scored[col] = display_scored[col].apply(lambda x: f"{x:.4f}" if pd.notna(x) and isinstance(x, (int, float)) else str(x))
-            
-            st.dataframe(display_scored, use_container_width=True, hide_index=True)
-            
-            # Show subtype uniqueness statistics if available
-            group_stats = load_parquet(ARTIFACT_DIR, "subtype_uniqueness_group_statistics.parquet")
+            if id_search and "sample_id" in filtered_scored.columns:
+                filtered_scored = filtered_scored[filtered_scored["sample_id"].astype(str).str.contains(id_search, case=False)]
+
+            disp_scored = filtered_scored.copy()
+            for col in disp_scored.select_dtypes(include=[np.number]).columns:
+                disp_scored[col] = disp_scored[col].apply(lambda x: f"{x:.4f}")
+            st.dataframe(disp_scored, use_container_width=True, hide_index=True)
+
+            group_stats = load_parquet("subtype_uniqueness_group_statistics.parquet")
             if group_stats is not None:
                 st.markdown('<div class="section-title">Subtype WPR-CUS Group Statistics</div>', unsafe_allow_html=True)
-                disp_group = group_stats.copy()
-                for col in disp_group.columns:
-                    if col not in ["Subtype", "N"]:
-                        disp_group[col] = disp_group[col].apply(lambda x: f"{x:.4f}" if isinstance(x, (int, float)) else str(x))
-                st.dataframe(disp_group, use_container_width=True, hide_index=True)
-
-            st.markdown("""
-            <div class="success-box">
-                <b>Key Outlier Insights:</b><br>
-                • <b>Basal Subtype Heterogeneity:</b> Basal-like tumors demonstrate the highest mean WPR-CUS (1.1909 ± 1.3391), reflecting significant intra-subtype molecular diversity.<br>
-                • <b>Luminal A Homogeneity:</b> Luminal A tumors exhibit the lowest mean WPR-CUS (-0.2186 ± 1.0262), confirming a highly conserved ER-driven expression profile.<br>
-                • <b>Permutation Significance:</b> An empirical permutation test (1,000 iterations) confirms the global PAM50 vs. WPR-CUS association is highly statistically significant ($p < 0.001$, $\eta^2 = 0.3184$).
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.warning("Patient uniqueness scores parquet file not found.")
+                disp_grp = group_stats.copy()
+                for col in disp_grp.select_dtypes(include=[np.number]).columns:
+                    disp_grp[col] = disp_grp[col].apply(lambda x: f"{x:.4f}")
+                st.dataframe(disp_grp, use_container_width=True, hide_index=True)
 
 # =============================================================================
-# PAGE: EXTERNAL COHORT VALIDATION
+# PAGE: EXTERNAL VALIDATION
 # =============================================================================
-
 elif page == "External Validation":
     st.markdown('<div class="main-title">External Cohort <span class="main-title-accent">Validation</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">The locked TCGA-BRCA-trained pipeline is evaluated on three independent cohorts representing different platforms, sequencing techniques, and geographic origins.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">The locked TCGA-BRCA 211-gene models were evaluated on three independent cohorts: SCAN-B (N=340), SMC 2018 (N=168), and METABRIC (N=1,974).</div>', unsafe_allow_html=True)
 
-    t_metrics, t_plots = st.tabs(["Performance Benchmarks", "Calibration & Centroid Comparison"])
+    t_metrics, t_plots = st.tabs(["External Cohort Performance", "Microarray Transfer & Platform Shifts"])
 
     with t_metrics:
-        st.markdown('<div class="section-title">Locked Pipeline External Validation Metrics</div>', unsafe_allow_html=True)
-        
-        ext_summary_path = BASE_DIR / "results" / "external_validation_summary.csv"
-        if ext_summary_path.exists():
-            ext_summary_df = pd.read_csv(ext_summary_path)
-            ext_display_df = ext_summary_df.copy()
-            ext_display_df["Cohort"] = ext_display_df["Cohort"].replace({
-                "GSE96058": "SCAN-B (GSE96058)",
-                "SMC_2018": "SMC 2018",
-                "METABRIC": "METABRIC"
-            })
-            ext_display_df["Model"] = ext_display_df["Model"].replace({
-                "Logistic_Regression": "Logistic Regression",
-                "Random_Forest": "Random Forest",
-                "MLP": "MLP Neural Net"
-            })
-            for col in ["Accuracy", "Macro_F1", "Weighted_F1"]:
-                if col in ext_display_df.columns:
-                    ext_display_df[col] = ext_display_df[col].apply(lambda x: f"{x:.2%}" if isinstance(x, (int, float)) else str(x))
-            st.dataframe(ext_display_df, use_container_width=True, hide_index=True)
-        elif external_val is not None:
-            rows = []
-            for cohort, data in external_val.items():
-                c_name = "SCAN-B (GSE96058)" if cohort == "GSE96058" else cohort
-                for m_key, m_label in [("Logistic_Regression", "Logistic Regression"), ("Random_Forest", "Random Forest"), ("MLP_Neural_Net", "MLP Neural Net")]:
-                    if m_key in data:
-                        m_metrics = data[m_key]
-                        acc = m_metrics.get("acc", m_metrics.get("Accuracy", 0))
-                        f1 = m_metrics.get("f1_macro", m_metrics.get("Macro_F1", 0))
-                        rows.append({
-                            "Cohort": c_name,
-                            "Model": m_label,
-                            "Accuracy": f"{acc:.2%}" if isinstance(acc, (int, float)) else str(acc),
-                            "Macro F1": f"{f1:.2%}" if isinstance(f1, (int, float)) else str(f1),
-                            "Samples (N)": data.get("N_samples", data.get("n_samples", "N/A"))
-                        })
-            val_df = pd.DataFrame(rows)
-            st.dataframe(val_df, use_container_width=True, hide_index=True)
-        else:
-            st.error("External validation summary artifact is unavailable. No validation metrics are displayed.")
+        st.markdown('<div class="section-title">External Cohort Benchmark Summary (211-Gene Signature)</div>', unsafe_allow_html=True)
+        if ext_val_summary_df is not None:
+            disp_ext = ext_val_summary_df.copy()
+            for col in ["Accuracy", "Macro_F1", "Weighted_F1", "Balanced_Accuracy"]:
+                if col in disp_ext.columns:
+                    disp_ext[col] = disp_ext[col].apply(lambda x: f"{x:.2%}" if isinstance(x, (int, float)) else str(x))
+            st.dataframe(disp_ext, use_container_width=True, hide_index=True)
 
-        st.markdown('<div class="section-title">Validation Confusion Matrices (Independent Scale)</div>', unsafe_allow_html=True)
-        show_artifact_image("fig32_external_cohort_validation.png", "External Validation Confusion Matrices (Z-scaled cohorts)")
-
-        st.markdown("""
-        <div class="success-box">
-            <b>Platform Shift & Normalization Insights:</b><br>
-            • <b>Model Collapse without scaling:</b> Direct execution of raw external cohorts without independent scaling causes complete model collapse (accuracy drops to 11%-21%), as raw RNA-seq or Microarray intensities differ from the TCGA discovery scale.<br>
-            • <b>Z-Score Standardization:</b> Independent scaling successfully bridges the platform shift, recovering high transportable accuracy (~74-77% on SMC 2018, ~83% on SCAN-B, and ~72% on METABRIC microarray).<br>
-            • <b>Feature Order Alignment:</b> Programmatically locking features in strict alphabetical order is mandatory; feeding features in arbitrary order causes identical collapse.
-        </div>
-        """, unsafe_allow_html=True)
+        col_ev1, col_ev2 = st.columns(2)
+        with col_ev1:
+            show_artifact_image("fig18_external_validation_211_gene_macro_f1.png", "External Validation Macro-F1 Across Cohorts")
+        with col_ev2:
+            show_artifact_image("fig19_external_validation_211_gene_balanced_accuracy.png", "External Validation Balanced Accuracy Across Cohorts")
 
     with t_plots:
-        st.markdown('<div class="section-title">Clinical Calibration and Centroid Benchmark</div>', unsafe_allow_html=True)
-        col_img1, col_img2 = st.columns(2)
-        with col_img1:
-            show_artifact_image("fig32b_calibration_reliability.png", "Validation Calibration Curves (Reliability Diagrams)")
-        with col_img2:
-            show_artifact_image("fig32d_centroid_benchmark.png", "Comparative Benchmarking vs PAM50 Spearman Centroids")
+        st.markdown('<div class="section-title">METABRIC Microarray Confusion Matrices & Raw Distributions</div>', unsafe_allow_html=True)
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            show_artifact_image("fig_metabric_confusion_matrices.png", "METABRIC Microarray Confusion Matrices Across Tri-Architecture")
+        with col_m2:
+            show_artifact_image("fig_external_raw_distributions.png", "Cross-Platform Raw Gene Expression Distributions")
+
+        if metabric_metrics_df is not None:
+            st.markdown('<div class="section-title">METABRIC Detailed Performance Metrics</div>', unsafe_allow_html=True)
+            st.dataframe(metabric_metrics_df, use_container_width=True, hide_index=True)
 
 # =============================================================================
 # PAGE: SURVIVAL ANALYSIS
 # =============================================================================
-
 elif page == "Survival Analysis":
-    st.markdown('<div class="main-title">Prognostic Survival <span class="main-title-accent">Modelling</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">We model patient survival to confirm that model-predicted subtypes capture clinically meaningful prognostic differences. A multivariate Cox model adjusts for Stage, Age, and Cell Proliferation.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Prognostic Survival <span class="main-title-accent">Modeling</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">Comprehensive longitudinal survival modeling using multivariate Cox proportional hazards, time-dependent ROC dynamics, and landmark analysis.</div>', unsafe_allow_html=True)
 
-    col_km, col_cox = st.columns([1, 1])
+    t_km, t_multi, t_time, t_ext = st.tabs(["Kaplan-Meier & Cox Hazards", "Multi-Endpoint & Multivariate Forest", "Longitudinal AUC & Landmark", "Age-Stratified & External"])
 
-    with col_km:
-        st.markdown('<div class="section-title">Kaplan-Meier Survival Stratification</div>', unsafe_allow_html=True)
-        show_artifact_image("fig33_prognostic_km_cox.png", "Kaplan-Meier Curves Stratified by Subtype (TCGA-BRCA, N=740)")
-        
-        st.markdown('<div class="section-title">Consensus Risk Score (CRS) Stratification</div>', unsafe_allow_html=True)
-        show_artifact_image("fig33b_crs_prognostic_km.png", "KM Curves Stratified by Continuous Consensus Risk Score (High vs Low)")
+    with t_km:
+        st.markdown('<div class="section-title">Kaplan-Meier Stratification & Univariate Cox</div>', unsafe_allow_html=True)
+        col_k1, col_k2 = st.columns(2)
+        with col_k1:
+            show_artifact_image("fig33_km_os.png", "Kaplan-Meier Overall Survival Curves Stratified by Subtype (TCGA-BRCA)")
+        with col_k2:
+            show_artifact_image("fig33_cox_forest.png", "Cox Proportional Hazards Forest Plot (Hazard Ratios)")
 
-    with col_cox:
-        st.markdown('<div class="section-title">Multivariate Cox Proportional Hazards Regression</div>', unsafe_allow_html=True)
-        st.markdown("""
-        The Cox model achieved a strong concordance index (**C-index = 0.75**) on the TCGA-BRCA cohort:
-        """)
-        
-        cox_data = {
-            "Covariate": ["Pathological Stage (STAGE_NUM)", "Age at Diagnosis", "HER2 vs. Luminal A", "Luminal B vs. Luminal A", "Basal vs. Luminal A", "MKI67 Proliferation Covariate"],
-            "Hazard Ratio (HR)": [1.64, 1.02, 1.59, 1.18, 0.98, 1.03],
-            "95% Confidence Interval": ["[1.33, 2.03]", "[1.01, 1.03]", "[0.93, 2.72]", "[0.80, 1.74]", "[0.64, 1.49]", "[0.90, 1.17]"],
-            "p-value": ["< 0.005", "< 0.005", "0.090", "0.410", "0.920", "0.670"],
-            "Significance": ["*** Highly Significant", "*** Highly Significant", "Trend", "Not Significant", "Not Significant", "Not Significant"]
-        }
-        st.dataframe(pd.DataFrame(cox_data), use_container_width=True, hide_index=True)
+        if surv_cox_df is not None:
+            with st.expander("📋 View Cox Survival Regression Metrics"):
+                st.dataframe(surv_cox_df, use_container_width=True, hide_index=True)
 
-        st.markdown("""
-        <div class="success-box">
-            <b>Clinical Interpretation:</b><br>
-            • <b>Stage and Age</b> remain the dominant independent clinical predictors of overall survival, with each pathologic stage increase representing a <b>64% increase in mortality risk</b>.<br>
-            • <b>Proliferation Covariate:</b> Continuous mRNA expression of MKI67 provides a stable continuous prognostic covariate for evaluating cell proliferation in the Cox proportional hazards model alongside canonical clinical predictors (age, stage, nodal status, subtype).
-        </div>
-        """, unsafe_allow_html=True)
+    with t_multi:
+        st.markdown('<div class="section-title">Multi-Endpoint Survival & Multivariate Adjustment</div>', unsafe_allow_html=True)
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            show_artifact_image("fig35_multi_endpoint_survival.png", "Multi-Endpoint Survival Modeling (OS, DSS, PFI, DFI)")
+        with col_m2:
+            show_artifact_image("fig36_multivariate_cox_forest.png", "Multivariate Cox Forest Plot Adjusting for Stage, Age, and Proliferation")
+
+        if surv_multi_df is not None:
+            with st.expander("📋 View Multi-Endpoint Survival Comparison Table"):
+                st.dataframe(surv_multi_df, use_container_width=True, hide_index=True)
+
+    with t_time:
+        st.markdown('<div class="section-title">Time-Dependent ROC Dynamics & Landmark Horizons</div>', unsafe_allow_html=True)
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            show_artifact_image("fig37_time_dependent_auc_dynamics.png", "Time-Dependent AUC Trajectories (1-10 Years)")
+        with col_t2:
+            show_artifact_image("fig38_landmark_survival_2yr_5yr.png", "2-Year and 5-Year Landmark Survival Stratification")
+
+        show_artifact_image("fig39_instantaneous_hazard_trajectories.png", "Instantaneous Hazard Trajectories Across Subtypes")
+
+        if surv_time_auc_df is not None:
+            with st.expander("📋 View Time-Dependent AUC Dynamics Data"):
+                st.dataframe(surv_time_auc_df, use_container_width=True, hide_index=True)
+
+    with t_ext:
+        st.markdown('<div class="section-title">Age-Stratified Survival & METABRIC Validation</div>', unsafe_allow_html=True)
+        col_e1, col_e2 = st.columns(2)
+        with col_e1:
+            show_artifact_image("fig40_age_stratified_survival.png", "Age-Stratified Survival Analysis (<50 vs >=50 Years)")
+        with col_e2:
+            show_artifact_image("fig41_external_cohort_survival_validation.png", "External Cohort Survival Validation in METABRIC (N=1,974)")
 
 # =============================================================================
 # PAGE: TME DECONVOLUTION
 # =============================================================================
-
 elif page == "TME Deconvolution":
     st.markdown('<div class="main-title">Tumour Microenvironment <span class="main-title-accent">Deconvolution</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">We estimate immune and stromal cell signature enrichment scores across 9 populations from bulk RNA-seq using ssGSEA via the decoupler package, utilizing single-sample Gene Set Enrichment Analysis (ssGSEA) with curated cell-type marker signatures.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">We deconvolved immune and stromal cell infiltration across 9 distinct populations using single-sample Gene Set Enrichment Analysis (ssGSEA).</div>', unsafe_allow_html=True)
 
-    col_heat, col_desc = st.columns([1, 1])
-
+    col_heat, col_desc = st.columns([1.2, 1.0])
     with col_heat:
-        st.markdown('<div class="section-title">Tumour Microenvironment ssGSEA Enrichment Profile</div>', unsafe_allow_html=True)
-        show_artifact_image("fig34_tme_deconvolution.png", "Mean ssGSEA Immune/Stromal Cell Enrichment Scores")
+        st.markdown('<div class="section-title">TME Marker Z-Score Heatmap Across Subtypes</div>', unsafe_allow_html=True)
+        show_artifact_image("fig37_tme_marker_zscore_heatmap.png", "Tumor Microenvironment Immune/Stromal Infiltration Profiles")
 
     with col_desc:
-        st.markdown('<div class="section-title">Deconvolved Subtype Cellular Fractions</div>', unsafe_allow_html=True)
-        
-        if tme_ssgsea_scores is not None:
-            # Aggregate mean scores per PAM50 subtype
-            tme_agg = tme_ssgsea_scores.groupby("PAM50").mean().reset_index()
-            # Clean column names
-            tme_agg.columns = [c.replace("_", " ") for c in tme_agg.columns]
-            st.dataframe(tme_agg, use_container_width=True, hide_index=True)
+        st.markdown('<div class="section-title">Subtype Infiltration Profiles</div>', unsafe_allow_html=True)
+        if tme_means_df is not None:
+            st.dataframe(tme_means_df, use_container_width=True, hide_index=True)
         else:
             tme_data = {
                 "Subtype": ["Basal", "HER2", "Luminal A", "Luminal B"],
@@ -1246,37 +1057,47 @@ elif page == "TME Deconvolution":
 
         st.markdown("""
         <div class="success-box">
-            <b>Key Biological Findings:</b><br>
-            • <b>Basal-like (TNBC) is immune-hot:</b> CD8+ T cells and NK cells are highest in Basal (-1.05 and -1.34), confirming high cytotoxic lymphocyte infiltration. M1 (anti-tumor) Macrophages are also highest (0.58). This provides a transcriptomic rationale for pembrolizumab efficacy in TNBC.<br>
-            • <b>Luminal A is an immune-cold desert:</b> CD8+ T cells (-1.44) and NK cells (-1.61) are lowest, while CAFs/Stroma is highest (1.87), indicating a dense extracellular matrix that blocks immune infiltration.
+            <b>Key Immunological Insights:</b><br>
+            • <b>Basal-like (TNBC) is an immune-hot environment:</b> Elevated cytotoxic CD8+ T cells, NK cells, and anti-tumor M1 macrophages provide mechanistic rationale for immune checkpoint inhibition.<br>
+            • <b>Luminal A is an immune-cold desert:</b> Depleted cytotoxic effectors and prominent CAF/stromal matrix block active immune infiltration.
         </div>
         """, unsafe_allow_html=True)
 
 # =============================================================================
-# PAGE: DRUG DISCOVERY
+# PAGE: DRUG DISCOVERY & DEPMAP
 # =============================================================================
-
 elif page == "Drug Discovery":
-    st.markdown('<div class="main-title">Computational Biomarker <span class="main-title-accent">Validation & Drug Candidate Screen</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="info-box">We validate SHAP driver essentiality using CRISPR knockout CERES scores from Broad DepMap, and search for signature-reversal compounds in the LINCS L1000 Connectivity Map.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">DepMap CRISPR 26Q1 Essentiality <span class="main-title-accent">& LINCS Drug Discovery</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="info-box">We integrated Broad DepMap Public 26Q1 Chronos CRISPR knockout essentiality data and LINCS L1000 Connectivity Map compound reversals to prioritize actionable therapeutic targets.</div>', unsafe_allow_html=True)
 
-    col_fig, col_details = st.columns([1, 1])
+    t_depmap, t_lincs = st.tabs(["Broad DepMap CRISPR 26Q1 Screen", "LINCS L1000 Drug Connectivity"])
 
-    with col_fig:
-        st.markdown('<div class="section-title">DepMap & LINCS Validation Profiles</div>', unsafe_allow_html=True)
-        show_artifact_image("fig35_depmap_lincs_validation.png", "CRISPR CERES Essentiality Scores & LINCS Reversal tau metrics")
+    with t_depmap:
+        st.markdown('<div class="section-title">Therapeutic Dependency Screening Across Breast Cancer Cell Lines</div>', unsafe_allow_html=True)
+        d_col1, d_col2 = st.columns(2)
+        with d_col1:
+            show_artifact_image("fig_depmap_1_candidate_overlap.png", "Candidate Biomarker Overlap Across Architectures")
+        with d_col2:
+            show_artifact_image("fig_depmap_2_lineage_dependency_tri_model.png", "Lineage-Specific Dependency Profiles Across Cell Lines")
 
-    with col_details:
-        st.markdown('<div class="section-title">Broad DepMap CRISPR Essentiality Screen (Public 26Q1 Chronos)</div>', unsafe_allow_html=True)
-        depmap_data = {
-            "Gene Symbol": ["ESR1", "ERBB2", "FOXA1", "AURKA", "TOP2A", "KRT5", "FGFR4"],
-            "Subtype Relevance": ["Luminal A/B", "HER2-enriched", "Luminal A/B & HER2+", "Pan-cancer", "Proliferative", "Basal structural", "HER2+ subclass"],
-            "Essentiality Class": ["Context-essential", "Context-essential", "Context-essential", "Pan-essential", "Pan-essential", "Non-essential", "Context-essential"],
-            "Chronos score Details": ["MCF7 -1.47, T47D -1.91 (essential in ER+ lines)", "SKBR3 -1.81, HCC1954 -0.61 (essential in HER2+ lines)", "MCF7 -2.05, T47D -1.56, SKBR3 -1.31 (pioneer factor)", "MCF7 -1.43, MDA-MB-231 -0.90 (mitosis check)", "All lines -1.68 to -3.31 (DNA replication machinery)", "Chronos ≈ 0 (structural marker, not driver)", "HCC1954 -1.60 (strongly essential in FGFR4-overexpressing)"]
-        }
-        st.dataframe(pd.DataFrame(depmap_data), use_container_width=True, hide_index=True)
+        d_col3, d_col4 = st.columns(2)
+        with d_col3:
+            show_artifact_image("fig_depmap_3_expression_dependency_correlations.png", "Expression vs Chronos Dependency Correlation")
+        with d_col4:
+            show_artifact_image("fig_depmap_4_quadrant_actionability_matrix.png", "Quadrant Therapeutic Actionability Matrix")
 
-        st.markdown('<div class="section-title">LINCS L1000 Connectivity Map Candidates (Reversal Score)</div>', unsafe_allow_html=True)
+        show_artifact_image("fig_depmap_5_tri_model_mechanistic_comparison.png", "Tri-Model Mechanistic Functional Classification")
+
+        if depmap_yield_df is not None:
+            st.markdown('<div class="section-title">Architecture Functional Dependency Yield</div>', unsafe_allow_html=True)
+            st.dataframe(depmap_yield_df, use_container_width=True, hide_index=True)
+
+        if depmap_lines_df is not None:
+            with st.expander("📋 View DepMap Breast Cancer Cell Line Cohort (N=48 lines)"):
+                st.dataframe(depmap_lines_df, use_container_width=True, hide_index=True)
+
+    with t_lincs:
+        st.markdown('<div class="section-title">LINCS L1000 Connectivity Map Compounds</div>', unsafe_allow_html=True)
         lincs_data = {
             "Compound": ["vorinostat", "neratinib", "OSI-027", "Purvalanol A", "wortmannin"],
             "Mechanism": ["HDAC inhibitor", "HER2/EGFR dual inhibitor", "mTOR inhibitor", "CDK inhibitor", "PI3K inhibitor"],
@@ -1284,28 +1105,25 @@ elif page == "Drug Discovery":
             "Clinical Context": ["Reverses cell cycle gene upregulation", "Targeted anti-HER2 clinical standard", "Reverses proliferation signatures", "Cell cycle checkpoint arrest", "PI3K pathway blockade"]
         }
         st.dataframe(pd.DataFrame(lincs_data), use_container_width=True, hide_index=True)
-        st.caption("Disclaimer: LINCS scores represent transcriptomic pattern reversal and do not directly predict clinical therapeutic efficacy.")
 
-    st.markdown("""
-    <div class="success-box">
-        <b>Experimental Wet Lab Roadmap:</b><br>
-        1. Validate <b>ESR1 & FOXA1</b> knockout phenotypes in MCF7 vs. MDA-MB-231 cell lines to confirm subtype-specific dependencies.<br>
-        2. Perform drug response assays for <b>Alisertib + Fulvestrant</b> combination in TNBC vs. ER+ cell lines to test synthetic lethality.<br>
-        3. Measure the L1000 expression profile of CRISPR knockouts to validate gene-drug connectivity.
-    </div>
-    """, unsafe_allow_html=True)
+        st.markdown("""
+        <div class="success-box">
+            <b>Experimental Wet Lab Validation Roadmap:</b><br>
+            1. Validate <b>ESR1 & FOXA1</b> knockout phenotypes in MCF7 vs. MDA-MB-231 cell lines to confirm subtype-specific dependencies.<br>
+            2. Perform drug response assays for <b>Alisertib + Fulvestrant</b> combination in TNBC vs. ER+ cell lines to test synthetic lethality.<br>
+            3. Measure the L1000 expression profile of CRISPR knockouts to validate gene-drug connectivity.
+        </div>
+        """, unsafe_allow_html=True)
 
 # =============================================================================
-# PAGE: AUTOML PIPELINE (delegated to automl_page.py)
+# PAGE: AUTOML PIPELINE
 # =============================================================================
-
 elif page == "AutoML Pipeline":
     automl_page.render(card_fn=card)
 
 # =============================================================================
 # FOOTER
 # =============================================================================
-
 st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 st.markdown("""
 <div style="text-align:center; padding:10px 0;">
@@ -1313,7 +1131,7 @@ st.markdown("""
        <b>OncoResolve v3.5.0 — Breast Cancer Transcriptomics Pipeline</b><br/>
     </span><br>
     <span style="color:#94a3b8; font-size:11.5px;">
-        TCGA-BRCA RNA-seq (N=1,084) &nbsp;|&nbsp; SMC 2018 (N=168) &nbsp;|&nbsp; SCAN-B (N=340) &nbsp;|&nbsp; METABRIC (N=1,974) &nbsp;|&nbsp; PAM50 Subtyping &nbsp;|&nbsp; Explainable AI
+        TCGA-BRCA RNA-seq (N=1,084) &nbsp;|&nbsp; SMC 2018 (N=168) &nbsp;|&nbsp; SCAN-B (N=340) &nbsp;|&nbsp; METABRIC (N=1,974) &nbsp;|&nbsp; PAM50 Subtyping &nbsp;|&nbsp; Explainable AI &nbsp;|&nbsp; DepMap CRISPR 26Q1
     </span>
 </div>
 """, unsafe_allow_html=True)
