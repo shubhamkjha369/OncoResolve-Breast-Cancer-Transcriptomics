@@ -78,6 +78,7 @@ class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
         patience=5,
         min_delta=1e-4,
         validation_fraction=0.15,
+        class_weight=None,
         scheduler="reduce_on_plateau",
         scheduler_factor=0.5,
         scheduler_patience=5,
@@ -95,6 +96,7 @@ class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
         self.patience = patience
         self.min_delta = min_delta
         self.validation_fraction = validation_fraction
+        self.class_weight = class_weight
         self.scheduler = scheduler
         self.scheduler_factor = scheduler_factor
         self.scheduler_patience = scheduler_patience
@@ -128,7 +130,23 @@ class PyTorchMLPClassifier(BaseEstimator, ClassifierMixin):
             self.n_classes_, self.dropout
         ).to(self.device)
 
-        criterion = nn.CrossEntropyLoss()
+        if self.class_weight == "balanced":
+            classes_in_tr, counts = np.unique(y_tr, return_counts=True)
+            weights = np.ones(self.n_classes_, dtype=np.float32)
+            total = len(y_tr)
+            for c, cnt in zip(classes_in_tr, counts):
+                weights[c] = total / (self.n_classes_ * max(cnt, 1))
+            weight_tensor = torch.tensor(weights, dtype=torch.float32, device=self.device)
+            criterion = nn.CrossEntropyLoss(weight=weight_tensor)
+        elif isinstance(self.class_weight, dict):
+            weights = np.ones(self.n_classes_, dtype=np.float32)
+            for c_idx, c_name in enumerate(self.classes_):
+                if c_name in self.class_weight:
+                    weights[c_idx] = float(self.class_weight[c_name])
+            weight_tensor = torch.tensor(weights, dtype=torch.float32, device=self.device)
+            criterion = nn.CrossEntropyLoss(weight=weight_tensor)
+        else:
+            criterion = nn.CrossEntropyLoss()
         optimizer = optim.AdamW(self.model_.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode='min', factor=self.scheduler_factor,

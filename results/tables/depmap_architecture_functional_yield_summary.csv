@@ -1,0 +1,4 @@
+Architecture,Evaluated Biomarkers,Quadrant I (Selective Addiction Targets),Quadrant II (Pan-Cancer Mitotic Engines),Quadrant III (Diagnostic Lineage Reporters),Quadrant IV (Context/Compensated),Mean Breast Chronos Score,Mean Delta Dependency
+Model 1: Logistic Regression,20,4 (20.0%),3 (15.0%),10 (50.0%),3 (15.0%),-0.601,-0.075
+Model 2: PyTorch MLP,19,2 (10.5%),3 (15.8%),13 (68.4%),1 (5.3%),-0.425,-0.023
+Model 3: Random Forest,19,3 (15.8%),0 (0.0%),11 (57.9%),5 (26.3%),-0.252,-0.115

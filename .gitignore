@@ -125,3 +125,12 @@ Oncoresolve-Breast Cancer Subtyping and Precision Profiling.pptx
 # Backups & Scratch Inventory
 backups/
 scratch_cell_inventory.json
+
+
+# Strict PDF, Presentation, Pre-print, and TeX exclusion
+*.pdf
+*.pptx
+*.ppt
+*.tex
+pre-print/
+results/presentation_slides/

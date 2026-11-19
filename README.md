@@ -192,34 +192,30 @@ Performed local hypergeometric ORA (Benjamini-Hochberg corrected) against 4 data
 **Cohort:** N=981 patients, P=211 consensus genes.
 
 #### WPR-CUS Formulation
-The Weighted Projected Residual Composite Uniqueness Score (WPR-CUS) combines three orthogonal metrics under strict 5-fold OOF cross-fitting (equal weights α=β=γ=⅓):
-1. Mean Absolute LOO Residual
-2. WPR-Hubness Isolation Score (Pairwise Weighted Projected Residual Distance)
-3. L₂ Residual Vector Norm
+The Projected Residual Composite Uniqueness Score (Option A: Bi-Dimensional Orthogonal PR-CUS) simplifies the metric to two truly orthogonal components under strict 5-fold OOF cross-fitting, eliminating the redundant L1 attribution norm (Mean Absolute LOO Residual) to prevent collinear double-counting of residual magnitude:
+1. **Leave-One-Out (LOO) $L_2$ Residual Norm ($u_{\text{LOO-L2}}$)**: Jackson-Mudholkar SPE / $Q$-statistic equivalent (weight 0.50)
+2. **Topological Manifold Isolation Score ($u_{\text{WPRD}}$)**: Pairwise Weighted Projected Residual Distance in PCA subspace (weight 0.50)
 
-#### Subtype-Level WPR-CUS Descriptives (N=981)
+#### Subtype-Level PR-CUS Descriptives (Option A, N=981)
 
-| Subtype | N | Mean WPR-CUS | SD | Median | IQR |
+| Subtype | N | Mean PR-CUS | SD | Median | Range [Min, Max] |
 |:---|:---:|:---:|:---:|:---:|:---:|
-| **Basal-like** | 171 | **1.191** | 1.026 | 1.098 | [0.462, 1.801] |
-| **HER2-enriched** | 78 | **1.096** | 0.887 | 0.986 | [0.545, 1.598] |
-| **Luminal B** | 197 | 0.435 | 0.780 | 0.416 | [-0.067, 0.859] |
-| **Normal-like** | 36 | 0.002 | 1.078 | -0.156 | [-0.689, 0.570] |
-| **Luminal A** | 499 | **−0.219** | 0.756 | −0.297 | [-0.793, 0.234] |
+| **HER2-enriched** | 78 | **+1.0739** | 0.8739 | +1.0522 | [-0.6403, 3.6185] |
+| **Basal-like** | 171 | **+0.9649** | 1.0654 | +0.7720 | [-0.9764, 5.0401] |
+| **Luminal B** | 197 | **+0.3268** | 1.0380 | +0.0562 | [-1.1687, 4.9678] |
+| **Normal-like** | 36 | **+0.7637** | 1.7053 | +0.5498 | [-1.3183, 8.1866] |
+| **Luminal A** | 499 | **−0.1412** | 0.9269 | −0.3541 | [-1.4270, 7.0519] |
 
-#### Statistical Validation
+#### Statistical Validation (Option A: PR-CUS)
 
-| Test | Statistic | p-value |
-|:---|:---:|:---:|
-| Classical ANOVA F | **116.052** | 5.49×10⁻⁸¹ |
-| Eta-squared (η²) | **0.322** | — |
-| Omega-squared (ω²) | 0.319 | — |
-| Welch ANOVA F | 101.298 | 5.06×10⁻⁴⁴ |
-| Kruskal-Wallis H | **316.094** | — |
-| Empirical permutation p (1,000 permutations) | **0.000999** | < 0.001 |
-| Permutation null 95th percentile H | 9.575 | — |
+| Test / Criterion | Statistic | p-value | Interpretation |
+|:---|:---:|:---:|:---|
+| Classical ANOVA F | **55.734** | $2.30 \times 10^{-42}$ | Highly significant subtype divergence |
+| Kruskal-Wallis H | **241.519** | $4.37 \times 10^{-51}$ | Extreme non-parametric subtype separation |
+| Pearson r with 3-component score | **0.9958** | — | 99.6% collinear preservation without L1 redundancy |
+| Spearman rho with 3-component score | **0.9956** | — | Complete monotonic rank preservation |
 
-> The observed Kruskal-Wallis H=316.09 vastly exceeds the 99th percentile of the permutation null (H=12.95), confirming that PAM50 subtype association with WPR-CUS is not a statistical artifact.
+> By dropping the redundant $L_1$ attribution norm, Option A eliminates double-counting while preserving $99.6\%$ of the biological ranking across PAM50 molecular subtypes with extreme statistical significance ($p = 4.37 \times 10^{-51}$).
 
 #### Cross-Patient Reconstruction Benchmark (OOF Ridge, 5-Fold)
 

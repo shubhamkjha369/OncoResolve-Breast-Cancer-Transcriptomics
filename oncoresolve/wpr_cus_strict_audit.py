@@ -66,7 +66,9 @@ RAW_DIR = DATA_DIR / "raw"
 RANDOM_STATE = 42
 N_SPLITS = 5
 L = 10
-ALPHA = BETA = GAMMA = 1.0 / 3.0
+ALPHA = 0.0
+BETA = 0.5
+GAMMA = 0.5
 RIDGE_ALPHA = 1.0                 # LOCKED; no outcome-driven tuning
 N_PERM = 1000
 N_BOOT = 100
@@ -300,7 +302,7 @@ def score_test_fold_with_reference(R_train, R_test, params):
     sw = (u_sw - params["mu_sw"]) / max(params["sd_sw"], EPS)
     loo = (u_loo - params["mu_loo"]) / max(params["sd_loo"], EPS)
 
-    score = ALPHA * att + BETA * sw + GAMMA * loo
+    score = BETA * sw + GAMMA * loo
 
     return score, {
         "u_att": u_att,
